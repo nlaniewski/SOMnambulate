@@ -1,0 +1,22 @@
+Package: SOMnambulate
+Title: Sleep Walking Through a High Dimensional Dream 
+Version: 0.0.0.9000
+Authors@R: 
+    person("Nathan", "Laniewski", , "nathan_laniewski@urmc.rochester.edu", role = c("aut", "cre"))
+Description: Generalized tools for .fcs preprocessing and visualization; High-dimensional analysis using a (flow)SOM-based workflow.
+License: GPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.2
+Imports:
+    data.table,
+    flowCore,
+    ggplot2,
+    plotly,
+    scales,
+    shiny,
+    shinydashboard,
+    stats,
+    stringr,
+    viridis
+biocViews:
