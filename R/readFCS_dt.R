@@ -1,5 +1,6 @@
 
-readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,drop.events=T){
+readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,drop.events=T,
+                     asinh.transform=F,cofactor.default=1000,cofactor.mod=NULL){
   ##
   channels.df<-generate.channels.frame(fcs.file.path)
   ##
@@ -22,6 +23,23 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,drop.events=T){
   ##
   if(drop.events){
     dat<-dat[!drop_events_count_based(dat)]
+  }
+  ##
+  if(asinh.transform){
+    asinh.cofactors<- setNames(rep(cofactor.default,length(grep("SC|Time",names(dat),invert = T))),
+                               nm=grep("SC|Time",names(dat),value = T,invert = T)
+    )
+    if(!is.null(cofactor.mod)){
+      if(length(which(names(asinh.cofactors) %in% names(cofactor.mod)))==length(cofactor.mod)){
+        for(i in names(cofactor.mod)){
+          asinh.cofactors[[i]]<-cofactor.mod[[i]]
+        }
+      }else{
+        stop(paste("Named cofactor not found:",i))
+      }
+    }
+    ##
+    for (j in names(asinh.cofactors)) data.table::set(dat, j = j, value = asinh(dat[[j]]/asinh.cofactors[[j]]))
   }
   ##
   return(dat)
