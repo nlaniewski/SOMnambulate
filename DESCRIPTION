@@ -12,7 +12,6 @@ Imports:
     data.table,
     flowCore,
     ggplot2,
-    hexbin,
     plotly,
     scales,
     shiny,

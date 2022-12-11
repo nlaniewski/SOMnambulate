@@ -26,8 +26,8 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,drop.events=T,
   }
   ##
   if(asinh.transform){
-    asinh.cofactors<- setNames(rep(cofactor.default,length(grep("SC|Time",names(dat),invert = T))),
-                               nm=grep("SC|Time",names(dat),value = T,invert = T)
+    asinh.cofactors<- stats::setNames(rep(cofactor.default,length(grep("SC|Time",names(dat),invert = T))),
+                                      nm=grep("SC|Time",names(dat),value = T,invert = T)
     )
     if(!is.null(cofactor.mod)){
       if(length(which(names(asinh.cofactors) %in% names(cofactor.mod)))==length(cofactor.mod)){
