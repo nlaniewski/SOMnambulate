@@ -20,7 +20,9 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,drop.events=T){
     }
   }
   ##
-  dat<-dat[!drop_events_count_based(dat)]
+  if(drop.events){
+    dat<-dat[!drop_events_count_based(dat)]
+  }
   ##
   return(dat)
 }
