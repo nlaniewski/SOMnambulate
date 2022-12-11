@@ -1,5 +1,5 @@
 
-readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T){
+readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,drop.events=T){
   ##
   channels.df<-generate.channels.frame(fcs.file.path)
   ##
@@ -19,6 +19,9 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T){
       data.table::setnames(dat,channels.df$alias)
     }
   }
+  ##
+  dat<-dat[!drop_events_count_based(dat)]
+  ##
   return(dat)
 }
 
