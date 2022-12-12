@@ -1,6 +1,7 @@
 
-readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,drop.events=T,
-                     asinh.transform=F,cofactor.default=1000,cofactor.mod=NULL){
+readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
+                     asinh.transform=F,cofactor.default=1000,cofactor.mod=NULL,
+                     drop.events=T){
   ##
   channels.df<-generate.channels.frame(fcs.file.path)
   ##
@@ -21,10 +22,6 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,drop.events=T,
     }
   }
   ##
-  if(drop.events){
-    dat<-dat[!drop_events_count_based(dat)]
-  }
-  ##
   if(asinh.transform){
     asinh.cofactors<- stats::setNames(rep(cofactor.default,length(grep("SC|Time",names(dat),invert = T))),
                                       nm=grep("SC|Time",names(dat),value = T,invert = T)
@@ -40,6 +37,10 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,drop.events=T,
     }
     ##
     for (j in names(asinh.cofactors)) data.table::set(dat, j = j, value = asinh(dat[[j]]/asinh.cofactors[[j]]))
+  }
+  ##
+  if(drop.events){
+    dat<-dat[!drop_events_count_based(dat)]
   }
   ##
   return(dat)
