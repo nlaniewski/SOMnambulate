@@ -7,12 +7,11 @@ cytoplot <- function(dat=NULL,fcs.file.path=NULL,marker.pair=NULL,asinh.view=F){
   ##
   if(!is.null(marker.pair)){
     m1 <- marker.pair[1];m2 <- marker.pair[2]
-  }else if(all(c('FSC-A','SSC-A') %in% c.names)){
-    m1 <- 'FSC-A'
-    m2 <- 'SSC-A'
   }else{
-    m1<-c.names[1]
-    m2<-c.names[2]
+    if(all(c('FSC-A','SSC-A') %in% c.names)){
+      m1 <- 'FSC-A'
+      m2 <- 'SSC-A'
+    }
   }
   ##
   p <- axis.selection.plotly.heatmap(c.names)
