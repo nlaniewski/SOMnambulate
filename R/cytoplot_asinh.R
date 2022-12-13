@@ -1,216 +1,216 @@
-cytoplot_asinh <- function(dat=NULL,fcs.file.path=NULL,marker.pair=NULL){
-  if(!is.null(fcs.file.path)){
-    dat<-readFCS_dt(fcs.file.path)
-  }
-  ##
-  c.names <- cols.sensible.reorder(cols = colnames(dat))
-  ##
-  if(!is.null(marker.pair)){
-    m1 <- marker.pair[1];m2 <- marker.pair[2]
-  }else{
-    if(all(c('FSC-A','SSC-A') %in% c.names)){
-      m1 <- 'FSC-A'
-      m2 <- 'SSC-A'
-    }
-  }
-  ##
-  p <- axis.selection.plotly.heatmap(c.names)
-  ##
-  total.rows <- nrow(dat)
-  if(total.rows<1E5){
-    rows.initial<-total.rows
-  }else{
-    rows.initial<-1E5
-  }
-  ##
-  drop.index<-drop_events_count_based(dat)#extreme events
-  ##
-  ui <- shinydashboard::dashboardPage(
-    shinydashboard::dashboardHeader(title = paste("Cyto Plot"),
-                                    disable = F),
-    shinydashboard::dashboardSidebar(
-      shinydashboard::sidebarMenu(
-        shinydashboard::menuItem(
-          "Marker Selection:",
-          tabName = "markers",
-          shiny::selectInput(inputId = "marker1",
-                             label = "Marker (x):",
-                             choices = c.names,
-                             selected = m1),
-          shiny::selectInput(inputId = "marker2",
-                             label = "Marker (y):",
-                             choices = c.names,
-                             selected = m2),
-          shiny::numericInput(inputId = "rowsamp",
-                              label = "# of 'All Events' to display:",
-                              value = rows.initial,
-                              min = 1E5,
-                              max = total.rows,
-                              step = 1E5)
-        ),
-        shinydashboard::menuItem(
-          "Asinh Transform:",
-          tabName = "asinh",
-          shiny::radioButtons(
-            inputId = 'asinh.applied',
-            label="Apply asinh?",
-            choices = c('Yes',"No"),
-            selected = 'No',
-            inline = T
-          ),
-          shiny::radioButtons(
-            inputId = 'drop.events',
-            label="Drop extreme events?",
-            choices = c('Yes',"No"),
-            selected = 'No',
-            inline = T
-          ),
-          shiny::sliderInput(
-            inputId = 'cofactor.xaxis',
-            label = "Cofactor: X-axis",
-            min = 1,
-            max = 3000,
-            value = 1000,
-            step = 50
-          ),
-          shiny::sliderInput(
-            inputId = 'cofactor.yaxis',
-            label = "Cofactor: Y-axis",
-            min = 1,
-            max = 3000,
-            value = 1000,
-            step = 50
-          )
-        )
-      )
-    ),
-    shinydashboard::dashboardBody(
-      shiny::fluidRow(
-        shinydashboard::box(
-          title=NULL,
-          shiny::plotOutput("ggbivariate_plot1"),
-          width=8
-        )
-      ),
-      shiny::fluidRow(
-        shinydashboard::box(
-          title="Axis (X,Y) Selection",
-          plotly::plotlyOutput("plotly_heat",height="150px"),
-          width=8
-        )
-      )
-    )
-  )
+# cytoplot_asinh <- function(dat=NULL,fcs.file.path=NULL,marker.pair=NULL){
+#   if(!is.null(fcs.file.path)){
+#     dat<-readFCS_dt(fcs.file.path)
+#   }
+#   ##
+#   c.names <- cols.sensible.reorder(cols = colnames(dat))
+#   ##
+#   if(!is.null(marker.pair)){
+#     m1 <- marker.pair[1];m2 <- marker.pair[2]
+#   }else{
+#     if(all(c('FSC-A','SSC-A') %in% c.names)){
+#       m1 <- 'FSC-A'
+#       m2 <- 'SSC-A'
+#     }
+#   }
+#   ##
+#   p <- axis.selection.plotly.heatmap(c.names)
+#   ##
+#   total.rows <- nrow(dat)
+#   if(total.rows<1E5){
+#     rows.initial<-total.rows
+#   }else{
+#     rows.initial<-1E5
+#   }
+#   ##
+#   drop.index<-drop_events_count_based(dat)#extreme events
+#   ##
+#   ui <- shinydashboard::dashboardPage(
+#     shinydashboard::dashboardHeader(title = paste("Cyto Plot"),
+#                                     disable = F),
+#     shinydashboard::dashboardSidebar(
+#       shinydashboard::sidebarMenu(
+#         shinydashboard::menuItem(
+#           "Marker Selection:",
+#           tabName = "markers",
+#           shiny::selectInput(inputId = "marker1",
+#                              label = "Marker (x):",
+#                              choices = c.names,
+#                              selected = m1),
+#           shiny::selectInput(inputId = "marker2",
+#                              label = "Marker (y):",
+#                              choices = c.names,
+#                              selected = m2),
+#           shiny::numericInput(inputId = "rowsamp",
+#                               label = "# of 'All Events' to display:",
+#                               value = rows.initial,
+#                               min = 1E5,
+#                               max = total.rows,
+#                               step = 1E5)
+#         ),
+#         shinydashboard::menuItem(
+#           "Asinh Transform:",
+#           tabName = "asinh",
+#           shiny::radioButtons(
+#             inputId = 'asinh.applied',
+#             label="Apply asinh?",
+#             choices = c('Yes',"No"),
+#             selected = 'No',
+#             inline = T
+#           ),
+#           shiny::radioButtons(
+#             inputId = 'drop.events',
+#             label="Drop extreme events?",
+#             choices = c('Yes',"No"),
+#             selected = 'No',
+#             inline = T
+#           ),
+#           shiny::sliderInput(
+#             inputId = 'cofactor.xaxis',
+#             label = "Cofactor: X-axis",
+#             min = 1,
+#             max = 3000,
+#             value = 1000,
+#             step = 50
+#           ),
+#           shiny::sliderInput(
+#             inputId = 'cofactor.yaxis',
+#             label = "Cofactor: Y-axis",
+#             min = 1,
+#             max = 3000,
+#             value = 1000,
+#             step = 50
+#           )
+#         )
+#       )
+#     ),
+#     shinydashboard::dashboardBody(
+#       shiny::fluidRow(
+#         shinydashboard::box(
+#           title=NULL,
+#           shiny::plotOutput("ggbivariate_plot1"),
+#           width=8
+#         )
+#       ),
+#       shiny::fluidRow(
+#         shinydashboard::box(
+#           title="Axis (X,Y) Selection",
+#           plotly::plotlyOutput("plotly_heat",height="150px"),
+#           width=8
+#         )
+#       )
+#     )
+#   )
+#
+#   server <- function(input, output) {
+#     ##
+#     row.index <- shiny::reactive({
+#       set.seed(1337)
+#       i <- sample(1:total.rows,input$rowsamp)
+#       if(input$drop.events=='Yes'){
+#         i<-i[!i %in% drop.index]
+#       }
+#       return(i)
+#     })
+#     ##
+#     ggbivariate_plot1 <- shiny::reactive({
+#       if(input$asinh.applied=='Yes'){
+#         p.tmp <- gg.func.bivariate(dat[row.index(),],
+#                                    x = asinh(!!ggplot2::sym(input$marker1)/input$cofactor.xaxis),
+#                                    y = asinh(!!ggplot2::sym(input$marker2)/input$cofactor.yaxis)
+#         )
+#       }else if(input$asinh.applied=='No'){
+#         p.tmp <- gg.func.bivariate(dat[row.index(),],
+#                                    x = !!ggplot2::sym(input$marker1),
+#                                    y = !!ggplot2::sym(input$marker2)
+#         )
+#       }
+#       p.tmp +
+#         ggplot2::labs(title = "All Events",
+#                       subtitle = paste(length(row.index()), "of", total.rows, "displayed")) +
+#         ggplot2::xlab(input$marker1) +
+#         ggplot2::ylab(input$marker2)
+#     })
+#     ##
+#     output$ggbivariate_plot1 <- shiny::renderPlot({
+#       ggbivariate_plot1()
+#     })
+#     ##
+#     output$plotly_heat <- plotly::renderPlotly(p)
+#     ##
+#     clicks <- shiny::reactiveValues(dat = data.frame(marker1 = NA, marker2 = NA))
+#     click <- shiny::reactive({
+#       plotly::event_data("plotly_click", priority = 'event', source = 'axis.selection')
+#     })
+#     #
+#     shiny::observeEvent(eventExpr = click(),{
+#       if(is.na(clicks$dat$marker1)&is.na(clicks$dat$marker2)){
+#         clicks$dat$marker1 <- click()$x
+#       }else if(is.na(clicks$dat$marker2)){
+#         clicks$dat$marker2 <- click()$x
+#         shiny::updateSelectInput(inputId = 'marker1',
+#                                  selected = clicks$dat$marker1)
+#         shiny::updateSelectInput(inputId = 'marker2',
+#                                  selected = clicks$dat$marker2)
+#         clicks$dat$marker1 <- NA
+#         clicks$dat$marker2 <- NA
+#       }
+#     })
+#   }
+#   # Run app ----
+#   #options(shiny.launch.browser = .rs.invokeShinyWindowViewer)
+#   shiny::shinyApp(ui, server)
+# }
 
-  server <- function(input, output) {
-    ##
-    row.index <- shiny::reactive({
-      set.seed(1337)
-      i <- sample(1:total.rows,input$rowsamp)
-      if(input$drop.events=='Yes'){
-        i<-i[!i %in% drop.index]
-      }
-      return(i)
-    })
-    ##
-    ggbivariate_plot1 <- shiny::reactive({
-      if(input$asinh.applied=='Yes'){
-        p.tmp <- gg.func.bivariate(dat[row.index(),],
-                                   x = asinh(!!ggplot2::sym(input$marker1)/input$cofactor.xaxis),
-                                   y = asinh(!!ggplot2::sym(input$marker2)/input$cofactor.yaxis)
-        )
-      }else if(input$asinh.applied=='No'){
-        p.tmp <- gg.func.bivariate(dat[row.index(),],
-                                   x = !!ggplot2::sym(input$marker1),
-                                   y = !!ggplot2::sym(input$marker2)
-        )
-      }
-      p.tmp +
-        ggplot2::labs(title = "All Events",
-                      subtitle = paste(length(row.index()), "of", total.rows, "displayed")) +
-        ggplot2::xlab(input$marker1) +
-        ggplot2::ylab(input$marker2)
-    })
-    ##
-    output$ggbivariate_plot1 <- shiny::renderPlot({
-      ggbivariate_plot1()
-    })
-    ##
-    output$plotly_heat <- plotly::renderPlotly(p)
-    ##
-    clicks <- shiny::reactiveValues(dat = data.frame(marker1 = NA, marker2 = NA))
-    click <- shiny::reactive({
-      plotly::event_data("plotly_click", priority = 'event', source = 'axis.selection')
-    })
-    #
-    shiny::observeEvent(eventExpr = click(),{
-      if(is.na(clicks$dat$marker1)&is.na(clicks$dat$marker2)){
-        clicks$dat$marker1 <- click()$x
-      }else if(is.na(clicks$dat$marker2)){
-        clicks$dat$marker2 <- click()$x
-        shiny::updateSelectInput(inputId = 'marker1',
-                                 selected = clicks$dat$marker1)
-        shiny::updateSelectInput(inputId = 'marker2',
-                                 selected = clicks$dat$marker2)
-        clicks$dat$marker1 <- NA
-        clicks$dat$marker2 <- NA
-      }
-    })
-  }
-  # Run app ----
-  #options(shiny.launch.browser = .rs.invokeShinyWindowViewer)
-  shiny::shinyApp(ui, server)
-}
+# gg.func.bivariate <- function(dat,...){
+#   ggplot2::ggplot(dat,ggplot2::aes(...)) +
+#     ggplot2::geom_hex(bins = 100) +
+#     viridis::scale_fill_viridis(option = "plasma", limits = c(0, 50), oob = scales::squish)
+# }
 
-gg.func.bivariate <- function(dat,...){
-  ggplot2::ggplot(dat,ggplot2::aes(...)) +
-    ggplot2::geom_hex(bins = 100) +
-    viridis::scale_fill_viridis(option = "plasma", limits = c(0, 50), oob = scales::squish)
-}
+# cols.sensible.reorder<-function(cols){
+#   scatter<-grep("SC",cols)
+#   cols[-scatter]<-cols[-scatter][order(stringr::str_extract(cols[-scatter],"[A-Za-z]+"))]
+#   cols[grep("CD",cols)]<-cols[grep("CD",cols)][order(as.numeric(stringr::str_extract(cols[grep("CD",cols)],"[0-9]+")))]
+#   cols[grep("IL",cols)]<-cols[grep("IL",cols)][order(as.numeric(stringr::str_extract(cols[grep("IL",cols)],"[0-9]+")))]
+#   if('Time' %in% cols){
+#     cols<-cols[-which(cols %in% 'Time')]
+#     cols<-c(cols,'Time')
+#   }
+#   return(cols)
+# }
 
-cols.sensible.reorder<-function(cols){
-  scatter<-grep("SC",cols)
-  cols[-scatter]<-cols[-scatter][order(stringr::str_extract(cols[-scatter],"[A-Za-z]+"))]
-  cols[grep("CD",cols)]<-cols[grep("CD",cols)][order(as.numeric(stringr::str_extract(cols[grep("CD",cols)],"[0-9]+")))]
-  cols[grep("IL",cols)]<-cols[grep("IL",cols)][order(as.numeric(stringr::str_extract(cols[grep("IL",cols)],"[0-9]+")))]
-  if('Time' %in% cols){
-    cols<-cols[-which(cols %in% 'Time')]
-    cols<-c(cols,'Time')
-  }
-  return(cols)
-}
-
-axis.selection.plotly.heatmap<-function(column.names){
-  axis.selection<-matrix(1:length(column.names),
-                         nrow=1,
-                         ncol=length(column.names),
-                         dimnames = list(c('click.x_click.y'),column.names)
-  )
-
-  plotly.heatmap <- plotly::plot_ly(x=colnames(axis.selection),
-                                    y=rownames(axis.selection),
-                                    z=axis.selection,
-                                    zauto = F,
-                                    type = "heatmap",
-                                    xgap = 2,
-                                    text=colnames(axis.selection),
-                                    source = 'axis.selection'
-  )
-  plotly.heatmap <- plotly::layout(plotly.heatmap,
-                                   yaxis = list(tickfont = list(size = 10),
-                                                type = "category")
-  )
-  plotly.heatmap <- plotly::layout(plotly.heatmap,
-                                   xaxis = list(showspikes=T,
-                                                spikedash="longdash",
-                                                spikemode="across",
-                                                spikecolor="purple",
-                                                spikethickness=1),
-                                   yaxis = list(showspike=T,
-                                                spikedash="longdash",
-                                                spikemode="across",
-                                                spikecolor="orange",
-                                                spikethickness=1)
-  )
-  plotly.heatmap<-plotly::hide_colorbar(plotly.heatmap)
-}
+# axis.selection.plotly.heatmap<-function(column.names){
+#   axis.selection<-matrix(1:length(column.names),
+#                          nrow=1,
+#                          ncol=length(column.names),
+#                          dimnames = list(c('click.x_click.y'),column.names)
+#   )
+#
+#   plotly.heatmap <- plotly::plot_ly(x=colnames(axis.selection),
+#                                     y=rownames(axis.selection),
+#                                     z=axis.selection,
+#                                     zauto = F,
+#                                     type = "heatmap",
+#                                     xgap = 2,
+#                                     text=colnames(axis.selection),
+#                                     source = 'axis.selection'
+#   )
+#   plotly.heatmap <- plotly::layout(plotly.heatmap,
+#                                    yaxis = list(tickfont = list(size = 10),
+#                                                 type = "category")
+#   )
+#   plotly.heatmap <- plotly::layout(plotly.heatmap,
+#                                    xaxis = list(showspikes=T,
+#                                                 spikedash="longdash",
+#                                                 spikemode="across",
+#                                                 spikecolor="purple",
+#                                                 spikethickness=1),
+#                                    yaxis = list(showspike=T,
+#                                                 spikedash="longdash",
+#                                                 spikemode="across",
+#                                                 spikecolor="orange",
+#                                                 spikethickness=1)
+#   )
+#   plotly.heatmap<-plotly::hide_colorbar(plotly.heatmap)
+# }

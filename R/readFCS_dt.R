@@ -1,7 +1,7 @@
 
 readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
                      asinh.transform=F,cofactor.default=1000,cofactor.mod=NULL,
-                     drop.events=T){
+                     drop.events=T,sensible.reorder=T){
   ##
   channels.df<-generate.channels.frame(fcs.file.path)
   ##
@@ -41,6 +41,10 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
   ##
   if(drop.events){
     dat<-dat[!drop_events_count_based(dat)]
+  }
+  ##
+  if(sensible.reorder){
+    data.table::setnames(dat,names(dat),SOMnambulate:::cols.sensible.reorder(names(dat)))
   }
   ##
   return(dat)
@@ -125,4 +129,16 @@ drop_events_count_based<-function(dat){
     cut.max<-h$breaks[cut.index][cut.max.bin]
     list(c(which(x<cut.min),which(x>cut.max)))
   }), .SDcols=fluors]))
+}
+
+cols.sensible.reorder<-function(cols){
+  scatter<-grep("SC",cols)
+  cols[-scatter]<-cols[-scatter][order(stringr::str_extract(cols[-scatter],"[A-Za-z]+"))]
+  cols[grep("CD",cols)]<-cols[grep("CD",cols)][order(as.numeric(stringr::str_extract(cols[grep("CD",cols)],"[0-9]+")))]
+  cols[grep("IL",cols)]<-cols[grep("IL",cols)][order(as.numeric(stringr::str_extract(cols[grep("IL",cols)],"[0-9]+")))]
+  if('Time' %in% cols){
+    cols<-cols[-which(cols %in% 'Time')]
+    cols<-c(cols,'Time')
+  }
+  return(cols)
 }
