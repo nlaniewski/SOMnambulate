@@ -52,13 +52,6 @@ cytoplot <- function(dat=NULL,fcs.file.path=NULL,marker.pair=NULL,asinh.view=F){
         selected = 'No',
         inline = T
       ),
-      shiny::radioButtons(
-        inputId = 'drop.events',
-        label="Drop extreme events?",
-        choices = c('Yes',"No"),
-        selected = 'No',
-        inline = T
-      ),
       shiny::sliderInput(
         inputId = 'cofactor.xaxis',
         label = "Cofactor: X-axis",
@@ -125,6 +118,7 @@ cytoplot <- function(dat=NULL,fcs.file.path=NULL,marker.pair=NULL,asinh.view=F){
                                    x = !!ggplot2::sym(input$marker1),
                                    y = !!ggplot2::sym(input$marker2))
       }else if(asinh.view==TRUE){
+        shiny::req(input$asinh.applied)
         if(input$asinh.applied=='Yes'){
           p.tmp <- gg.func.bivariate(dat[row.index(),],
                                      x = asinh(!!ggplot2::sym(input$marker1)/input$cofactor.xaxis),
@@ -143,6 +137,31 @@ cytoplot <- function(dat=NULL,fcs.file.path=NULL,marker.pair=NULL,asinh.view=F){
         ggplot2::xlab(input$marker1) +
         ggplot2::ylab(input$marker2)
     })
+    ##
+    # ggbivariate_plot1 <- shiny::reactive({
+    #   if(asinh.view==FALSE){
+    #     p.tmp <- gg.func.bivariate(dat[row.index(),],
+    #                                x = !!ggplot2::sym(input$marker1),
+    #                                y = !!ggplot2::sym(input$marker2))
+    #   }else if(asinh.view==TRUE){
+    #     if(input$asinh.applied=='Yes'){
+    #       p.tmp <- gg.func.bivariate(dat[row.index(),],
+    #                                  x = asinh(!!ggplot2::sym(input$marker1)/input$cofactor.xaxis),
+    #                                  y = asinh(!!ggplot2::sym(input$marker2)/input$cofactor.yaxis)
+    #       )
+    #     }else if(input$asinh.applied=='No'){
+    #       p.tmp <- gg.func.bivariate(dat[row.index(),],
+    #                                  x = !!ggplot2::sym(input$marker1),
+    #                                  y = !!ggplot2::sym(input$marker2)
+    #       )
+    #     }
+    #   }
+    #   p.tmp +
+    #     ggplot2::labs(title = "All Events",
+    #                   subtitle = paste(length(row.index()), "of", total.rows, "displayed")) +
+    #     ggplot2::xlab(input$marker1) +
+    #     ggplot2::ylab(input$marker2)
+    # })
     ##
     output$ggbivariate_plot1 <- shiny::renderPlot({
       ggbivariate_plot1()
