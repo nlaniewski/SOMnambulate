@@ -44,7 +44,7 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
   }
   ##
   if(sensible.reorder){
-    data.table::setnames(dat,names(dat),SOMnambulate:::cols.sensible.reorder(names(dat)))
+    data.table::setcolorder(dat,cols.sensible.reorder(names(dat)))
   }
   ##
   return(dat)
