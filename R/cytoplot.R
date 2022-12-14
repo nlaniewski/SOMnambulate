@@ -209,22 +209,22 @@ axis.selection.plotly.heatmap<-function(column.names){
   plotly.heatmap<-plotly::hide_colorbar(plotly.heatmap)
 }
 
-# gg.func.bivariate.cluster.overlay <- function(dat,...,bins=100,fill.limits=c(0,50),cluster.number=NULL,cell.type,
-#                                               overlay.total=1E5,use.labs=T){
-#   p<-ggplot2::ggplot(dat[sample(.N,overlay.total)],ggplot2::aes(...)) +
-#     ggplot2::geom_hex(fill = "gray", bins = bins) +
-#     ggplot2::geom_hex(data=dat[cluster==cluster.number],bins=bins) +
-#     viridis::scale_fill_viridis(option = "plasma", limits = fill.limits, oob = scales::squish) +
-#     ggplot2::theme_classic() +
-#     ggplot2::guides(fill='none')
-#   if(use.labs){
-#     p<-p+ggplot2::labs(title=paste("Cluster #:",cluster.number),
-#                        subtitle = paste("Cell Type:",unique(dat[cluster==cluster.number,cell.type])),
-#                        caption = paste(paste("# of events (cluster):",dat[cluster==cluster.number,.N]),
-#                                        paste("# of events (overlay):",overlay.total),
-#                                        paste('# of events (total)',dat[,.N]),
-#                                        sep="\n")
-#     )
-#   }
-#   return(p)
-# }
+gg.func.bivariate.cluster.overlay <- function(dat,...,bins=100,fill.limits=c(0,50),cluster.number=NULL,
+                                              overlay.total=1E5,use.labs=T){
+  p<-ggplot2::ggplot(dat[sample(.N,overlay.total)],ggplot2::aes(...)) +
+    ggplot2::geom_hex(fill = "gray", bins = bins) +
+    ggplot2::geom_hex(data=dat[cluster==cluster.number],bins=bins) +
+    viridis::scale_fill_viridis(option = "plasma", limits = fill.limits, oob = scales::squish) +
+    ggplot2::theme_classic() +
+    ggplot2::guides(fill='none')
+  if(use.labs){
+    p<-p+ggplot2::labs(title=paste("Cluster #:",cluster.number),
+                       subtitle = paste("Cell Type:",unique(dat[cluster==cluster.number,cell.type])),
+                       caption = paste(paste("# of events (cluster):",dat[cluster==cluster.number,.N]),
+                                       paste("# of events (overlay):",overlay.total),
+                                       paste('# of events (total)',dat[,.N]),
+                                       sep="\n")
+    )
+  }
+  return(p)
+}

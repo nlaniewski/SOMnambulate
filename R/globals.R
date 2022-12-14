@@ -1,1 +1,1 @@
-utils::globalVariables(c("cluster"))
+utils::globalVariables(c("cell.type","cluster"))
