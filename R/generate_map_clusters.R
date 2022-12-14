@@ -48,15 +48,15 @@ generate_map_nodes <- function(codes,dat,scale.dims=T){
     FlowSOM:::MapDataToCodes(codes,as.matrix(dat[, lapply(.SD, function(x) (x - mean(x))/stats::sd(x)),.SDcols=dims.codes]))[,1]
 }
 
-cluster.id<-function(dat,cell.subset.marker,discriminating.markers){
-  if(!cell.subset.marker %in% names(dat)){
+cluster.id<-function(dat,cell.type.marker,discriminating.markers){
+  if(!cell.type.marker %in% names(dat)){
     stop("Check marker names...")
   }
   if(!all(discriminating.markers %in% names(dat))){
     stop("Check marker names...")
   }
-  cluster.medians <- dat[, lapply(.SD, stats::median), keyby = cluster,.SDcols=c(cell.subset.marker,discriminating.markers)]
-  cid<-which(cluster.medians[,get(cell.subset.marker)]>mean(cluster.medians[,get(cell.subset.marker)]))
+  cluster.medians <- dat[, lapply(.SD, stats::median), keyby = cluster,.SDcols=c(cell.type.marker,discriminating.markers)]
+  cid<-which(cluster.medians[,get(cell.type.marker)]>mean(cluster.medians[,get(cell.type.marker)]))
   for(cid.test in discriminating.markers){
     if(length(cid)>1){
       i<-which(cluster.medians[,get(cid.test)]<mean(cluster.medians[,get(cid.test)]))
