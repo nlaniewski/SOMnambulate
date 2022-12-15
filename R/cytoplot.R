@@ -251,7 +251,7 @@ cluster.axis.selection.plotly.heatmap<- function(cluster.medians,use.sorting=T,b
                                     zmax = max(break.vec),
                                     type = "heatmap",
                                     colors = color.breaks,
-                                    source = 'cluster.heatmap'
+                                    source = 'axis.selection'
   )
   plotly.heatmap <- plotly::layout(plotly.heatmap,
                                    yaxis = list(tickfont = list(size = 10),
