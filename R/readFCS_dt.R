@@ -67,17 +67,17 @@ generate.channels.frame<-function(fcs.file.path,split.type.position=NULL){
   return(channels.df)
 }
 
-split.type.position.agnostic<-function(S){
+split.type.position.agnostic<-function(s){
   common.split.counts <- sapply(c(".", "_", "-", " "),function(split){
-    sum(grepl(split,S, fixed = T))
+    sum(grepl(split,s,fixed = T))
   })
-  if(max(common.split.counts)!=length(S)){
+  if(max(common.split.counts)!=length(s)){
     most.likely.split <- ""
   }
   else {
     most.likely.split <- names(common.split.counts)[which.max(common.split.counts)]
   }
-  splits<-strsplit(S,most.likely.split)
+  splits<-strsplit(s,most.likely.split)
   split.lengths<-unique(sapply(splits,length))
   if(length(split.lengths)!=1){
     stop("Varying split lengths;check naming convention")
