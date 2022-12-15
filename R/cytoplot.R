@@ -277,9 +277,9 @@ generate_cluster_medians<-function(dt,use.scale.func=T){
   if(!data.table::is.data.table(dt)&'cluster' %in% names(dt)){
     stop("Need data.table with a 'cluster' column")
   }
-  cluster.medians <- dt[ , .SD, .SDcols = is.numeric][, lapply(.SD, median), keyby = cluster][,-'cluster',with=F]
+  cluster.medians <- dt[ , .SD, .SDcols = is.numeric][, lapply(.SD, stats::median), keyby = cluster][,-'cluster',with=F]
   if(use.scale.func){
-    cluster.medians[,names(cluster.medians) := lapply(.SD, function(x) (x - mean(x))/sd(x))]
+    cluster.medians[,names(cluster.medians) := lapply(.SD, function(x) (x - mean(x))/stats::sd(x))]
   }
   return(cluster.medians)
 }
