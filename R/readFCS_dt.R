@@ -32,7 +32,7 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
           asinh.cofactors[[i]]<-cofactor.mod[[i]]
         }
       }else{
-        stop(paste("Named cofactor not found:",i))
+        stop(paste("Named cofactor(s) not found:"))
       }
     }
     ##
