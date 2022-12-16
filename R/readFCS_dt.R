@@ -107,7 +107,7 @@ split.type.position.agnostic<-function(s){
   splits<-strsplit(s,most.likely.split)
   split.lengths<-unique(sapply(splits,length))
   if(length(split.lengths)!=1){
-    stop("Varying split lengths;check naming convention")
+    message("Varying split lengths;check naming convention")
   }
   split.position<-which(sapply(seq(split.lengths),function(i){
     any(grepl("CD",sapply(splits,'[',i)))
