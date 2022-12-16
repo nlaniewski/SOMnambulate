@@ -161,10 +161,17 @@ drop_events_count_based<-function(dat){
 }
 
 cols.sensible.reorder<-function(cols){
-  scatter<-grep("SC",cols)
-  cols[-scatter]<-cols[-scatter][order(stringr::str_extract(cols[-scatter],"[A-Za-z]+"))]
-  cols[grep("CD",cols)]<-cols[grep("CD",cols)][order(as.numeric(stringr::str_extract(cols[grep("CD",cols)],"[0-9]+")))]
-  cols[grep("IL",cols)]<-cols[grep("IL",cols)][order(as.numeric(stringr::str_extract(cols[grep("IL",cols)],"[0-9]+")))]
+  if(any(grepl("FSC|SSC",cols))){
+    scatter<-grep("SC",cols)
+    cols[-scatter]<-cols[-scatter][order(stringr::str_extract(cols[-scatter],"[A-Za-z]+"))]
+  }else{
+    cols<-cols[order(stringr::str_extract(cols,"[A-Za-z]+"))]
+  }
+  for(i in c("CCR","CD","IL")){
+    if(any(grepl(i,cols))&length(grep(i,cols))>1){
+      cols[grep(i,cols)]<-cols[grep(i,cols)][order(as.numeric(stringr::str_extract(cols[grep(i,cols)],"[0-9]+")))]
+    }
+  }
   if('Time' %in% cols){
     cols<-cols[-which(cols %in% 'Time')]
     cols<-c(cols,'Time')

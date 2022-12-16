@@ -22,8 +22,9 @@ cytoplot <- function(dat=NULL,fcs.file.path=NULL,marker.pair=NULL,asinh.view=F){
     p <- cluster.axis.selection.plotly.heatmap(cm)
     axis.click.select<-shiny::fluidRow(
       shinydashboard::box(
-        title="Cluster (X,Y) Selection",
-        plotly::plotlyOutput("plotly_heat")
+        title="Axis (X,Y) Selection: by Cluster",
+        plotly::plotlyOutput("plotly_heat"),
+        width = 10
       )
     )
   }else{
@@ -31,8 +32,8 @@ cytoplot <- function(dat=NULL,fcs.file.path=NULL,marker.pair=NULL,asinh.view=F){
     axis.click.select<-shiny::fluidRow(
       shinydashboard::box(
         title="Axis (X,Y) Selection",
-        plotly::plotlyOutput("plotly_heat",height="150px"),
-        width=8
+        plotly::plotlyOutput("plotly_heat",height="200px"),
+        width=10
       )
     )
   }
@@ -48,7 +49,7 @@ cytoplot <- function(dat=NULL,fcs.file.path=NULL,marker.pair=NULL,asinh.view=F){
     slider.vals <- setNames(nm=c('min','max','value','step'),
                             c(1,3000,1000,50)
     )
-    if(length(which(dat==0))>0&dat[,.N]*ncol(dat)/length(which(dat==0))>1){#preponderance of zeroes in mass cyto. data
+    if(any(dat==0)&dat[,.N]*ncol(dat)/length(which(dat==0))>1){#preponderance of zeroes in mass cyto. data
       slider.vals[1:4] <- c(1,10,2,1)
     }
   }
@@ -104,7 +105,7 @@ cytoplot <- function(dat=NULL,fcs.file.path=NULL,marker.pair=NULL,asinh.view=F){
     shinydashboard::box(
       title=NULL,
       shiny::plotOutput("ggbivariate_plot1"),
-      width=8
+      width=10
     )
   )
   # axis.click.select<-shiny::fluidRow(
