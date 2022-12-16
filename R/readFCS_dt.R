@@ -69,12 +69,14 @@ generate.channels.frame<-function(fcs.file.path,split.type.position=NULL){
   channels.df<-data.frame(channels=channels$N,alias=NA,alias.split=NA)
   channels.df$alias[sub("N","S",rownames(channels.df)) %in% names(channels$S)] <- channels$S
   ##
-  channels.retain <- c("Time","Event_length")
+  channels.retain <- c("Time","Event_length",paste(rep(c("FSC","SSC"),each=3),c("A","H","W"),sep="-"))
   channels.df$alias[channels.df$channels %in% channels.retain] <- channels.df$channels[channels.df$channels %in% channels.retain]
   channels.dismiss <- c("back","bead")#"background","bead"
   channels.dismiss.index <- grep(paste0(channels.dismiss,collapse = "|"),channels.df$alias,ignore.case = T)
   channels.df$alias[channels.dismiss.index] <- NA
-  channels.df<-channels.df[-which(is.na(channels.df$alias)),]
+  if(any(is.na(channels.df$alias))){
+    channels.df<-channels.df[-which(is.na(channels.df$alias)),]
+  }
   ##
   split.these <- which(!channels.df$alias %in% channels.retain)
   channels.df$alias.split[split.these]<-sapply(strsplit(channels.df$alias[split.these],split.type.position$type),
