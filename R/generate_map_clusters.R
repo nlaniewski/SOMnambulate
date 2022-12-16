@@ -1,8 +1,11 @@
-generate_map_clusters <- function(dat,dims,scale.dims=T,subsample.val=2E5,k=20){
-  codes <- generate_fsom(dat=dat,dims=dims,scale.dims =scale.dims,subsample.val=subsample.val,return.codes = T)
-  mc <- generate_clusters(codes=codes,k=k)
-  map <- generate_map_nodes(codes = codes,dat=dat,scale.dims = scale.dims)
-  return(mc[map])
+generate_map_nodes_clusters <- function(dat,dims,scale.dims=T,subsample.val=2E5,k=20){
+  codes <- generate_fsom(dat,dims,scale.dims,subsample.val,return.codes = T)
+  mc <- generate_clusters(codes,k)
+  map <- generate_map_nodes(codes,dat,scale.dims)
+  return(data.table::setDT(list(node=map,
+                                cluster=mc[map])
+                           )
+  )
 }
 
 generate_fsom <- function(dat,dims,scale.dims=T,subsample.val=2E5,return.codes=F){
