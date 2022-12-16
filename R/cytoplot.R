@@ -11,6 +11,9 @@ cytoplot <- function(dat=NULL,fcs.file.path=NULL,marker.pair=NULL,asinh.view=F){
     if(all(c('FSC-A','SSC-A') %in% c.names)){
       m1 <- 'FSC-A'
       m2 <- 'SSC-A'
+    }else{
+      m1 <- c.names[1]
+      m2 <- c.names[2]
     }
   }
   ##
@@ -39,6 +42,15 @@ cytoplot <- function(dat=NULL,fcs.file.path=NULL,marker.pair=NULL,asinh.view=F){
     rows.initial<-total.rows
   }else{
     rows.initial<-1E5
+  }
+  ##
+  if(asinh.view==T){
+    slider.vals <- setNames(nm=c('min','max','value','step'),
+                            c(1,3000,1000,50)
+    )
+    if(length(which(dat==0))>0&dat[,.N]*ncol(dat)/length(which(dat==0))>1){#preponderance of zeroes in mass cyto. data
+      slider.vals[1:4] <- c(1,10,2,1)
+    }
   }
   ##shinydashboard items;store as variables
   marker.menu <- shinydashboard::menuItem(
@@ -73,18 +85,18 @@ cytoplot <- function(dat=NULL,fcs.file.path=NULL,marker.pair=NULL,asinh.view=F){
       shiny::sliderInput(
         inputId = 'cofactor.xaxis',
         label = "Cofactor: X-axis",
-        min = 1,
-        max = 3000,
-        value = 1000,
-        step = 50
+        min = slider.vals[['min']],
+        max = slider.vals[['max']],
+        value = slider.vals[['value']],
+        step = slider.vals[['step']]
       ),
       shiny::sliderInput(
         inputId = 'cofactor.yaxis',
         label = "Cofactor: Y-axis",
-        min = 1,
-        max = 3000,
-        value = 1000,
-        step = 50
+        min = slider.vals[['min']],
+        max = slider.vals[['max']],
+        value = slider.vals[['value']],
+        step = slider.vals[['step']]
       )
     )
   })
@@ -122,7 +134,7 @@ cytoplot <- function(dat=NULL,fcs.file.path=NULL,marker.pair=NULL,asinh.view=F){
     ##
     if(asinh.view==TRUE){
       output$asinh.menu <- asinh.menu
-    }
+      }
     ##
     row.index <- shiny::reactive({
       set.seed(1337)
