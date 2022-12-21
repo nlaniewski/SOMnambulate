@@ -328,18 +328,12 @@ generate_cluster_medians<-function(dat,use.scale.func=T){
     stop("Need a data.table with a 'cluster' column")
   }
   ##
-  cols.for.cluster.medians <- setdiff(names(which(sapply(dat,is.numeric))),
-                                      names(which(sapply(dat,is.integer)))
-  );cols.for.cluster.medians<-cols.for.cluster.medians[!cols.for.cluster.medians %in% "Time"]
-  cluster.medians<-(
-    dat
-    [,lapply(.SD,stats::median),keyby=list(cluster,sample),.SDcols=c(cols.for.cluster.medians,'cluster')][,!'cluster']
-    [,lapply(.SD,function(x) (x - mean(x))/stats::sd(x)),by=sample]
-  )
-  ##
-  # if(use.scale.func){
-  #   cluster.medians[, := lapply(.SD, function(x) (x - mean(x))/stats::sd(x))]
-  # }
+  cols.for.cluster.medians <- names(which(sapply(dat,is.numeric)[!sapply(dat,is.integer)]))
+  cols.for.cluster.medians<-cols.for.cluster.medians[!cols.for.cluster.medians %in% "Time"]
+  cluster.medians<-dat[,lapply(.SD,stats::median),keyby=list(cluster,sample),.SDcols=cols.for.cluster.medians][,!'cluster']
+  if(use.scale.func){
+    cluster.medians[,(cols.for.cluster.medians):=lapply(.SD,function(x) (x - mean(x))/stats::sd(x)),by=sample]
+  }
   return(cluster.medians)
 }
 
