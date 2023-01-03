@@ -72,5 +72,6 @@ cluster.id<-function(dat,cell.type.marker,discriminating.markers){
       stop("Need a return value of length 1; check conditionals")
     }
   }
+  return(cid)
 }
 
