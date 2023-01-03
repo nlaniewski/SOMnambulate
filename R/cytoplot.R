@@ -17,6 +17,8 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
   ##
   samples<-dat[,unique(sample)]
   ##
+  lims <- dat[,lapply(.SD,function(x) c(min(x),max(x))),.SDcols=is.numeric]
+  ##
   if('cluster' %in% names(dat)){
     clusters<-dat[,sort(unique(cluster))]
   }
@@ -170,23 +172,46 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
           )
         }
       }
-      p.tmp +
+      p.tmp <- p.tmp +
         ggplot2::labs(title = "All Events",
                       subtitle = paste(input$rowsamp, "of", dat[sample==input$sample.id,.N], "displayed")) +
         ggplot2::xlab(input$marker1) +
         ggplot2::ylab(input$marker2)
+      if(all(c(input$marker1,input$marker2) %in% names(lims))){
+        p.tmp <- p.tmp +
+          ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)],
+                                   ylim=lims[,get(input$marker2)])
+      }else if(input$marker1 %in% names(lims)){
+        p.tmp <- p.tmp +
+          ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)])
+      }else if(input$marker2 %in% names(lims)){
+        p.tmp <- p.tmp +
+          ggplot2::coord_cartesian(ylim=lims[,get(input$marker2)])
+      }
+      return(p.tmp)
     })
     ##
     ggbivariate_plot2 <- shiny::reactive({
       p.tmp <- gg.func.bivariate(dat[sample==input$sample.id][cluster==input$cluster.val],
                                  x = !!ggplot2::sym(input$marker1),
                                  y = !!ggplot2::sym(input$marker2))
-
-      p.tmp +
+      p.tmp <- p.tmp +
         ggplot2::labs(title = paste("Cluster #",input$cluster.val),
                       subtitle = paste(dat[sample==input$sample.id][cluster==input$cluster.val,.N], "displayed")) +
         ggplot2::xlab(input$marker1) +
         ggplot2::ylab(input$marker2)
+      if(all(c(input$marker1,input$marker2) %in% names(lims))){
+        p.tmp <- p.tmp +
+          ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)],
+                                   ylim=lims[,get(input$marker2)])
+      }else if(input$marker1 %in% names(lims)){
+        p.tmp <- p.tmp +
+          ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)])
+      }else if(input$marker2 %in% names(lims)){
+        p.tmp <- p.tmp +
+          ggplot2::coord_cartesian(ylim=lims[,get(input$marker2)])
+      }
+      return(p.tmp)
     })
     ##
     output$ggbivariate_plot1 <- shiny::renderPlot({
