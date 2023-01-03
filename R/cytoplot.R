@@ -346,18 +346,24 @@ cluster.axis.selection.plotly.heatmap<- function(cluster.medians,use.sorting=T,b
   return(plotly.heatmap)
 }
 
-
-
-generate_cluster_medians<-function(dat,use.scale.func=T){
+generate_cluster_medians<-function(dat,use.scale.func=T,by.factor='sample'){
   if(!data.table::is.data.table(dat)&'cluster' %in% names(dat)){
     stop("Need a data.table with a 'cluster' column")
   }
   ##
   cols.for.cluster.medians <- names(which(sapply(dat,is.numeric)[!sapply(dat,is.integer)]))
   cols.for.cluster.medians<-cols.for.cluster.medians[!cols.for.cluster.medians %in% "Time"]
-  cluster.medians<-dat[,lapply(.SD,stats::median),keyby=list(cluster,sample),.SDcols=cols.for.cluster.medians][,!'cluster']
+  if(is.null(by.factor)){
+    cluster.medians<-dat[,lapply(.SD,stats::median),keyby='cluster',.SDcols=cols.for.cluster.medians][,!'cluster']
+  }else{
+    cluster.medians<-dat[,lapply(.SD,stats::median),keyby=c('cluster',by.factor),.SDcols=cols.for.cluster.medians][,!'cluster']
+  }
   if(use.scale.func){
-    cluster.medians[,(cols.for.cluster.medians):=lapply(.SD,function(x) (x - mean(x))/stats::sd(x)),by=sample]
+    if(is.null(by.factor)){
+      cluster.medians[,(cols.for.cluster.medians):=lapply(.SD,function(x)(x-mean(x))/stats::sd(x))]
+    }else{
+      cluster.medians[,(cols.for.cluster.medians):=lapply(.SD,function(x)(x-mean(x))/stats::sd(x)),by=by.factor]
+    }
   }
   return(cluster.medians)
 }
