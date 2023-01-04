@@ -106,11 +106,13 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
   })
   cyto.plots<-shiny::fluidRow(
     shinydashboard::box(
+      collapsible = T,
       title=NULL,
       shiny::plotOutput("ggbivariate_plot1"),
       width=5
     ),
     shinydashboard::box(
+      collapsible = T,
       title=NULL,
       shiny::plotOutput("ggbivariate_plot2"),
       width=5
@@ -118,6 +120,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
   )
   axis.click.select<-shiny::fluidRow(
     shinydashboard::box(
+      collapsible = T,
       title="Axis (X,Y) Selection",
       plotly::plotlyOutput("plotly_heat"),
       width = 10
