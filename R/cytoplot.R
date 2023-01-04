@@ -290,7 +290,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
       }
     })
     ##
-    output$factor_plot1 <- plotly::renderPlotly(factor_plot1)
+    output$factor_plot1 <- plotly::renderPlotly(factor_plot1())
     ##
   }
   ##
