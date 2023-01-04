@@ -21,6 +21,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
   ##
   if('cluster' %in% names(dat)){
     clusters<-dat[,sort(unique(cluster))]
+    dat.N.cluster<-cluster_counts_long(dat)
   }
   ##
   # if('cell.type' %in% names(dat)){
@@ -75,6 +76,14 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
                         selected = "Markers",
                         inline = T)
   )
+  factor.menu <- shinydashboard::menuItem(
+    "Factor Selection:",
+    tabName = "factors",
+    shiny::selectInput(inputId = "factor.name",
+                       label = "Factor (x):",
+                       choices = c('subject','visit','condition','batch'),
+                       selected = 'visit')
+  )
   asinh.menu <- shinydashboard::renderMenu({
     shinydashboard::menuItem(
       "Asinh Transform:",
@@ -126,6 +135,14 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
       width = 10
     )
   )
+  factor.plot<-shiny::fluidRow(
+    shinydashboard::box(
+      collapsible = T,
+      title=NULL,
+      plotly::plotlyOutput("factor_plot1"),
+      width=10
+    )
+  )
   ##
   ui <- shinydashboard::dashboardPage(
     shinydashboard::dashboardHeader(title = paste("Cyto Plot"),
@@ -138,7 +155,8 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
     ),
     shinydashboard::dashboardBody(
       cyto.plots,
-      axis.click.select
+      axis.click.select,
+      factor.plot
     )
   )
 
@@ -217,6 +235,21 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
       return(p.tmp)
     })
     ##
+    factor_plot1 <- shiny::reactive({
+      fp1 <- ggplot2::ggplot(dat.N.cluster[cluster==input$cluster.val],
+                             ggplot2::aes(x=input$factor.name,
+                                          y=prop,
+                                          text=paste("Subject:",subject,
+                                                     "<br>Visit:",visit,
+                                                     "<br>Condition:",condition,
+                                                     "<br>Batch:",batch)
+                             ))+
+        ggplot2::geom_boxplot() +
+        ggplot2::geom_jitter(size=1.5) +
+        ggplot2::facet_wrap(~cluster)
+      #plotly::ggplotly(fp1,tooltip = "text")
+    })
+    ##
     output$ggbivariate_plot1 <- shiny::renderPlot({
       ggbivariate_plot1()
     })
@@ -239,7 +272,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
     click <- shiny::reactive({
       plotly::event_data("plotly_click", priority = 'event', source = 'axis.selection')
     })
-    #
+    ##
     shiny::observeEvent(eventExpr = click(),{
       if(is.na(clicks$dat$marker1)&is.na(clicks$dat$marker2)){
         clicks$dat$marker1 <- click()$x
@@ -256,6 +289,9 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
         clicks$dat$marker2 <- NA
       }
     })
+    ##
+    output$factor_plot1 <- plotly::renderPlotly(fp1())
+    ##
   }
   ##
   shiny::shinyApp(ui, server)
