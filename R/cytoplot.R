@@ -280,6 +280,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
       sample.click <- plotly::event_data("plotly_click", priority = 'event', source = 'sample.selection')
       shiny::req(sample.click)
       print(sample.click)
+      print(sample.click$key)
     })
     ##
     shiny::observeEvent(eventExpr = click(),{
