@@ -41,8 +41,8 @@ generate_fsom <- function(dat,dims,scale.dims=T,subsample.val=2E5,return.codes=F
   }
 }
 
-generate_clusters <- function(codes,k=20){
-  FlowSOM::metaClustering_consensus(codes,k)
+generate_clusters <- function(codes,k=20,seed=1337){
+  FlowSOM::metaClustering_consensus(codes,k,seed)
 }
 
 generate_map_nodes <- function(codes,dat,scale.dims=T){
