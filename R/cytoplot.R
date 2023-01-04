@@ -237,12 +237,13 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
     ##
     factor_plot1 <- shiny::reactive({
       fp1 <- ggplot2::ggplot(dat.N.cluster[cluster==input$cluster.val],
-                             ggplot2::aes(x=input$factor.name,
-                                          y=prop,
-                                          text=paste("Subject:",subject,
-                                                     "<br>Visit:",visit,
-                                                     "<br>Condition:",condition,
-                                                     "<br>Batch:",batch)
+                             ggplot2::aes(x=!!ggplot2::sym(input$factor.name),
+                                          y=!!ggplot2::sym('prop'),
+                                          text=paste("Subject:",get('subject'),
+                                                     "<br>Visit:",get('visit'),
+                                                     "<br>Condition:",get('condition'),
+                                                     "<br>Batch:",get('batch')
+                                          )
                              ))+
         ggplot2::geom_boxplot() +
         ggplot2::geom_jitter(size=1.5) +
