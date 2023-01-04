@@ -279,8 +279,9 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
     shiny::observe({
       sample.click <- plotly::event_data("plotly_click", priority = 'event', source = 'sample.selection')
       shiny::req(sample.click)
-      print(sample.click)
-      print(dat.N.cluster[sample.click$pointNumber+1,unique(sample)])
+      print(sample.click$pointNumber)
+      print(sample.click$pointNumber+1)
+      print(dat.N.cluster[,unique(sample)][sample.click$pointNumber+1])
     })
     ##
     shiny::observeEvent(eventExpr = click(),{
@@ -325,7 +326,7 @@ gg.func.boxplot.points <- function(dat,...){
                                               "<br>Condition:",get('condition'),
                                               "<br>Batch:",get('batch')
                                    ))) +
-      ggplot2::geom_boxplot() +
+      ggplot2::geom_boxplot(outlier.shape = NA) +
       ggplot2::geom_jitter(size=1.5) +
       ggplot2::facet_wrap(~cluster)
 }
