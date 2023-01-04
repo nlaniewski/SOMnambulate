@@ -249,6 +249,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
         ggplot2::geom_jitter(size=1.5) +
         ggplot2::facet_wrap(~cluster)
       #plotly::ggplotly(fp1,tooltip = "text")
+      return(fp1)
     })
     ##
     output$ggbivariate_plot1 <- shiny::renderPlot({
@@ -291,7 +292,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
       }
     })
     ##
-    output$factor_plot1 <- plotly::renderPlotly(fp1())
+    output$factor_plot1 <- plotly::renderPlotly(factor_plot1())
     ##
   }
   ##
