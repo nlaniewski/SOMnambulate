@@ -82,7 +82,12 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
     shiny::selectInput(inputId = "factor.name",
                        label = "Factor (x):",
                        choices = c('subject','visit','condition','batch'),
-                       selected = 'visit')
+                       selected = 'visit'),
+    shiny::radioButtons(inputId = "value.y",
+                        label = "Value (y):",
+                        choices= c("prop","per1million"),
+                        selected = "prop",
+                        inline = T)
   )
   asinh.menu <- shinydashboard::renderMenu({
     shinydashboard::menuItem(
@@ -150,6 +155,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
     shinydashboard::dashboardSidebar(
       shinydashboard::sidebarMenu(
         par.menu,
+        factor.menu,
         shinydashboard::menuItemOutput('asinh.menu')
       )
     ),
@@ -236,20 +242,12 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
     })
     ##
     factor_plot1 <- shiny::reactive({
-      fp1 <- ggplot2::ggplot(dat.N.cluster[cluster==input$cluster.val],
-                             ggplot2::aes(x=!!ggplot2::sym(input$factor.name),
-                                          y=!!ggplot2::sym('prop'),
-                                          text=paste("Subject:",get('subject'),
-                                                     "<br>Visit:",get('visit'),
-                                                     "<br>Condition:",get('condition'),
-                                                     "<br>Batch:",get('batch')
-                                          )
-                             ))+
-        ggplot2::geom_boxplot() +
-        ggplot2::geom_jitter(size=1.5) +
-        ggplot2::facet_wrap(~cluster)
-      #plotly::ggplotly(fp1,tooltip = "text")
-      return(fp1)
+      plotly::ggplotly(
+        gg.func.boxplot.points(dat.N.cluster[cluster==input$cluster.val],
+                               x=!!ggplot2::sym(input$factor.name),
+                               y=!!ggplot2::sym(input$value.y)
+        ),
+        tooltip = 'text')
     })
     ##
     output$ggbivariate_plot1 <- shiny::renderPlot({
@@ -292,7 +290,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
       }
     })
     ##
-    output$factor_plot1 <- plotly::renderPlotly(factor_plot1())
+    output$factor_plot1 <- plotly::renderPlotly(factor_plot1)
     ##
   }
   ##
@@ -305,6 +303,17 @@ gg.func.bivariate <- function(dat,...,bins=100,fill.limits=c(0,50)){
     viridis::scale_fill_viridis(option = "plasma", limits = fill.limits, oob = scales::squish)
 }
 
+gg.func.boxplot.points <- function(dat,...){
+  ggplot2::ggplot(dat,ggplot2::aes(...,
+                                   text=paste("Subject:",get('subject'),
+                                              "<br>Visit:",get('visit'),
+                                              "<br>Condition:",get('condition'),
+                                              "<br>Batch:",get('batch')
+                                   ))) +
+      ggplot2::geom_boxplot() +
+      ggplot2::geom_jitter(size=1.5) +
+      ggplot2::facet_wrap(~cluster)
+}
 
 axis.selection.plotly.heatmap<-function(column.names){
   axis.selection<-matrix(1:length(column.names),
