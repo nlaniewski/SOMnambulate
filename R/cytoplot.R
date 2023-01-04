@@ -274,16 +274,19 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
       plotly::event_data("plotly_click", priority = 'event', source = 'axis.selection')
     })
     ##
-    shiny::observeEvent({
-      sample_click <- plotly::event_data("plotly_click", priority = 'event', source = 'sample.selection')
-      shiny::updateSelectInput(inputId = "sample.id",
-                               selected = dat.N.cluster[,unique(sample)][sample_click$pointNumber+1]
-      )
-      # shiny::req(sample.click)
-      # print(sample.click$pointNumber)
-      # print(sample.click$pointNumber+1)
-      # print(dat.N.cluster[,unique(sample)][sample.click$pointNumber+1])
+    sample_click <- shiny::reactive({
+      plotly::event_data("plotly_click", priority = 'event', source = 'sample.selection')
     })
+    # shiny::observeEvent({
+    #   sample_click <- plotly::event_data("plotly_click", priority = 'event', source = 'sample.selection')
+    #   shiny::updateSelectInput(inputId = "sample.id",
+    #                            selected = dat.N.cluster[,unique(sample)][sample_click$pointNumber+1]
+    #   )
+    #   # shiny::req(sample.click)
+    #   # print(sample.click$pointNumber)
+    #   # print(sample.click$pointNumber+1)
+    #   # print(dat.N.cluster[,unique(sample)][sample.click$pointNumber+1])
+    # })
     ##
     shiny::observeEvent(eventExpr = click(),{
       if(is.na(clicks$dat$marker1)&is.na(clicks$dat$marker2)){
@@ -300,6 +303,13 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
         clicks$dat$marker1 <- NA
         clicks$dat$marker2 <- NA
       }
+    })
+    ##
+    shiny::observeEvent(eventExpr = sample_click(),{
+      pn <- sample_click()$pointNumber+1
+      shiny::updateSelectInput(inputId = "sample.id",
+                               selected = dat.N.cluster[,unique(sample)][pn]
+      )
     })
     ##
     output$factor_plot1 <- plotly::renderPlotly(factor_plot1())
