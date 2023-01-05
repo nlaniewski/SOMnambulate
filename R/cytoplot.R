@@ -270,8 +270,6 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
           tooltip = 'text',
           source = 'sample.selection')
       })
-    }else{
-      factor_plot1 <- NULL
     }
     ##
     output$ggbivariate_plot1 <- shiny::renderPlot({
@@ -335,7 +333,11 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
     })
     }
     ##
-    output$factor_plot1 <- plotly::renderPlotly(factor_plot1())
+    if(!is.null(clusters)){
+      output$factor_plot1 <- plotly::renderPlotly(factor_plot1())
+    }else{
+      output$factor_plot1 <- plotly::renderPlotly(NULL)
+    }
     ##
   }
   ##
