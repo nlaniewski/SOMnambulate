@@ -258,8 +258,6 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
         }
         return(p.tmp)
       })
-    }else{
-      ggbivariate_plot2 <- NA
     }
     ##
     if(!is.null(clusters)){
