@@ -261,8 +261,8 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
     }
     ##
     if(!is.null(clusters)){
-      shiny::req(input$factor.name,input$value.y)
       factor_plot1 <- shiny::reactive({
+        shiny::req(input$factor.name,input$value.y)
         plotly::ggplotly(
           gg.func.boxplot.points(dat.N.cluster[cluster==input$cluster.val],
                                  x=!!ggplot2::sym(input$factor.name),
