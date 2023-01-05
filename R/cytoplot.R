@@ -74,11 +74,13 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
                          choices=clusters,
                          selected = NULL)
     },
+    if(!is.null(clusters)){
     shiny::radioButtons(inputId = "axis.select",
                         label = "Axis Select Type:",
                         choices= c("Markers","Clusters"),
                         selected = "Markers",
                         inline = T)
+    }
   )
   factor.menu <- shinydashboard::menuItem(
     "Factor Selection:",
@@ -159,7 +161,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
     shinydashboard::dashboardSidebar(
       shinydashboard::sidebarMenu(
         par.menu,
-        factor.menu,
+        shinydashboard::menuItemOutput('factor.menu'),
         shinydashboard::menuItemOutput('asinh.menu')
       )
     ),
@@ -174,6 +176,10 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
     ##
     if(asinh.view==TRUE){
       output$asinh.menu <- asinh.menu
+    }
+    ##
+    if(!is.null(clusters)){
+      output$factor.menu <- factor.menu
     }
     ##
     shiny::observeEvent(input$sample.id,{
