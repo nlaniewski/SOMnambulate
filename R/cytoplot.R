@@ -24,7 +24,9 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
     dat.N.cluster<-cluster_counts_long(dat)
   }else{
     clusters<-NULL
+    print(clusters)
     dat.N.cluster
+    print(dat.N.cluster)
   }
   ##
   # if('cell.type' %in% names(dat)){
@@ -262,15 +264,19 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
       ggbivariate_plot2 <- NULL
     }
     ##
-    factor_plot1 <- shiny::reactive({
-      plotly::ggplotly(
-        gg.func.boxplot.points(dat.N.cluster[cluster==input$cluster.val],
-                               x=!!ggplot2::sym(input$factor.name),
-                               y=!!ggplot2::sym(input$value.y)
-        ),
-        tooltip = 'text',
-        source = 'sample.selection')
-    })
+    if(!is.null(dat.N.cluster)){
+      factor_plot1 <- shiny::reactive({
+        plotly::ggplotly(
+          gg.func.boxplot.points(dat.N.cluster[cluster==input$cluster.val],
+                                 x=!!ggplot2::sym(input$factor.name),
+                                 y=!!ggplot2::sym(input$value.y)
+          ),
+          tooltip = 'text',
+          source = 'sample.selection')
+      })
+    }else{
+      factor_plot1 <- NULL
+    }
     ##
     output$ggbivariate_plot1 <- shiny::renderPlot({
       ggbivariate_plot1()
