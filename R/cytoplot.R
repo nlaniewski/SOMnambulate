@@ -277,9 +277,15 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
     output$ggbivariate_plot1 <- shiny::renderPlot({
       ggbivariate_plot1()
     })
-    output$ggbivariate_plot2 <- shiny::renderPlot({
-      ggbivariate_plot2()
-    })
+    if(!is.null(clusters)){
+      output$ggbivariate_plot2 <- shiny::renderPlot({
+        ggbivariate_plot2()
+      })
+    }else{
+      output$ggbivariate_plot2 <- shiny::renderPlot({
+        NULL
+      })
+    }
     ##
     shiny::observeEvent(input$sample.id,{
       shiny::observeEvent(input$axis.select,{
