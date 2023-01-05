@@ -81,19 +81,21 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
                         selected = ifelse(!is.null(clusters),"Clusters",'Markers'),
                         inline = T)
   )
-  factor.menu <- shinydashboard::menuItem(
-    "Factor Selection:",
-    tabName = "factors",
-    shiny::selectInput(inputId = "factor.name",
-                       label = "Factor (x):",
-                       choices = c('subject','visit','condition','batch'),
-                       selected = 'visit'),
-    shiny::radioButtons(inputId = "value.y",
-                        label = "Value (y):",
-                        choices= c("prop","per1million"),
-                        selected = "prop",
-                        inline = T)
-  )
+  factor.menu <- shinydashboard::renderMenu({
+    shinydashboard::menuItem(
+      "Factor Selection:",
+      tabName = "factors",
+      shiny::selectInput(inputId = "factor.name",
+                         label = "Factor (x):",
+                         choices = c('subject','visit','condition','batch'),
+                         selected = 'visit'),
+      shiny::radioButtons(inputId = "value.y",
+                          label = "Value (y):",
+                          choices= c("prop","per1million"),
+                          selected = "prop",
+                          inline = T)
+    )
+  })
   asinh.menu <- shinydashboard::renderMenu({
     shinydashboard::menuItem(
       "Asinh Transform:",
