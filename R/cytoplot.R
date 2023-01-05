@@ -22,6 +22,8 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
   if('cluster' %in% names(dat)){
     clusters<-dat[,sort(unique(cluster))]
     dat.N.cluster<-cluster_counts_long(dat)
+  }else{
+    clusters<-NULL
   }
   ##
   # if('cell.type' %in% names(dat)){
@@ -66,10 +68,12 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
                        label="Sample",
                        choices=samples,
                        selected = samples[1]),
-    shiny::selectInput(inputId = "cluster.val",
-                       label="Cluster #",
-                       choices=clusters,
-                       selected = NULL),
+    if(!is.null(clusters)){
+      shiny::selectInput(inputId = "cluster.val",
+                         label="Cluster #",
+                         choices=clusters,
+                         selected = NULL)
+    },
     shiny::radioButtons(inputId = "axis.select",
                         label = "Axis Select Type:",
                         choices= c("Markers","Clusters"),
