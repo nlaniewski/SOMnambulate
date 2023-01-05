@@ -24,6 +24,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
     dat.N.cluster<-cluster_counts_long(dat)
   }else{
     clusters<-NULL
+    dat.N.cluster
   }
   ##
   # if('cell.type' %in% names(dat)){
@@ -75,11 +76,17 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
                          selected = NULL)
     },
     if(!is.null(clusters)){
-    shiny::radioButtons(inputId = "axis.select",
-                        label = "Axis Select Type:",
-                        choices= c("Markers","Clusters"),
-                        selected = "Markers",
-                        inline = T)
+      shiny::radioButtons(inputId = "axis.select",
+                          label = "Axis Select Type:",
+                          choices= c("Markers","Clusters"),
+                          selected = "Markers",
+                          inline = T)
+    }else{
+      shiny::radioButtons(inputId = "axis.select",
+                          label = "Axis Select Type:",
+                          choices= c("Markers"),
+                          selected = "Markers",
+                          inline = T)
     }
   )
   factor.menu <- shinydashboard::menuItem(
@@ -228,28 +235,32 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
       return(p.tmp)
     })
     ##
-    ggbivariate_plot2 <- shiny::reactive({
-      p.tmp <- gg.func.bivariate(dat[sample==input$sample.id][cluster==input$cluster.val],
-                                 x = !!ggplot2::sym(input$marker1),
-                                 y = !!ggplot2::sym(input$marker2))
-      p.tmp <- p.tmp +
-        ggplot2::labs(title = paste("Cluster #",input$cluster.val),
-                      subtitle = paste(dat[sample==input$sample.id][cluster==input$cluster.val,.N], "displayed")) +
-        ggplot2::xlab(input$marker1) +
-        ggplot2::ylab(input$marker2)
-      if(all(c(input$marker1,input$marker2) %in% names(lims))){
+    if(!is.null(clusters)){
+      ggbivariate_plot2 <- shiny::reactive({
+        p.tmp <- gg.func.bivariate(dat[sample==input$sample.id][cluster==input$cluster.val],
+                                   x = !!ggplot2::sym(input$marker1),
+                                   y = !!ggplot2::sym(input$marker2))
         p.tmp <- p.tmp +
-          ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)],
-                                   ylim=lims[,get(input$marker2)])
-      }else if(input$marker1 %in% names(lims)){
-        p.tmp <- p.tmp +
-          ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)])
-      }else if(input$marker2 %in% names(lims)){
-        p.tmp <- p.tmp +
-          ggplot2::coord_cartesian(ylim=lims[,get(input$marker2)])
-      }
-      return(p.tmp)
-    })
+          ggplot2::labs(title = paste("Cluster #",input$cluster.val),
+                        subtitle = paste(dat[sample==input$sample.id][cluster==input$cluster.val,.N], "displayed")) +
+          ggplot2::xlab(input$marker1) +
+          ggplot2::ylab(input$marker2)
+        if(all(c(input$marker1,input$marker2) %in% names(lims))){
+          p.tmp <- p.tmp +
+            ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)],
+                                     ylim=lims[,get(input$marker2)])
+        }else if(input$marker1 %in% names(lims)){
+          p.tmp <- p.tmp +
+            ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)])
+        }else if(input$marker2 %in% names(lims)){
+          p.tmp <- p.tmp +
+            ggplot2::coord_cartesian(ylim=lims[,get(input$marker2)])
+        }
+        return(p.tmp)
+      })
+    }else{
+      ggbivariate_plot2 <- NULL
+    }
     ##
     factor_plot1 <- shiny::reactive({
       plotly::ggplotly(
