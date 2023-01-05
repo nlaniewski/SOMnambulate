@@ -74,20 +74,12 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
                          label="Cluster #",
                          choices=clusters,
                          selected = NULL)
-    },
-    if(!is.null(clusters)){
-      shiny::radioButtons(inputId = "axis.select",
-                          label = "Axis Select Type:",
-                          choices= c("Markers","Clusters"),
-                          selected = "Markers",
-                          inline = T)
-    }else{
-      shiny::radioButtons(inputId = "axis.select",
-                          label = "Axis Select Type:",
-                          choices= c("Markers"),
-                          selected = "Markers",
-                          inline = T)
     }
+    shiny::radioButtons(inputId = "axis.select",
+                        label = "Axis Select Type:",
+                        choices= ifelse(!is.null(clusters),c("Markers","Clusters"),'Markers'),
+                        selected = ifelse(!is.null(clusters),"Clusters",'Markers'),
+                        inline = T)
   )
   factor.menu <- shinydashboard::menuItem(
     "Factor Selection:",
@@ -140,6 +132,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
     ),
     shinydashboard::box(
       collapsible = T,
+      collapsed = is.null(clusters),
       title=NULL,
       shiny::plotOutput("ggbivariate_plot2"),
       width=5
@@ -156,6 +149,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
   factor.plot<-shiny::fluidRow(
     shinydashboard::box(
       collapsible = T,
+      collapsed = is.null(clusters),
       title=NULL,
       plotly::plotlyOutput("factor_plot1"),
       width=10
