@@ -74,7 +74,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
                          label="Cluster #",
                          choices=clusters,
                          selected = NULL)
-    }
+    },
     shiny::radioButtons(inputId = "axis.select",
                         label = "Axis Select Type:",
                         choices= ifelse(!is.null(clusters),c("Markers","Clusters"),'Markers'),
