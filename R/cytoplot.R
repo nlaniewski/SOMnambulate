@@ -221,18 +221,22 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
                       subtitle = paste(input$rowsamp, "of", dat[sample==input$sample.id,.N], "displayed")) +
         ggplot2::xlab(input$marker1) +
         ggplot2::ylab(input$marker2)
-      if(all(c(input$marker1,input$marker2) %in% names(lims))){
-        p.tmp <- p.tmp +
-          ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)],
-                                   ylim=lims[,get(input$marker2)])
-      }else if(input$marker1 %in% names(lims)){
-        p.tmp <- p.tmp +
-          ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)])
-      }else if(input$marker2 %in% names(lims)){
-        p.tmp <- p.tmp +
-          ggplot2::coord_cartesian(ylim=lims[,get(input$marker2)])
+      if(asinh.view==TRUE){
+        return(p.tmp)
+      }else{
+        if(all(c(input$marker1,input$marker2) %in% names(lims))){
+          p.tmp <- p.tmp +
+            ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)],
+                                     ylim=lims[,get(input$marker2)])
+        }else if(input$marker1 %in% names(lims)){
+          p.tmp <- p.tmp +
+            ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)])
+        }else if(input$marker2 %in% names(lims)){
+          p.tmp <- p.tmp +
+            ggplot2::coord_cartesian(ylim=lims[,get(input$marker2)])
+        }
+        return(p.tmp)
       }
-      return(p.tmp)
     })
     ##
     if(!is.null(clusters)){
