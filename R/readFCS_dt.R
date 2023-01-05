@@ -19,7 +19,6 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
     }else{
       fcs.tmp <- flowCore::compensate(fcs.tmp,comp.mat.modified)
     }
-    return(fcs.tmp)
   }
   ##
   dat <- data.table::as.data.table(fcs.tmp@exprs)
