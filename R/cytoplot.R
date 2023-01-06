@@ -1,4 +1,4 @@
-cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
+cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=T,cluster.dims=NULL){
   if(!data.table::is.data.table(dat)) stop("Need a data.table returned from 'readFCS_dt'...")
   ##
   c.names <- names(dat)
@@ -286,15 +286,28 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F){
       })
     }
     ##
-    shiny::observeEvent(input$sample.id,{
-      shiny::observeEvent(input$axis.select,{
-        if(input$axis.select=="Markers"){
-          output$plotly_heat <- plotly::renderPlotly(axis.selection.plotly.heatmap(c.names))
-        }else if(input$axis.select=="Clusters"){
-          cm=generate_cluster_medians(dat[sample==input$sample.id])[,!'sample']
+    shiny::observeEvent(input$axis.select,{
+      if(input$axis.select=="Markers"){
+        output$plotly_heat <- plotly::renderPlotly(axis.selection.plotly.heatmap(c.names))
+      }else(input$axis.select=="Clusters"){
+        if(sample.specific.heatmap){
+          shiny::observeEvent(input$sample.id,{
+            if(is.null(cluster.dims)){
+              cm=generate_cluster_medians(dat[sample==input$sample.id])[,!'sample']
+            }else{
+              cm=generate_cluster_medians(dat[sample==input$sample.id],heatmap.dims = cluster.dims)[,!'sample']
+            }
+            output$plotly_heat <- plotly::renderPlotly(cluster.axis.selection.plotly.heatmap(cm))
+          })
+        }else{
+          if(is.null(cluster.dims)){
+            cm=generate_cluster_medians(dat,by.factor = NULL)
+          }else{
+            cm=generate_cluster_medians(dat,by.factor = NULL,heatmap.dims = cluster.dims)
+          }
           output$plotly_heat <- plotly::renderPlotly(cluster.axis.selection.plotly.heatmap(cm))
         }
-      })
+      }
     })
     ##
     clicks <- shiny::reactiveValues(dat = data.frame(marker1 = NA, marker2 = NA))
@@ -445,13 +458,16 @@ cluster.axis.selection.plotly.heatmap<- function(cluster.medians,use.sorting=T,b
   return(plotly.heatmap)
 }
 
-generate_cluster_medians<-function(dat,use.scale.func=T,by.factor='sample'){
+generate_cluster_medians<-function(dat,use.scale.func=T,by.factor='sample',na.check=T,heatmap.dims=NULL){
   if(!data.table::is.data.table(dat)&'cluster' %in% names(dat)){
     stop("Need a data.table with a 'cluster' column")
   }
   ##
   cols.for.cluster.medians <- names(which(sapply(dat,is.numeric)[!sapply(dat,is.integer)]))
   cols.for.cluster.medians<-cols.for.cluster.medians[!cols.for.cluster.medians %in% "Time"]
+  if(!is.null(heatmap.dims)){
+    cols.for.cluster.medians<-cols.for.cluster.medians[cols.for.cluster.medians %in% heatmap.dims]
+  }
   if(is.null(by.factor)){
     cluster.medians<-dat[,lapply(.SD,stats::median),keyby='cluster',.SDcols=cols.for.cluster.medians][,!'cluster']
   }else{
@@ -463,6 +479,9 @@ generate_cluster_medians<-function(dat,use.scale.func=T,by.factor='sample'){
     }else{
       cluster.medians[,(cols.for.cluster.medians):=lapply(.SD,function(x)(x-mean(x))/stats::sd(x)),by=by.factor]
     }
+  }
+  if(na.check&any(unlist(lapply(cluster.medians,function(x) all(is.na(x)))))){
+    cluster.medians[,which(unlist(lapply(cluster.medians,function(x) all(is.na(x))))) := NULL]
   }
   return(cluster.medians)
 }
