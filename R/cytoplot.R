@@ -289,7 +289,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=T
     shiny::observeEvent(input$axis.select,{
       if(input$axis.select=="Markers"){
         output$plotly_heat <- plotly::renderPlotly(axis.selection.plotly.heatmap(c.names))
-      }else(input$axis.select=="Clusters"){
+      }else if(input$axis.select=="Clusters"){
         if(sample.specific.heatmap){
           shiny::observeEvent(input$sample.id,{
             if(is.null(cluster.dims)){
