@@ -73,7 +73,7 @@ generate.channels.frame<-function(fcs.file.path,split.type.position=NULL){
   if(any(channels.df$channels %in% channels.retain)){
     channels.df$alias[channels.df$channels %in% channels.retain] <- channels.df$channels[channels.df$channels %in% channels.retain]
   }
-  channels.dismiss <- c("back","bead")#"background","bead"
+  channels.dismiss <- c("back","bead",'noise')#"background","bead"
   channels.dismiss.index <- grep(paste0(channels.dismiss,collapse = "|"),channels.df$alias,ignore.case = T)
   channels.df$alias[channels.dismiss.index] <- NA
   if(any(is.na(channels.df$alias))){
@@ -104,12 +104,7 @@ split.type.position.agnostic<-function(s){
   common.split.counts <- sapply(c(".", "_", "-", " "),function(split){
     sum(grepl(split,s,fixed = T))
   })
-  if(max(common.split.counts)!=length(s)){
-    most.likely.split <- ""
-  }
-  else {
-    most.likely.split <- names(common.split.counts)[which.max(common.split.counts)]
-  }
+  most.likely.split <- names(common.split.counts)[which.max(common.split.counts)]
   splits<-strsplit(s,most.likely.split)
   split.lengths<-unique(sapply(splits,length))
   if(length(split.lengths)!=1){
