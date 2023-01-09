@@ -70,24 +70,24 @@ generate.channels.frame<-function(fcs.file.path,split.type.position=NULL){
   if(is.null(split.type.position)){
     split.type.position<-split.type.position.agnostic(channels$S)
   }
-  channels.df<-data.frame(channels=channels$N,alias=NA,alias.split=NA)
-  channels.df$alias[sub("N","S",rownames(channels.df)) %in% names(channels$S)] <- channels$S
   ##
-  channels.retain <- c("Time","Event_length",paste(rep(c("FSC","SSC"),each=3),c("A","H","W"),sep="-"))
-  if(any(channels.df$channels %in% channels.retain)){
-    channels.df$alias[channels.df$channels %in% channels.retain] <- channels.df$channels[channels.df$channels %in% channels.retain]
-  }
-  channels.dismiss <- c("back","bead",'noise')#"background","bead"
-  channels.dismiss.index <- grep(paste0(channels.dismiss,collapse = "|"),channels.df$alias,ignore.case = T)
-  channels.df$alias[channels.dismiss.index] <- NA
-  if(any(is.na(channels.df$alias))){
-    channels.df<-channels.df[-which(is.na(channels.df$alias)),]
-  }
+  channels.retain.vars <- c("Time","Event_length",paste(rep(c("FSC","SSC"),each=3),c("A","H","W"),sep="-"))
+  channels.retain <- channels$N[which(channels$N %in% channels.retain.vars)]
   ##
-  split.these <- which(!channels.df$alias %in% channels.retain)
-  channels.df$alias.split[split.these]<-sapply(strsplit(channels.df$alias[split.these],split.type.position$type),
-                                               '[',
-                                               split.type.position$position
+  channels.dismiss.vars <- c("back","bead","noise")#"background","bead"
+  channels.dismiss <- channels$S[grep(paste0(channels.dismiss.vars,collapse = "|"),channels$S,ignore.case = T)]
+  ##
+  channels.split <- channels$S[which(stringr::str_detect(channels$S,split.type.position$type))]
+  channels.split <- channels.split[!channels.split %in% channels.dismiss]
+  ##
+  channels.keep.n <- sub("S","N",c(names(channels.retain),names(channels.split)))
+  ##
+  channels.df <- data.frame(channels=channels$N[names(channels$N) %in% channels.keep.n],
+                            alias=NA,alias.split=NA)
+  channels.df$alias[rownames(channels.df) %in% sub("S","N",names(channels.split))] <- channels.split
+  channels.df$alias.split <- sapply(strsplit(channels.df$alias,split.type.position$type),
+                                    '[',
+                                    split.type.position$position
   )
   ##
   if(any(table(channels.df$alias.split)>1)){
@@ -99,7 +99,8 @@ generate.channels.frame<-function(fcs.file.path,split.type.position=NULL){
     channels.df$alias.split[non.unique] <- now.unique
   }
   ##
-  channels.df$alias.split[is.na(channels.df$alias.split)]<-channels.df$alias[is.na(channels.df$alias.split)]
+  i<-rownames(channels.df) %in% names(channels.retain)
+  channels.df$alias[i] <- channels.df$alias.split[i] <- channels.retain
   ##
   return(channels.df)
 }
