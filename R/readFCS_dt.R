@@ -1,6 +1,6 @@
 readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
                      asinh.transform=F,cofactor.default=1000,cofactor.mod=NULL,
-                     drop.events=T,sensible.reorder=T){
+                     drop.events=T,sensible.reorder=T,comp.mat.modified=NULL){
   ##
   channels.df<-generate.channels.frame(fcs.file.path)
   ##
@@ -14,7 +14,11 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
   cyto.type<-ifelse(any(grepl("laser",names(fcs.tmp@description),ignore.case = T)),"flow","mass")
   if(cyto.type=="flow"){
     fcs.tmp <- trim.scatter(fcs.tmp)
-    fcs.tmp <- flowCore::compensate(fcs.tmp,fcs.tmp@description$SPILL)
+    if(is.null(comp.mat.modified)){
+      fcs.tmp <- flowCore::compensate(fcs.tmp,fcs.tmp@description$SPILL)
+    }else{
+      fcs.tmp <- flowCore::compensate(fcs.tmp,comp.mat.modified)
+    }
   }
   ##
   dat <- data.table::as.data.table(fcs.tmp@exprs)
