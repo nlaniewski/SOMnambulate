@@ -1,8 +1,16 @@
 readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
                      asinh.transform=F,cofactor.default=1000,cofactor.mod=NULL,
-                     drop.events=T,sensible.reorder=T,comp.mat.modified=NULL){
+                     drop.events=T,sensible.reorder=T,comp.mat.modified=NULL,
+                     channels.df=NULL){
   ##
-  channels.df<-generate.channels.frame(fcs.file.path)
+  if(is.null(channels.df)){
+    channels.df<-generate.channels.frame(fcs.file.path)
+  }else if(!all(c('channels','alias','alias.split') %in% colnames(cf))){
+    stop(paste("Supplied 'channels.df' should have the following column names: 'channels','alias','alias.split'",
+               "Use the returned data.frame from 'generate.channels.frame()'",
+               sep = "\n")
+    )
+  }
   ##
   if(use.alias==F){
     fcs.tmp <- flowCore::read.FCS(fcs.file.path,transformation = F,truncate_max_range = F)
