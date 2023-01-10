@@ -1,4 +1,5 @@
-cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=T,cluster.dims=NULL){
+cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=T,cluster.dims=NULL,
+                     cluster.counts=T){
   if(!data.table::is.data.table(dat)) stop("Need a data.table returned from 'readFCS_dt'...")
   ##
   c.names <- names(dat)
@@ -21,7 +22,9 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=T
   ##
   if('cluster' %in% names(dat)){
     clusters<-dat[,sort(unique(cluster))]
-    dat.N.cluster<-cluster_counts_long(dat)
+    if(cluster.counts){
+      dat.N.cluster<-cluster_counts_long(dat)
+    }
   }else{
     clusters<-NULL
     message("'clusters' is NULL")
