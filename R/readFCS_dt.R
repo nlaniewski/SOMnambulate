@@ -1,6 +1,6 @@
 readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
                      asinh.transform=F,cofactor.default=1000,cofactor.mod=NULL,
-                     drop.events=T,sensible.reorder=T,comp.mat.modified=NULL,
+                     drop.events=T,natural.order=T,comp.mat.modified=NULL,
                      channels.df=NULL){
   ##
   if(is.null(channels.df)){
@@ -62,8 +62,8 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
     dat<-dat[!drop_events_count_based(dat)]
   }
   ##
-  if(sensible.reorder){
-    data.table::setcolorder(dat,cols.sensible.reorder(names(dat)))
+  if(natural.order){
+    data.table::setcolorder(dat,stringr::str_sort(names(dat),numeric = T))
   }
   ##
   return(dat)
@@ -172,23 +172,4 @@ drop_events_count_based<-function(dat){
       list(c(which(x<cut.min),which(x>cut.max)))
     }
   }), .SDcols=transform.these]))
-}
-
-cols.sensible.reorder<-function(cols){
-  if(any(grepl("FSC|SSC",cols))){
-    scatter<-grep("SC",cols)
-    cols[-scatter]<-cols[-scatter][order(stringr::str_extract(cols[-scatter],"[A-Za-z]+"))]
-  }else{
-    cols<-cols[order(stringr::str_extract(cols,"[A-Za-z]+"))]
-  }
-  for(i in c("CCR","CD","IL")){
-    if(any(grepl(i,cols))&length(grep(i,cols))>1){
-      cols[grep(i,cols)]<-cols[grep(i,cols)][order(as.numeric(stringr::str_extract(cols[grep(i,cols)],"[0-9]+")))]
-    }
-  }
-  if('Time' %in% cols){
-    cols<-cols[-which(cols %in% 'Time')]
-    cols<-c(cols,'Time')
-  }
-  return(cols)
 }
