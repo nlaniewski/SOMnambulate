@@ -180,6 +180,8 @@ channels.frame.check <- function(fcs.file.paths){
   })
   if(length(unique(channel.frame.lengths))>1){
     channels.df <- generate.channels.frame(names(which.max(channel.frame.lengths)))
-    return(channels.df)
+  }else if(all(length(unique(channel.frame.lengths))==1)){
+    channels.df <- generate.channels.frame(fcs.file.paths[1])
   }
+  return(channels.df)
 }
