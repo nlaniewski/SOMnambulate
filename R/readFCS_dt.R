@@ -5,7 +5,7 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
   ##
   if(is.null(channels.df)){
     channels.df<-generate.channels.frame(fcs.file.path)
-  }else if(!all(c('channels','alias','alias.split') %in% colnames(cf))){
+  }else if(!all(c('channels','alias','alias.split') %in% colnames(channels.df))){
     stop(paste("Supplied 'channels.df' should have the following column names: 'channels','alias','alias.split'",
                "Use the returned data.frame from 'generate.channels.frame()'",
                sep = "\n")
