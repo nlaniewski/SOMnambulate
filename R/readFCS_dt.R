@@ -69,12 +69,22 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
   return(dat)
 }
 
-generate.channels.frame<-function(fcs.file.path,split.type.position=NULL){
+get.parameters<-function(fcs.file.path){
   header <- flowCore::read.FCSheader(fcs.file.path)[[1]]
   channels <- sapply(c("N","S"),function(i){
     p <- header[grep(paste0("P[0-9]+",i),names(header),value = T)]
     p <- p[order(as.numeric(stringr::str_extract(names(p),"[0-9]+")))]
   },simplify = F)
+  return(channels)
+}
+
+generate.channels.frame<-function(fcs.file.path,split.type.position=NULL){
+  channels<-get.parameters(fcs.file.path)
+  # header <- flowCore::read.FCSheader(fcs.file.path)[[1]]
+  # channels <- sapply(c("N","S"),function(i){
+  #   p <- header[grep(paste0("P[0-9]+",i),names(header),value = T)]
+  #   p <- p[order(as.numeric(stringr::str_extract(names(p),"[0-9]+")))]
+  # },simplify = F)
   if(is.null(split.type.position)){
     split.type.position<-split.type.position.agnostic(channels$S)
   }
