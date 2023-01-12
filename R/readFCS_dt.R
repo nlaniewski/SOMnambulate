@@ -78,13 +78,8 @@ get.parameters<-function(fcs.file.path){
   return(channels)
 }
 
-generate.channels.frame<-function(fcs.file.path,split.type.position=NULL){
+generate.channels.frame<-function(fcs.file.path,split.type.position=NULL,dismiss.vars = NULL){
   channels<-get.parameters(fcs.file.path)
-  # header <- flowCore::read.FCSheader(fcs.file.path)[[1]]
-  # channels <- sapply(c("N","S"),function(i){
-  #   p <- header[grep(paste0("P[0-9]+",i),names(header),value = T)]
-  #   p <- p[order(as.numeric(stringr::str_extract(names(p),"[0-9]+")))]
-  # },simplify = F)
   if(is.null(split.type.position)){
     split.type.position<-split.type.position.agnostic(channels$S)
   }
@@ -92,7 +87,10 @@ generate.channels.frame<-function(fcs.file.path,split.type.position=NULL){
   channels.retain.vars <- c("Time","Event_length",paste(rep(c("FSC","SSC"),each=3),c("A","H","W"),sep="-"))
   channels.retain <- channels$N[which(channels$N %in% channels.retain.vars)]
   ##
-  channels.dismiss.vars <- c("back","bead","noise")#"background","bead"
+  channels.dismiss.vars <- c("back","noise")#mass cytometers can have named channels that include 'background' and 'noise'
+  if(!is.null(dismiss.vars)){
+    channels.dismiss.vars <- c(channels.dismiss.vars,dismiss.vars)
+  }
   channels.dismiss <- channels$S[grep(paste0(channels.dismiss.vars,collapse = "|"),channels$S,ignore.case = T)]
   ##
   channels.split <- channels$S[which(stringr::str_detect(channels$S,split.type.position$type))]
