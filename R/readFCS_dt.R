@@ -106,6 +106,14 @@ generate.channels.frame<-function(fcs.file.path,split.type.position=NULL,dismiss
                                     split.type.position$position
   )
   ##
+  if(any(grepl("[A-Z]{1}[a-z]{1}[0-9]{3}",channels.df$alias))){
+    metal.isotope.index <- grep("[A-Z]{1}[a-z]{1}[0-9]{3}",channels.df$alias)
+    metal.isotope <- grep("[A-Z]{1}[a-z]{1}[0-9]{3}",channels.df$alias,value = T)
+    metal<-stringr::str_extract(metal.isotope,"[A-Z]{1}[a-z]{1}")
+    isotope<-stringr::str_extract(metal.isotope,"[0-9]{3}")
+    channels.df$alias[metal.isotope.index] <- paste0(isotope,metal)
+  }
+  ##
   if(any(table(channels.df$alias.split)>1)){
     non.unique<-which(channels.df$alias.split %in% names(which(table(channels.df$alias.split)>1)))
     now.unique<-sapply(channels.df$alias[non.unique],function(i){
@@ -117,6 +125,8 @@ generate.channels.frame<-function(fcs.file.path,split.type.position=NULL,dismiss
   ##
   i<-rownames(channels.df) %in% names(channels.retain)
   channels.df$alias[i] <- channels.df$alias.split[i] <- channels.retain
+  ##
+
   ##
   return(channels.df)
 }
