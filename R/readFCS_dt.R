@@ -86,6 +86,10 @@ get.parameters<-function(fcs.file.path){
     channels$S[i] <- stringr::str_replace(channels$S[i],"[A-Z]{1}[a-z]{1}[0-9]{3}",isotope.metal)
   }
   ##
+  if(any(grepl("140Ce",channels$S))){
+    channels$S[grep("140Ce",channels$S)] <- "140Ce_beads"
+  }
+  ##
   return(channels)
 }
 
@@ -129,7 +133,8 @@ generate.channels.frame<-function(fcs.file.path,split.type.position=NULL,dismiss
   i<-rownames(channels.df) %in% names(channels.retain)
   channels.df$alias[i] <- channels.df$alias.split[i] <- channels.retain
   ##
-
+  i.to.lower<-grep("intercalator|viability",channels.df$alias.split,ignore.case = T)
+  channels.df$alias.split[i.to.lower]<-tolower(channels.df$alias.split[i.to.lower])
   ##
   return(channels.df)
 }
