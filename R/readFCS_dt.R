@@ -200,14 +200,14 @@ drop_events_count_based<-function(dat){
   }), .SDcols=transform.these]))
 }
 
-channels.frame.check <- function(fcs.file.paths){
+channels.frame.check <- function(fcs.file.paths,...){
   channel.frame.lengths<-sapply(fcs.file.paths,function(i){
     suppressMessages(nrow(generate.channels.frame(i)))
   })
   if(length(unique(channel.frame.lengths))>1){
-    channels.df <- generate.channels.frame(names(which.max(channel.frame.lengths)))
+    channels.df <- generate.channels.frame(names(which.max(channel.frame.lengths)),...)
   }else if(all(length(unique(channel.frame.lengths))==1)){
-    channels.df <- generate.channels.frame(fcs.file.paths[1])
+    channels.df <- generate.channels.frame(fcs.file.paths[1],...)
   }
   return(channels.df)
 }
