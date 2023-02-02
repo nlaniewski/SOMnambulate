@@ -23,7 +23,7 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
   if(cyto.type=="flow"){
     fcs.tmp <- trim.scatter(fcs.tmp)
     if(is.null(comp.mat.modified)){
-      fcs.tmp <- flowCore::compensate(fcs.tmp,fcs.tmp@description$SPILL)
+      fcs.tmp <- flowCore::compensate(fcs.tmp, fcs.tmp@description[[grep("SPILL",names(fcs.tmp@description),ignore.case = T)]])
     }else{
       fcs.tmp <- flowCore::compensate(fcs.tmp,comp.mat.modified)
     }
