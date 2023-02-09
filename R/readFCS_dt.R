@@ -1,7 +1,25 @@
+#' Read a .fcs file and convert to a data.table
+#'
+#' @param fcs.file.path Character string; 'list.files(...,full.names=T,pattern=".fcs")'
+#' @param use.alias Logical. By default, TRUE; will use header-encoded 'marker' names instead of 'channel' names.
+#' @param use.alias.split Logical. By default, TRUE; will use 'split' alias names.
+#' @param asinh.transform Logical. By default, FALSE; if TRUE, will transform flow/spectral/mass cytometry data using the function 'asinh()'
+#' @param cofactor.default Adjust the 'asinh.transform' using a supplied cofactor.  Depending on cytometry data type, use the following default cofactor: flow = 1000, mass = 5
+#' @param cofactor.mod Channel/marker-specific adjustment to 'cofactor.default'; provide as a named numeric vector, e.g. 'c("CD3"=2000,"CD8A"=2000)'
+#' @param drop.events Logical. By default, TRUE; will drop 'extreme' events using the internal function 'drop_events_count_based()'; these events are most likely to be extreme-negative values introduced due to spectral compensation
+#' @param natural.order Logical. By default, TRUE; will sort column names alphabetically then numerically, e.g. "CD3, CD4, CD8, CD45A" instead of "CD3, CD4, CD45A, CD8".
+#' @param comp.mat.modified An optional compensation matrix; if provided, will be used in place of a header-encoded matrix ('$SPILL').
+#' @param channels.df An optional data.frame returned from the function 'generate.channels.frame()'
+#' @param add.identifier.col Logical. By default, TRUE; adds the .fcs filename (basename) as an identifier.
+#'
+#' @return A data.table composed of .fcs data (cells/events as rows; channels/markers as columns); appended with an additional identifier column ('sample.id').
+#' @export
+#'
+#'
 readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
                      asinh.transform=F,cofactor.default=1000,cofactor.mod=NULL,
                      drop.events=T,natural.order=T,comp.mat.modified=NULL,
-                     channels.df=NULL){
+                     channels.df=NULL,add.identifier.col=T){
   ##
   if(is.null(channels.df)){
     channels.df<-generate.channels.frame(fcs.file.path)
@@ -66,6 +84,9 @@ readFCS_dt<-function(fcs.file.path,use.alias=T,use.alias.split=T,
     data.table::setcolorder(dat,stringr::str_sort(names(dat),numeric = T))
   }
   ##
+  if(add.identifier.col){
+    dat[,'sample.id':=basename(fcs.file.path)]
+  }
   return(dat)
 }
 
