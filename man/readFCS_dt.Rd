@@ -2,7 +2,7 @@
 % Please edit documentation in R/readFCS_dt.R
 \name{readFCS_dt}
 \alias{readFCS_dt}
-\title{Read a .fcs file and convert to a data.table}
+\title{Read a .fcs file and convert to/return a data.table}
 \usage{
 readFCS_dt(
   fcs.file.path,
@@ -19,31 +19,31 @@ readFCS_dt(
 )
 }
 \arguments{
-\item{fcs.file.path}{Character string; 'list.files(...,full.names=T,pattern=".fcs")'}
+\item{fcs.file.path}{Character string; path(s) returned from \code{list.files(...,full.names=T,pattern=".fcs")}.}
 
-\item{use.alias}{Logical. By default, TRUE; will use header-encoded 'marker' names instead of 'channel' names.}
+\item{use.alias}{Logical. By default, \code{TRUE}; will use header-encoded 'marker' names instead of 'channel' names.}
 
-\item{use.alias.split}{Logical. By default, TRUE; will use 'split' alias names.}
+\item{use.alias.split}{Logical. By default, \code{TRUE}; will use 'split' alias names.}
 
-\item{asinh.transform}{Logical. By default, FALSE; if TRUE, will transform flow/spectral/mass cytometry data using the function 'asinh()'}
+\item{asinh.transform}{Logical. By default, \code{FALSE}; if \code{TRUE}, will transform flow/spectral/mass cytometry data using the function \code{asinh()}}
 
-\item{cofactor.default}{Adjust the 'asinh.transform' using a supplied cofactor.  Depending on cytometry data type, use the following default cofactor: flow = 1000, mass = 5}
+\item{cofactor.default}{Adjust the \emph{asinh.transform} using a supplied cofactor: \code{asinh(x/cofactor.default)}. Depending on cytometry data type, use the following default cofactor: flow = 1000, mass = 5}
 
-\item{cofactor.mod}{Channel/marker-specific adjustment to 'cofactor.default'; provide as a named numeric vector, e.g. 'c("CD3"=2000,"CD8A"=2000)'}
+\item{cofactor.mod}{Channel/marker-specific adjustment to 'cofactor.default'; provide as a named numeric vector, e.g. \code{c("CD3"=2000,"CD8A"=2000)}.}
 
-\item{drop.events}{Logical. By default, TRUE; will drop 'extreme' events using the internal function 'drop_events_count_based()'; these events are most likely to be extreme-negative values introduced due to spectral compensation}
+\item{drop.events}{Logical. By default, \code{TRUE}; will drop 'extreme' events using the internal \code{drop_events_count_based()}; these events are most likely to be extreme-negative values introduced due to spectral compensation.}
 
-\item{natural.order}{Logical. By default, TRUE; will sort column names alphabetically then numerically, e.g. "CD3, CD4, CD8, CD45A" instead of "CD3, CD4, CD45A, CD8".}
+\item{natural.order}{Logical. By default, \code{TRUE}; will sort column names alphabetically then numerically, e.g. "CD3, CD4, CD8, CD45A" instead of "CD3, CD4, CD45A, CD8".}
 
-\item{comp.mat.modified}{An optional compensation matrix; if provided, will be used in place of a header-encoded matrix ('$SPILL').}
+\item{comp.mat.modified}{An optional compensation matrix; if provided, will be used in place of a header-encoded compensation matrix.}
 
 \item{channels.df}{An optional data.frame returned from the function 'generate.channels.frame()'}
 
-\item{add.identifier.col}{Logical. By default, TRUE; adds the .fcs filename (basename) as an identifier.}
+\item{add.identifier.col}{Logical. By default, \code{TRUE}; adds the .fcs filename (basename) as an identifier.}
 }
 \value{
 A data.table composed of .fcs data (cells/events as rows; channels/markers as columns); appended with an additional identifier column ('sample.id').
 }
 \description{
-Read a .fcs file and convert to a data.table
+Read a .fcs file and convert to/return a data.table
 }
