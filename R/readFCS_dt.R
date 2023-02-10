@@ -115,8 +115,9 @@ get.parameters<-function(fcs.file.path){
     channels$S[i] <- stringr::str_replace(channels$S[i],"[A-Z]{1}[a-z]{1}[0-9]{3}",isotope.metal)
   }
   ##
-  if(any(grepl("140Ce",channels$S))){
-    channels$S[grep("140Ce",channels$S)] <- "140Ce_beads"
+  if(any(grepl("beads",channels$S[grepl("140Ce|142Ce",channels$S)],ignore.case = T))){
+    bead.string <- paste0(stringr::str_extract(grep("140Ce|142Ce",channels$S,value = T),"[0-9]{3}Ce_"),"beads")
+    channels$S[grep("140Ce|142Ce",channels$S)] <- bead.string
   }
   ##
   return(channels)
