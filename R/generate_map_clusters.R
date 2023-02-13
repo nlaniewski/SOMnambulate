@@ -8,21 +8,10 @@ generate_map_nodes_clusters <- function(dat,dims,scale.dims=T,subsample.val=2E5,
   )
 }
 
-generate_fsom <- function(dat,dims,scale.dims=T,subsample.val=2E5,return.codes=F){
+generate_fsom <- function(dat,dims,scale.dims=T,subsample.val=NULL,return.codes=F){
   dims<-dims[which(dims %in% names(dat))]
   ##
-  if(!is.null(subsample.val)&nrow(dat)>subsample.val){
-    set.seed(1337)
-    if(scale.dims){
-      fsom <- FlowSOM::SOM(as.matrix(dat[sample(.N,subsample.val), lapply(.SD, function(x) (x - mean(x))/stats::sd(x)),.SDcols=dims]),
-                           xdim=10,ydim=10
-      )
-    }else{
-      fsom <- FlowSOM::SOM(as.matrix(dat[sample(.N,subsample.val),dims,with=F]),
-                           xdim=10,ydim=10
-      )
-    }
-  }else{
+  if(is.null(subsample.val)){
     set.seed(1337)
     if(scale.dims){
       fsom <- FlowSOM::SOM(as.matrix(dat[, lapply(.SD, function(x) (x - mean(x))/stats::sd(x)),.SDcols=dims]),
@@ -33,7 +22,19 @@ generate_fsom <- function(dat,dims,scale.dims=T,subsample.val=2E5,return.codes=F
                            xdim=10,ydim=10
       )
     }
+  }else{
+    set.seed(1337)
+    if(scale.dims){
+      fsom <- FlowSOM::SOM(as.matrix(dat[sample(.N,subsample.val), lapply(.SD, function(x) (x - mean(x))/stats::sd(x)),.SDcols=dims]),
+                           xdim=10,ydim=10
+      )
+    }else{
+      fsom <- FlowSOM::SOM(as.matrix(dat[sample(.N,subsample.val),dims,with=F]),
+                           xdim=10,ydim=10
+      )
+    }
   }
+
   if(return.codes){
     return(fsom$codes)
   }else{
