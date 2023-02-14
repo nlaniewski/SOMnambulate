@@ -6,8 +6,8 @@ barcode.plots <- function(dat,barcode.dims=NULL,bin.number=100){
     barcode.dims <- grep("CD45_",names(dat),value = T)
   }
   ##
-  batch <- dat[,unique(stringr::str_extract(unique(sample.id),"[0-9]{3}_[0-9]{8}"))]
-  condition.name <- dat[,ifelse(all(grepl("SEB",unique(sample.id))),"SEB","UNSTIM")]
+  batch <- dat[,unique(stringr::str_extract(unique(pool.id),"[0-9]{3}_[0-9]{8}"))]
+  condition.name <- dat[,ifelse(all(grepl("SEB",unique(pool.id))),"SEB","UNSTIM")]
   batch.name <- paste(batch,condition.name,sep="_")
   if(length(batch.name==1)){
     batch.name <- paste("ECHO",batch.name,sep = "_")
