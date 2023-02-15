@@ -37,7 +37,7 @@ barcode.plots <- function(dat,barcode.dims=NULL,bin.number=100){
         y=!!ggplot2::sym(i[2])
       ))
       p <- p + ggplot2::geom_hex(fill = 'gray', bins = bin.number)
-      p <- p + ggplot2::geom_hex(data=dat[barcode==bc],bins=bin.number) +
+      p <- p + ggplot2::geom_hex(data=dat[get('barcode')==bc],bins=bin.number) +
         viridis::scale_fill_viridis(option = "plasma", limits = c(0,bin.number), oob = scales::squish) +
         ggplot2::theme_classic() +
         ggplot2::guides(fill='none')
@@ -48,9 +48,9 @@ barcode.plots <- function(dat,barcode.dims=NULL,bin.number=100){
         )
       return(p)
     })
-    title.sample <- paste("Sample:",dat[barcode==bc,unique(sample)])
-    title.sample.n <- paste("n =",dat[barcode==bc,.N])
-    title.sample.yield<-paste0("(",round(dat[barcode==bc,.N]/dat[,.N]*100,2),"%)")
+    title.sample <- paste("Sample:",dat[get('barcode')==bc,unique(sample)])
+    title.sample.n <- paste("n =",dat[get('barcode')==bc,.N])
+    title.sample.yield<-paste0("(",round(dat[get('barcode')==bc,.N]/dat[,.N]*100,2),"%)")
     title.barcode.number<-paste("Barcode:",bc)
     title.barcode.combination<-paste(stringr::str_extract(barcode.dims[barcode.key[,bc]],"[0-9]{3}"),collapse = " : ")
     title.barcode<-paste(title.barcode.number,title.barcode.combination,sep = "     ")
