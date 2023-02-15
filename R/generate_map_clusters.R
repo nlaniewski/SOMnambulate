@@ -8,38 +8,32 @@ generate_map_nodes_clusters <- function(dat,dims,scale.dims=T,subsample.val=2E5,
   )
 }
 
-generate_fsom <- function(dat,dims,scale.dims=T,subsample.val=NULL,return.codes=F){
+#' @title Build a self-organizing map (wrapper)
+#' @description A wrapper for \code{FlowSOM::SOM()} with a few \code{data.table} sensibilities for scaling/sampling
+#'
+#' @param dat Data.table returned from \code{readFCS_dt()}
+#' @param dims Character vector of dimensions (data.table names/columns) to use when building the SOMs
+#' @param scale.dims Logical. By default, \code{TRUE}; will scale input data before building the SOMs
+#' @param subsample.val Optional numeric value defining the number of rows to sample from the input data. The default is \code{NULL}
+#' @param ... Additional arguments for \code{FlowSOM::SOM(...)}
+#'
+#' @return As from \code{FlowSOM::SOM(): "A list containing all parameter settings and results"
+#' @export
+#'
+generate_fsom <- function(dat,dims,scale.dims=T,subsample.val=NULL,...){
   dims<-dims[which(dims %in% names(dat))]
+  scale.func<-function(x){(x - mean(x))/stats::sd(x)}
   ##
-  if(is.null(subsample.val)){
-    set.seed(1337)
-    if(scale.dims){
-      fsom <- FlowSOM::SOM(as.matrix(dat[, lapply(.SD, function(x) (x - mean(x))/stats::sd(x)),.SDcols=dims]),
-                           xdim=10,ydim=10
-      )
+  fsom<-FlowSOM::SOM(
+    data=if(is.null(subsample.val)){
+      if(scale.dims){as.matrix(dat[, lapply(.SD,scale.func),.SDcols=dims])
+      }else{as.matrix(dat[,dims,with=F])}
     }else{
-      fsom <- FlowSOM::SOM(as.matrix(dat[,dims,with=F]),
-                           xdim=10,ydim=10
-      )
-    }
-  }else{
-    set.seed(1337)
-    if(scale.dims){
-      fsom <- FlowSOM::SOM(as.matrix(dat[sample(.N,subsample.val), lapply(.SD, function(x) (x - mean(x))/stats::sd(x)),.SDcols=dims]),
-                           xdim=10,ydim=10
-      )
-    }else{
-      fsom <- FlowSOM::SOM(as.matrix(dat[sample(.N,subsample.val),dims,with=F]),
-                           xdim=10,ydim=10
-      )
-    }
-  }
-
-  if(return.codes){
-    return(fsom$codes)
-  }else{
-    return(fsom)
-  }
+      if(scale.dims){as.matrix(dat[sample(.N,subsample.val), lapply(.SD,scale.func),.SDcols=dims])
+      }else{as.matrix(dat[sample(.N,subsample.val),dims,with=F])}
+    },
+    ...
+  )
 }
 
 generate_clusters <- function(codes,k=20,seed=1337){
