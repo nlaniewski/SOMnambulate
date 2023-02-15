@@ -4,7 +4,14 @@
 \alias{generate_fsom}
 \title{Build a self-organizing map (wrapper)}
 \usage{
-generate_fsom(dat, dims, scale.dims = T, subsample.val = NULL, ...)
+generate_fsom(
+  dat,
+  dims,
+  scale.dims = T,
+  subsample.val = NULL,
+  seed.val = 1337,
+  ...
+)
 }
 \arguments{
 \item{dat}{Data.table returned from \code{readFCS_dt()}}
@@ -14,6 +21,8 @@ generate_fsom(dat, dims, scale.dims = T, subsample.val = NULL, ...)
 \item{scale.dims}{Logical. By default, \code{TRUE}; will scale input data before building the SOMs}
 
 \item{subsample.val}{Optional numeric value defining the number of rows to sample from the input data. The default is \code{NULL}}
+
+\item{seed.val}{Optional random seed value}
 
 \item{...}{Additional arguments for \code{FlowSOM::SOM(...)}}
 }

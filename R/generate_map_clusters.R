@@ -15,16 +15,18 @@ generate_map_nodes_clusters <- function(dat,dims,scale.dims=T,subsample.val=2E5,
 #' @param dims Character vector of dimensions (data.table names/columns) to use when building the SOMs
 #' @param scale.dims Logical. By default, \code{TRUE}; will scale input data before building the SOMs
 #' @param subsample.val Optional numeric value defining the number of rows to sample from the input data. The default is \code{NULL}
+#' @param seed.val Optional random seed value
 #' @param ... Additional arguments for \code{FlowSOM::SOM(...)}
 #'
 #' @return As from \code{FlowSOM::SOM()}: "A list containing all parameter settings and results"
 #' @export
 #'
 #'
-generate_fsom <- function(dat,dims,scale.dims=T,subsample.val=NULL,...){
+generate_fsom <- function(dat,dims,scale.dims=T,subsample.val=NULL,seed.val=1337,...){
   dims<-dims[which(dims %in% names(dat))]
   scale.func<-function(x){(x - mean(x))/stats::sd(x)}
   ##
+  set.seed(seed.val)
   fsom<-FlowSOM::SOM(
     data=if(is.null(subsample.val)){
       if(scale.dims){as.matrix(dat[, lapply(.SD,scale.func),.SDcols=dims])
