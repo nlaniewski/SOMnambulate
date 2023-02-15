@@ -2,12 +2,15 @@ barcode.plots <- function(dat,barcode.dims=NULL,bin.number=100){
   if(!'barcode' %in% names(dat)){
     stop("Need a 'barcode' column")
   }
+  if(!'pool.id' %in% names(dat)){
+    stop("Need a 'pool.id' column")
+  }
   if(is.null(barcode.dims)){
     barcode.dims <- grep("CD45_",names(dat),value = T)
   }
   ##
-  batch <- dat[,unique(stringr::str_extract(unique(pool.id),"[0-9]{3}_[0-9]{8}"))]
-  condition.name <- dat[,ifelse(all(grepl("SEB",unique(pool.id))),"SEB","UNSTIM")]
+  batch <- dat[,unique(stringr::str_extract(unique(get('pool.id')),"[0-9]{3}_[0-9]{8}"))]
+  condition.name <- dat[,ifelse(all(grepl("SEB",unique(get('pool.id')))),"SEB","UNSTIM")]
   batch.name <- paste(batch,condition.name,sep="_")
   if(length(batch.name==1)){
     batch.name <- paste("ECHO",batch.name,sep = "_")
@@ -15,7 +18,7 @@ barcode.plots <- function(dat,barcode.dims=NULL,bin.number=100){
     stop("Non-unique 'batch.name'")
   }
   ##
-  barcodes <- dat[,sort(unique(barcode))]
+  barcodes <- dat[,sort(unique(get('barcode')))]
   barcode.key <- utils::combn(length(barcode.dims),3)
   ##
   pair.1 <- barcode.dims[seq(1,length(barcode.dims),2)]
