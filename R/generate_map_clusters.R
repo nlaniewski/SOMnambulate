@@ -9,7 +9,7 @@ generate_map_nodes_clusters <- function(dat,dims,scale.dims=T,subsample.val=2E5,
 }
 
 #' @title Build a self-organizing map (wrapper)
-#' @description A wrapper for \code{FlowSOM::SOM()} with a few \code{data.table} sensibilities for scaling/sampling
+#' @description  A wrapper for \code{FlowSOM::SOM()} with a few \code{data.table} sensibilities for scaling/sampling
 #'
 #' @param dat Data.table returned from \code{readFCS_dt()}
 #' @param dims Character vector of dimensions (data.table names/columns) to use when building the SOMs
@@ -17,8 +17,9 @@ generate_map_nodes_clusters <- function(dat,dims,scale.dims=T,subsample.val=2E5,
 #' @param subsample.val Optional numeric value defining the number of rows to sample from the input data. The default is \code{NULL}
 #' @param ... Additional arguments for \code{FlowSOM::SOM(...)}
 #'
-#' @return As from \code{FlowSOM::SOM(): "A list containing all parameter settings and results"
+#' @return As from \code{FlowSOM::SOM()}: "A list containing all parameter settings and results"
 #' @export
+#'
 #'
 generate_fsom <- function(dat,dims,scale.dims=T,subsample.val=NULL,...){
   dims<-dims[which(dims %in% names(dat))]
