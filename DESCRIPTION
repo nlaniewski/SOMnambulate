@@ -13,6 +13,7 @@ Imports:
     flowCore,
     FlowSOM,
     ggplot2,
+    gridExtra
     plotly,
     RColorBrewer,
     scales,
