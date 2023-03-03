@@ -1,4 +1,4 @@
-cluster_counts_long <- function(dat,sample.split.cols=c('subject','visit','condition','batch')){
+cluster_counts_long <- function(dat,sample.split.cols=c('subject','visit','condition','batch','batch.date')){
   if(!all(c('sample','cluster') %in% names(dat))){
     stop("Need 'sample' and 'cluster' columns...")
   }
@@ -19,7 +19,7 @@ cluster_counts_long <- function(dat,sample.split.cols=c('subject','visit','condi
   return(dat.N.cluster)
 }
 ##
-node_counts_long <- function(dat,sample.split.cols=c('subject','visit','condition','batch')){
+node_counts_long <- function(dat,sample.split.cols=c('subject','visit','condition','batch','batch.date')){
   if(!all(c('sample','node') %in% names(dat))){
     stop("Need 'sample' and 'node' columns...")
   }
