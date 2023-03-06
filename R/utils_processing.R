@@ -51,7 +51,7 @@ barcode.assignment.codes<-function(codes,k=3){
 drop_extreme_events_fluors<-function(x,count.cut=3,quantile.cut=0.05){
   b <- seq(min(x), max(x), length.out = 301)
   h <- graphics::hist(x, breaks = b, plot = F)
-  count.cut.val<-floor(quantile(h$counts[h$counts>count.cut],quantile.cut))
+  count.cut.val<-floor(stats::quantile(h$counts[h$counts>count.cut],quantile.cut))
   count.range<-range(which(h$counts>count.cut.val))
   break.range<-range(h$breaks[count.range[1]:count.range[2]])
   ##
@@ -63,10 +63,10 @@ drop_extreme_events_time<-function(time.vector,plot.histogram=F,sample.name){
   b <- seq(min(time.vector), max(time.vector), length.out = 301)
   h <- graphics::hist(time.vector, breaks = b, plot = F)
   for(i in 5:2){
-    if(sign(median(h$counts)-sd(h$counts)*i)==(-1)){
+    if(sign(stats::median(h$counts)-stats::sd(h$counts)*i)==(-1)){
       next
     }else{
-      drop.bins.i<-which(h$counts<(median(h$counts)-sd(h$counts)*i))
+      drop.bins.i<-which(h$counts<(stats::median(h$counts)-stats::sd(h$counts)*i))
       break
     }
   }
@@ -78,7 +78,7 @@ drop_extreme_events_time<-function(time.vector,plot.histogram=F,sample.name){
   }
   if(plot.histogram){
     plot(h,main=sample.name)
-    abline(v=time.break,col="red",lty='dashed',lwd=2)
+    graphics::abline(v=time.break,col="red",lty='dashed',lwd=2)
   }else{
     return(time.break)
   }
