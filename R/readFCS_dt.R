@@ -188,11 +188,16 @@ split.type.position.agnostic<-function(s){
   return(split.type.position)
 }
 
-trim.scatter<-function(fcs,trim.low=10000,trim.high=250000){
-  scatter.trim.list <- sapply(paste(rep(c("FSC", "SSC"),
-                                        each = 3), c("A", "H", "W"), sep = "-"), function(scatter) {
-                                          which(fcs@exprs[,scatter]<trim.low|fcs@exprs[,scatter]>trim.high)
-                                        })
+trim.scatter<-function(fcs){
+  cols.scatter<-grep("SC",colnames(fcs@exprs),value=T)
+  if(any(apply(fcs@exprs[,cols.scatter],2,max)==4194304)){
+    trim.low=0;trim.high=4E6
+  }else if(any(apply(fcs@exprs[,cols.scatter],2,max)==262143)){
+    trim.low=10000;trim.high=250000
+  }
+  scatter.trim.list <- sapply(cols.scatter,function(scatter) {
+    which(fcs@exprs[,scatter]<trim.low|fcs@exprs[,scatter]>trim.high)
+  })
   fcs@exprs <- fcs@exprs[-Reduce(union, scatter.trim.list),]
   return(fcs)
 }

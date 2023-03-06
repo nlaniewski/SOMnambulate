@@ -46,7 +46,8 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=T
     slider.vals <- stats::setNames(nm=c('min','max','value','step'),
                                    c(1,3000,1000,50)
     )
-    if(any(dat==0)&dat[,.N]*ncol(dat)/length(which(dat==0))>1){#preponderance of zeroes in mass cyto. data
+    # any(dat==0)&dat[,.N]*ncol(dat)/length(which(dat==0))>1
+    if(sum(dat[,lapply(.SD,function(x)length(which(x==0)))])/dat[,.N]*ncol(dat)*100>1){#preponderance of zeroes in mass cyto. data
       slider.vals[1:4] <- c(1,10,2,1)
     }
   }
