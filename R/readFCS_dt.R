@@ -190,9 +190,9 @@ split.type.position.agnostic<-function(s){
 
 trim.scatter<-function(fcs){
   cols.scatter<-grep("SC",colnames(fcs@exprs),value=T)
-  if(any(apply(fcs@exprs[,cols.scatter],2,max)==4194304)){
+  if(any(apply(fcs@exprs[,cols.scatter],2,max)>4E6)){
     trim.low=0;trim.high=4E6
-  }else if(any(apply(fcs@exprs[,cols.scatter],2,max)==262143)){
+  }else if(any(apply(fcs@exprs[,cols.scatter],2,max)>250000)){
     trim.low=10000;trim.high=250000
   }
   scatter.trim.list <- sapply(cols.scatter,function(scatter) {
