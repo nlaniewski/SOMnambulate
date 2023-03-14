@@ -398,7 +398,7 @@ gg.func.boxplot.points <- function(dat,...){
                                    ))) +
       ggplot2::geom_boxplot(outlier.shape = NA) +
       ggplot2::geom_jitter(size=1.5) +
-      ggplot2::facet_wrap(~cluster)
+      ggplot2::facet_wrap(~!!as.symbol(cluster.col))
 }
 
 axis.selection.plotly.heatmap<-function(column.names){
