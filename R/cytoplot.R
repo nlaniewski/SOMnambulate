@@ -1,8 +1,28 @@
-cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=T,cluster.dims=NULL,
+cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F,cluster.dims=NULL,
                      cluster.counts=T){
   if(!data.table::is.data.table(dat)) stop("Need a data.table returned from 'readFCS_dt'...")
   ##
   c.names <- names(dat)
+  if(length(grep("sample",c.names))>1){
+    stop(paste("Found",length(grep("sample",c.names)),"columns with 'sample' in their name:",paste0(grep("sample",c.names,value = T),collapse = " ; ")))
+  }else{
+    sample.col<-grep("sample",c.names,value = T)
+  }
+  ##
+  if(any(grepl('cluster',names(dat),ignore.case = T))){
+    if(length(grep("cluster",c.names))>1){
+      stop(paste("Found",length(grep("cluster",c.names)),"columns with 'cluster' in their name:",paste0(grep("cluster",c.names,value = T),collapse = " ; ")))
+    }else{
+      cluster.col<-grep("cluster",c.names,value = T)
+      clusters<-sort(unique(dat[[cluster.col]]))
+      if(cluster.counts){
+        dat.N.cluster<-cluster_counts_long(dat,cluster.col,sample.col)
+      }
+    }
+  }else{
+    clusters<-NULL
+    message("'clusters' is NULL")
+  }
   ##
   if(!is.null(marker.pair)){
     m1 <- marker.pair[1];m2 <- marker.pair[2]
@@ -16,19 +36,19 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=T
     }
   }
   ##
-  samples<-dat[,unique(sample)]
+  samples<-unique(dat[[sample.col]])
   ##
   lims <- dat[,lapply(.SD,function(x) c(min(x),max(x))),.SDcols=is.numeric]
   ##
-  if('cluster' %in% names(dat)){
-    clusters<-dat[,sort(unique(cluster))]
-    if(cluster.counts){
-      dat.N.cluster<-cluster_counts_long(dat)
-    }
-  }else{
-    clusters<-NULL
-    message("'clusters' is NULL")
-  }
+  # if('cluster' %in% names(dat)){
+  #   clusters<-dat[,sort(unique(cluster))]
+  #   if(cluster.counts){
+  #     dat.N.cluster<-cluster_counts_long(dat)
+  #   }
+  # }else{
+  #   clusters<-NULL
+  #   message("'clusters' is NULL")
+  # }
   ##
   # if('cell.type' %in% names(dat)){
   #   cell.types<-dat[,unique(na.omit(cell.type))]
