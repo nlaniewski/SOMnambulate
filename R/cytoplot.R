@@ -195,9 +195,13 @@ cytoplot <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,cluster
     ##
     ggbivariate_plot1 <- shiny::reactive({
       if(asinh.view==FALSE){
-        p.tmp <- gg.func.bivariate(dat[get('sample.id')==input$sample.id][sample(.N,input$rowsamp)],
-                                   x = !!ggplot2::sym(input$marker1),
-                                   y = !!ggplot2::sym(input$marker2))
+        p.tmp <- gg.func.bivariate(dat = if(dat[get('sample.id')==input$sample.id,.N]>input$rowsamp){
+          dat[get('sample.id')==input$sample.id][sample(.N,input$rowsamp)]
+        }else{
+          dat[get('sample.id')==input$sample.id]
+        },
+        x = !!ggplot2::sym(input$marker1),
+        y = !!ggplot2::sym(input$marker2))
       }else if(asinh.view==TRUE){
         shiny::req(input$asinh.applied)
         if(input$asinh.applied=='Yes'){
