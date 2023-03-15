@@ -2,57 +2,33 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F
                      cluster.counts=T){
   if(!data.table::is.data.table(dat)) stop("Need a data.table returned from 'readFCS_dt'...")
   ##
-  c.names <- names(dat)
-  if(length(grep("sample",c.names))>1){
-    stop(paste("Found",length(grep("sample",c.names)),"columns with 'sample' in their name:",paste0(grep("sample",c.names,value = T),collapse = " ; ")))
-  }else{
-    sample.col<-grep("sample",c.names,value = T)
-  }
+  dat.names <- names(dat)
   ##
-  if(any(grepl('cluster',names(dat),ignore.case = T))){
-    if(length(grep("cluster",c.names))>1){
-      stop(paste("Found",length(grep("cluster",c.names)),"columns with 'cluster' in their name:",paste0(grep("cluster",c.names,value = T),collapse = " ; ")))
-    }else{
-      cluster.col<-grep("cluster",c.names,value = T)
-      clusters<-sort(unique(dat[[cluster.col]]))
-      if(cluster.counts){
-        dat.N.cluster<-cluster_counts_long(dat,cluster.col,sample.col)
-      }
-    }
+  sample.id.check(dat.names)
+  cluster.col<-cluster.col.check(dat.names)
+  if(cluster.counts){
+    clusters.seq<-sort(unique(dat[[cluster.col]]))
+    dat.N.cluster<-cluster_counts_long(dat)
   }else{
-    clusters<-NULL
+    clusters.seq<-NULL
     message("'clusters' is NULL")
   }
   ##
   if(!is.null(marker.pair)){
     m1 <- marker.pair[1];m2 <- marker.pair[2]
   }else{
-    if(all(c('FSC-A','SSC-A') %in% c.names)){
+    if(all(c('FSC-A','SSC-A') %in% dat.names)){
       m1 <- 'FSC-A'
       m2 <- 'SSC-A'
     }else{
-      m1 <- c.names[1]
-      m2 <- c.names[2]
+      m1 <- dat.names[1]
+      m2 <- dat.names[2]
     }
   }
   ##
-  samples<-unique(dat[[sample.col]])
+  samples<-unique(dat[['sample.id']])
   ##
   lims <- dat[,lapply(.SD,function(x) c(min(x),max(x))),.SDcols=is.numeric]
-  ##
-  # if('cluster' %in% names(dat)){
-  #   clusters<-dat[,sort(unique(cluster))]
-  #   if(cluster.counts){
-  #     dat.N.cluster<-cluster_counts_long(dat)
-  #   }
-  # }else{
-  #   clusters<-NULL
-  #   message("'clusters' is NULL")
-  # }
-  ##
-  # if('cell.type' %in% names(dat)){
-  #   cell.types<-dat[,unique(na.omit(cell.type))]
-  # }
   ##
   axis.click.select<-shiny::fluidRow(
     shinydashboard::box(
@@ -77,11 +53,11 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F
     tabName = "markers",
     shiny::selectInput(inputId = "marker1",
                        label = "Marker (x):",
-                       choices = c.names,
+                       choices = dat.names,
                        selected = m1),
     shiny::selectInput(inputId = "marker2",
                        label = "Marker (y):",
-                       choices = c.names,
+                       choices = dat.names,
                        selected = m2),
     shiny::numericInput(inputId = "rowsamp",
                         label = "# of 'Events' to display:",
@@ -93,16 +69,16 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F
                        label="Sample",
                        choices=samples,
                        selected = samples[1]),
-    if(!is.null(clusters)){
+    if(!is.null(clusters.seq)){
       shiny::selectInput(inputId = "cluster.val",
                          label="Cluster #",
-                         choices=clusters,
+                         choices=clusters.seq,
                          selected = NULL)
     },
     shiny::radioButtons(inputId = "axis.select",
                         label = "Axis Select Type:",
-                        choices=if(!is.null(clusters)) c("Markers","Clusters") else "Markers",
-                        selected = if(!is.null(clusters)) "Clusters" else "Markers",
+                        choices=if(!is.null(clusters.seq)) c("Markers","Clusters") else "Markers",
+                        selected = if(!is.null(clusters.seq)) "Clusters" else "Markers",
                         inline = T)
   )
   factor.menu <- shinydashboard::renderMenu({
@@ -158,7 +134,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F
     ),
     shinydashboard::box(
       collapsible = T,
-      collapsed = is.null(clusters),
+      collapsed = is.null(clusters.seq),
       title=NULL,
       shiny::plotOutput("ggbivariate_plot2"),
       width=5
@@ -175,7 +151,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F
   factor.plot<-shiny::fluidRow(
     shinydashboard::box(
       collapsible = T,
-      collapsed = is.null(clusters),
+      collapsed = is.null(clusters.seq),
       title=NULL,
       plotly::plotlyOutput("factor_plot1"),
       width=10
@@ -205,32 +181,32 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F
       output$asinh.menu <- asinh.menu
     }
     ##
-    if(!is.null(clusters)){
+    if(!is.null(clusters.seq)){
       output$factor.menu <- factor.menu
     }
     ##
     shiny::observeEvent(input$sample.id,{
       shiny::updateNumericInput(inputId = "rowsamp",
-                                value = ifelse(dat[get(sample.col)==input$sample.id ,.N]<1E5,dat[get(sample.col)==input$sample.id ,.N],1E5),
+                                value = ifelse(dat[get('sample.id')==input$sample.id ,.N]<1E5,dat[get('sample.id')==input$sample.id ,.N],1E5),
                                 min = 1E5,
-                                max = dat[get(sample.col)==input$sample.id ,.N],
+                                max = dat[get('sample.id')==input$sample.id ,.N],
                                 step = 1E5)
     })
     ##
     ggbivariate_plot1 <- shiny::reactive({
       if(asinh.view==FALSE){
-        p.tmp <- gg.func.bivariate(dat[get(sample.col)==input$sample.id][sample(.N,input$rowsamp)],
+        p.tmp <- gg.func.bivariate(dat[get('sample.id')==input$sample.id][sample(.N,input$rowsamp)],
                                    x = !!ggplot2::sym(input$marker1),
                                    y = !!ggplot2::sym(input$marker2))
       }else if(asinh.view==TRUE){
         shiny::req(input$asinh.applied)
         if(input$asinh.applied=='Yes'){
-          p.tmp <- gg.func.bivariate(dat[get(sample.col)==input$sample.id][sample(.N,input$rowsamp)],
+          p.tmp <- gg.func.bivariate(dat[get('sample.id')==input$sample.id][sample(.N,input$rowsamp)],
                                      x = asinh(!!ggplot2::sym(input$marker1)/input$cofactor.xaxis),
                                      y = asinh(!!ggplot2::sym(input$marker2)/input$cofactor.yaxis)
           )
         }else if(input$asinh.applied=='No'){
-          p.tmp <- gg.func.bivariate(dat[get(sample.col)==input$sample.id][sample(.N,input$rowsamp)],
+          p.tmp <- gg.func.bivariate(dat[get('sample.id')==input$sample.id][sample(.N,input$rowsamp)],
                                      x = !!ggplot2::sym(input$marker1),
                                      y = !!ggplot2::sym(input$marker2)
           )
@@ -238,7 +214,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F
       }
       p.tmp <- p.tmp +
         ggplot2::labs(title = "All Events",
-                      subtitle = paste(input$rowsamp, "of", dat[get(sample.col)==input$sample.id,.N], "displayed")) +
+                      subtitle = paste(input$rowsamp, "of", dat[get('sample.id')==input$sample.id,.N], "displayed")) +
         ggplot2::xlab(input$marker1) +
         ggplot2::ylab(input$marker2)
       if(asinh.view==TRUE){
@@ -259,14 +235,14 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F
       }
     })
     ##
-    if(!is.null(clusters)){
+    if(!is.null(clusters.seq)){
       ggbivariate_plot2 <- shiny::reactive({
-        p.tmp <- gg.func.bivariate(dat[get(sample.col)==input$sample.id][get(cluster.col)==input$cluster.val],
+        p.tmp <- gg.func.bivariate(dat[get('sample.id')==input$sample.id][get(cluster.col)==input$cluster.val],
                                    x = !!ggplot2::sym(input$marker1),
                                    y = !!ggplot2::sym(input$marker2))
         p.tmp <- p.tmp +
           ggplot2::labs(title = paste("Cluster #",input$cluster.val),
-                        subtitle = paste(dat[get(sample.col)==input$sample.id][get(cluster.col)==input$cluster.val,.N], "displayed")) +
+                        subtitle = paste(dat[get('sample.id')==input$sample.id][get(cluster.col)==input$cluster.val,.N], "displayed")) +
           ggplot2::xlab(input$marker1) +
           ggplot2::ylab(input$marker2)
         if(all(c(input$marker1,input$marker2) %in% names(lims))){
@@ -284,7 +260,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F
       })
     }
     ##
-    #if(!is.null(clusters)){
+    #if(!is.null(clusters.seq)){
       factor_plot1 <- shiny::reactive({
         shiny::req(input$factor.name,input$value.y)
         plotly::ggplotly(
@@ -300,7 +276,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F
     output$ggbivariate_plot1 <- shiny::renderPlot({
       ggbivariate_plot1()
     })
-    if(!is.null(clusters)){
+    if(!is.null(clusters.seq)){
       output$ggbivariate_plot2 <- shiny::renderPlot({
         ggbivariate_plot2()
       })
@@ -312,14 +288,14 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F
     ##
     shiny::observeEvent(input$axis.select,{
       if(input$axis.select=="Markers"){
-        output$plotly_heat <- plotly::renderPlotly(axis.selection.plotly.heatmap(c.names))
+        output$plotly_heat <- plotly::renderPlotly(axis.selection.plotly.heatmap(dat.names))
       }else if(input$axis.select=="Clusters"){
         if(sample.specific.heatmap){
           shiny::observeEvent(input$sample.id,{
             if(is.null(cluster.dims)){
-              cm=generate_cluster_medians(dat[get(sample.col)==input$sample.id])[,!'sample']
+              cm=generate_cluster_medians(dat[get('sample.id')==input$sample.id])[,!'sample']
             }else{
-              cm=generate_cluster_medians(dat[get(sample.col)==input$sample.id],heatmap.dims = cluster.dims)[,!'sample']
+              cm=generate_cluster_medians(dat[get('sample.id')==input$sample.id],heatmap.dims = cluster.dims)[,!'sample']
             }
             output$plotly_heat <- plotly::renderPlotly(cluster.axis.selection.plotly.heatmap(cm))
           })
@@ -339,7 +315,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F
       plotly::event_data("plotly_click", priority = 'event', source = 'axis.selection')
     })
     ##
-    #if(!is.null(clusters)){
+    #if(!is.null(clusters.seq)){
     sample_click <- shiny::reactive({
       shiny::req()
       plotly::event_data("plotly_click", priority = 'event', source = 'sample.selection')
@@ -363,16 +339,16 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F
       }
     })
     ##
-    #if(!is.null(clusters)){
+    #if(!is.null(clusters.seq)){
     shiny::observeEvent(eventExpr = sample_click(),{
       pn <- sample_click()$pointNumber+1
       shiny::updateSelectInput(inputId = "sample.id",
-                               selected = dat.N.cluster[,unique(get(sample.col))][pn]
+                               selected = dat.N.cluster[,unique(get('sample.id'))][pn]
       )
     })
     #}
     ##
-    if(!is.null(clusters)){
+    if(!is.null(clusters.seq)){
       output$factor_plot1 <- plotly::renderPlotly(factor_plot1())
     }else{
       output$factor_plot1 <- plotly::renderPlotly(NULL)
@@ -390,6 +366,7 @@ gg.func.bivariate <- function(dat,...,bins=100,fill.limits=c(0,50)){
 }
 
 gg.func.boxplot.points <- function(dat,...){
+  cluster.col<-cluster.col.check(names(dat))
   ggplot2::ggplot(dat,ggplot2::aes(...,
                                    text=paste("Subject:",get('subject'),
                                               "<br>Visit:",get('visit'),
@@ -482,10 +459,13 @@ cluster.axis.selection.plotly.heatmap<- function(cluster.medians,use.sorting=T,b
   return(plotly.heatmap)
 }
 
-generate_cluster_medians<-function(dat,use.scale.func=T,by.factor='sample',na.check=T,heatmap.dims=NULL){
-  if(!data.table::is.data.table(dat)&'cluster' %in% names(dat)){
-    stop("Need a data.table with a 'cluster' column")
+generate_cluster_medians<-function(dat,use.scale.func=T,by.factor='sample.id',na.check=T,heatmap.dims=NULL){
+  ##checks
+  if(!data.table::is.data.table(dat)){
+    stop("Need a data.table")
   }
+  sample.id.check(dat)
+  cluster.col<-cluster.col.check(dat)
   ##
   cols.for.cluster.medians <- names(which(sapply(dat,is.numeric)[!sapply(dat,is.integer)]))
   cols.for.cluster.medians<-cols.for.cluster.medians[!cols.for.cluster.medians %in% "Time"]
@@ -493,9 +473,9 @@ generate_cluster_medians<-function(dat,use.scale.func=T,by.factor='sample',na.ch
     cols.for.cluster.medians<-cols.for.cluster.medians[cols.for.cluster.medians %in% heatmap.dims]
   }
   if(is.null(by.factor)){
-    cluster.medians<-dat[,lapply(.SD,stats::median),keyby='cluster',.SDcols=cols.for.cluster.medians][,!'cluster']
+    cluster.medians<-dat[,lapply(.SD,stats::median),keyby=cluster.col,.SDcols=cols.for.cluster.medians][,!cluster.col]
   }else{
-    cluster.medians<-dat[,lapply(.SD,stats::median),keyby=c('cluster',by.factor),.SDcols=cols.for.cluster.medians][,!'cluster']
+    cluster.medians<-dat[,lapply(.SD,stats::median),keyby=c(cluster.col,by.factor),.SDcols=cols.for.cluster.medians][,!cluster.col]
   }
   if(use.scale.func){
     if(is.null(by.factor)){

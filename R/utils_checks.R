@@ -19,3 +19,17 @@ cluster.col.check<-function(dt.names){
   return(cluster.col)
 }
 ##
+node.col.check<-function(dt.names){
+  if(!'node' %in% dt.names){
+    if(any(grepl('node',dt.names,ignore.case = T))){
+      if(length(which(grepl('node',dt.names,ignore.case = T)))==1){
+        node.col<-grep('node',dt.names,ignore.case = T,value=T)
+      }else{
+        n.names<-paste0(grep('node',dt.names,ignore.case = T,value=T),collapse = " ; ")
+        stop(paste("More than one node column found:",n.names))
+      }
+    }
+  }
+  return(node.col)
+}
+##
