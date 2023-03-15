@@ -1,4 +1,4 @@
-cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F,cluster.dims=NULL,
+cytoplot <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F,cluster.dims=NULL,
                      cluster.counts=T){
   if(!data.table::is.data.table(dat)) stop("Need a data.table returned from 'readFCS_dt'...")
   ##
@@ -290,23 +290,7 @@ cytoplot <- function(dat,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F
       if(input$axis.select=="Markers"){
         output$plotly_heat <- plotly::renderPlotly(axis.selection.plotly.heatmap(dat.names))
       }else if(input$axis.select=="Clusters"){
-        if(sample.specific.heatmap){
-          shiny::observeEvent(input$sample.id,{
-            if(is.null(cluster.dims)){
-              cm=generate_cluster_medians(dat[get('sample.id')==input$sample.id])[,!'sample']
-            }else{
-              cm=generate_cluster_medians(dat[get('sample.id')==input$sample.id],heatmap.dims = cluster.dims)[,!'sample']
-            }
-            output$plotly_heat <- plotly::renderPlotly(cluster.axis.selection.plotly.heatmap(cm))
-          })
-        }else{
-          if(is.null(cluster.dims)){
-            cm=generate_cluster_medians(dat,by.factor = NULL)
-          }else{
-            cm=generate_cluster_medians(dat,by.factor = NULL,heatmap.dims = cluster.dims)
-          }
-          output$plotly_heat <- plotly::renderPlotly(cluster.axis.selection.plotly.heatmap(cm))
-        }
+        output$plotly_heat <- plotly::renderPlotly(cluster.axis.selection.plotly.heatmap(cluster.axis.selection.plotly.heatmap(code.medians)))
       }
     })
     ##
@@ -413,25 +397,30 @@ axis.selection.plotly.heatmap<-function(column.names){
   plotly.heatmap<-plotly::hide_colorbar(plotly.heatmap)
 }
 
-cluster.axis.selection.plotly.heatmap<- function(cluster.medians,use.sorting=T,break.vec = seq(0, 1, by = 0.05)){
-  if(!is.matrix(cluster.medians)){
-    cluster.medians <- as.matrix(cluster.medians)
+cluster.axis.selection.plotly.heatmap<- function(code.medians){
+  if(!'cluster' %in% colnames(code.medians)){
+    stop("Need a 'cluster' column")
   }
+  if(!is.matrix(code.medians)){
+    code.medians <- as.matrix(code.medians)
+  }
+  code.medians<-code.medians[,colnames(code.medians)!='cluster']
+  ##row-scale
+  cols<-colnames(code.medians)
+  code.medians<-t(apply(code.medians,1,scale));colnames(code.medians)<-cols
   #prepare cluster ordering for plotly; uses dendgrogram sorting
-  if(use.sorting){
-    c.order <- rev(unlist(stats::as.dendrogram(stats::hclust(stats::dist(cluster.medians)))))
-    m.order <- unlist(stats::as.dendrogram(stats::hclust(stats::dist(t(cluster.medians)))))
-    cluster.medians<-cluster.medians[c.order,m.order]
-    rownames(cluster.medians)<-c.order
-  }else{
-    rownames(cluster.medians)<-seq(nrow(cluster.medians))
-  }
+  row.order <- rev(unlist(stats::as.dendrogram(stats::hclust(stats::dist(code.medians)))))
+  col.order <- unlist(stats::as.dendrogram(stats::hclust(stats::dist(t(code.medians)))))
+  code.medians<-code.medians[row.order,col.order]
+  rownames(code.medians)<-row.order
   ##
+  r<-range(apply(code.medians,2,range))
+  break.vec<-seq(floor(min(r)),ceiling(max(r)),by=0.05)
   color.breaks<-grDevices::colorRampPalette(RColorBrewer::brewer.pal(n = 9, name ="Greens"))(length(break.vec))
   #plotly heatmap
-  plotly.heatmap <- plotly::plot_ly(x=colnames(cluster.medians),
-                                    y=rownames(cluster.medians),
-                                    z=cluster.medians,
+  plotly.heatmap <- plotly::plot_ly(x=colnames(code.medians),
+                                    y=rownames(code.medians),
+                                    z=code.medians,
                                     zauto = F,
                                     zmin = min(break.vec),
                                     zmax = max(break.vec),
@@ -459,36 +448,36 @@ cluster.axis.selection.plotly.heatmap<- function(cluster.medians,use.sorting=T,b
   return(plotly.heatmap)
 }
 
-generate_cluster_medians<-function(dat,use.scale.func=T,by.factor='sample.id',na.check=T,heatmap.dims=NULL){
-  ##checks
-  if(!data.table::is.data.table(dat)){
-    stop("Need a data.table")
-  }
-  sample.id.check(names(dat))
-  cluster.col<-cluster.col.check(names(dat))
-  ##
-  cols.for.cluster.medians <- names(which(sapply(dat,is.numeric)[!sapply(dat,is.integer)]))
-  cols.for.cluster.medians<-cols.for.cluster.medians[!cols.for.cluster.medians %in% "Time"]
-  if(!is.null(heatmap.dims)){
-    cols.for.cluster.medians<-cols.for.cluster.medians[cols.for.cluster.medians %in% heatmap.dims]
-  }
-  if(is.null(by.factor)){
-    cluster.medians<-dat[,lapply(.SD,stats::median),keyby=cluster.col,.SDcols=cols.for.cluster.medians][,!cluster.col]
-  }else{
-    cluster.medians<-dat[,lapply(.SD,stats::median),keyby=c(cluster.col,by.factor),.SDcols=cols.for.cluster.medians][,!cluster.col]
-  }
-  if(use.scale.func){
-    if(is.null(by.factor)){
-      cluster.medians[,(cols.for.cluster.medians):=lapply(.SD,function(x)(x-mean(x))/stats::sd(x))]
-    }else{
-      cluster.medians[,(cols.for.cluster.medians):=lapply(.SD,function(x)(x-mean(x))/stats::sd(x)),by=by.factor]
-    }
-  }
-  if(na.check&any(unlist(lapply(cluster.medians,function(x) all(is.na(x)))))){
-    cluster.medians[,which(unlist(lapply(cluster.medians,function(x) all(is.na(x))))) := NULL]
-  }
-  return(cluster.medians)
-}
+# generate_cluster_medians<-function(dat,use.scale.func=T,by.factor='sample.id',na.check=T,heatmap.dims=NULL){
+#   ##checks
+#   if(!data.table::is.data.table(dat)){
+#     stop("Need a data.table")
+#   }
+#   sample.id.check(names(dat))
+#   cluster.col<-cluster.col.check(names(dat))
+#   ##
+#   cols.for.cluster.medians <- names(which(sapply(dat,is.numeric)[!sapply(dat,is.integer)]))
+#   cols.for.cluster.medians<-cols.for.cluster.medians[!cols.for.cluster.medians %in% "Time"]
+#   if(!is.null(heatmap.dims)){
+#     cols.for.cluster.medians<-cols.for.cluster.medians[cols.for.cluster.medians %in% heatmap.dims]
+#   }
+#   if(is.null(by.factor)){
+#     cluster.medians<-dat[,lapply(.SD,stats::median),keyby=cluster.col,.SDcols=cols.for.cluster.medians][,!cluster.col]
+#   }else{
+#     cluster.medians<-dat[,lapply(.SD,stats::median),keyby=c(cluster.col,by.factor),.SDcols=cols.for.cluster.medians][,!cluster.col]
+#   }
+#   if(use.scale.func){
+#     if(is.null(by.factor)){
+#       cluster.medians[,(cols.for.cluster.medians):=lapply(.SD,function(x)(x-mean(x))/stats::sd(x))]
+#     }else{
+#       cluster.medians[,(cols.for.cluster.medians):=lapply(.SD,function(x)(x-mean(x))/stats::sd(x)),by=by.factor]
+#     }
+#   }
+#   if(na.check&any(unlist(lapply(cluster.medians,function(x) all(is.na(x)))))){
+#     cluster.medians[,which(unlist(lapply(cluster.medians,function(x) all(is.na(x))))) := NULL]
+#   }
+#   return(cluster.medians)
+# }
 
 gg.func.bivariate.cluster.overlay <- function(dat,...,bins=100,fill.limits=c(0,50),cluster.number=NULL,
                                               overlay.total=1E5,use.labs=T){
