@@ -464,8 +464,8 @@ generate_cluster_medians<-function(dat,use.scale.func=T,by.factor='sample.id',na
   if(!data.table::is.data.table(dat)){
     stop("Need a data.table")
   }
-  sample.id.check(dat)
-  cluster.col<-cluster.col.check(dat)
+  sample.id.check(names(dat))
+  cluster.col<-cluster.col.check(names(dat))
   ##
   cols.for.cluster.medians <- names(which(sapply(dat,is.numeric)[!sapply(dat,is.integer)]))
   cols.for.cluster.medians<-cols.for.cluster.medians[!cols.for.cluster.medians %in% "Time"]
