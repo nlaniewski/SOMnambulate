@@ -1,4 +1,4 @@
-cytoplot <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,sample.specific.heatmap=F,cluster.dims=NULL,
+cytoplot <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,cluster.dims=NULL,
                      cluster.counts=T){
   if(!data.table::is.data.table(dat)) stop("Need a data.table returned from 'readFCS_dt'...")
   ##
@@ -290,7 +290,7 @@ cytoplot <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,sample.
       if(input$axis.select=="Markers"){
         output$plotly_heat <- plotly::renderPlotly(axis.selection.plotly.heatmap(dat.names))
       }else if(input$axis.select=="Clusters"){
-        output$plotly_heat <- plotly::renderPlotly(cluster.axis.selection.plotly.heatmap(cluster.axis.selection.plotly.heatmap(code.medians)))
+        output$plotly_heat <- plotly::renderPlotly(cluster.axis.selection.plotly.heatmap(code.medians))
       }
     })
     ##
