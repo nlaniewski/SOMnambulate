@@ -301,7 +301,7 @@ cytoplot <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,cluster
     ##
     #if(!is.null(clusters.seq)){
     sample_click <- shiny::reactive({
-      shiny::req()
+      #shiny::req()
       plotly::event_data("plotly_click", priority = 'event', source = 'sample.selection')
     })
     #}
