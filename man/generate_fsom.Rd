@@ -20,7 +20,7 @@ generate_fsom(
 
 \item{scale.dims}{Logical. By default, \code{TRUE}; will scale input data before building the SOMs}
 
-\item{subsample.val}{Optional numeric value defining the number of rows to sample from the input data. The default is \code{NULL}}
+\item{subsample.val}{Optional numeric value defining the number of rows to sample from the input data; sample-specific. The default is \code{NULL}}
 
 \item{seed.val}{Optional random seed value}
 

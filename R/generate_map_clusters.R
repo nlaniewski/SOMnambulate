@@ -14,7 +14,7 @@ generate_map_nodes_clusters <- function(dat,dims,scale.dims=T,subsample.val=2E5,
 #' @param dat Data.table returned from \code{readFCS_dt()}
 #' @param dims Character vector of dimensions (data.table names/columns) to use when building the SOMs
 #' @param scale.dims Logical. By default, \code{TRUE}; will scale input data before building the SOMs
-#' @param subsample.val Optional numeric value defining the number of rows to sample from the input data. The default is \code{NULL}
+#' @param subsample.val Optional numeric value defining the number of rows to sample from the input data; sample-specific. The default is \code{NULL}
 #' @param seed.val Optional random seed value
 #' @param ... Additional arguments for \code{FlowSOM::SOM(...)}
 #'
@@ -31,9 +31,18 @@ generate_fsom <- function(dat,dims,scale.dims=T,subsample.val=NULL,seed.val=1337
     data=if(is.null(subsample.val)){
       if(scale.dims){as.matrix(dat[, lapply(.SD,scale.func),.SDcols=dims])
       }else{as.matrix(dat[,dims,with=F])}
-    }else{
-      if(scale.dims){as.matrix(dat[sample(.N,subsample.val), lapply(.SD,scale.func),.SDcols=dims])
-      }else{as.matrix(dat[sample(.N,subsample.val),dims,with=F])}
+    }else{#subsample here;sample-specific
+      sample.id.check(names(dat))#check for 'sample.id'
+      if(scale.dims){
+        as.matrix(
+          dat[dat[,list(I=if(.N>subsample.val){.I[sample(.N,subsample.val)]}else{.I}),by=get('sample.id')][['I']]]
+          [,lapply(.SD,scale.func),.SDcols=dims]
+        )
+      }else{
+        as.matrix(
+          dat[dat[,list(I=if(.N>subsample.val){.I[sample(.N,subsample.val)]}else{.I}),by=get('sample.id')][['I']],dims,with=F]
+        )
+      }
     },
     ...
   )
