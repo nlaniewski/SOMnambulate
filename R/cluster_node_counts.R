@@ -1,25 +1,22 @@
-cluster_counts_long <- function(dat,cluster.col='cluster',sample.col='sample.id',
+cluster_counts_long <- function(dat,cluster.col=NULL,sample.col=NULL,
                                 sample.split.cols=c('subject','visit','condition','batch','batch.date')){
-  if(!cluster.col %in% names(dat)){
-    stop(paste("Specified cluster column name not found:",cluster.col))
-  }
-  if(!sample.col %in% names(dat)){
-    stop(paste("Specified sample column name not found:",sample.col))
-  }
+  ##use checks to confirm column names
+  sample.id.check(names(dat))
+  cluster.col<-cluster.col.check(names(dat))
   #commented lines fail 'devtools::check()' due to 'no visible binding for global variable...'
   #data.table::setkey(dat, sample, cluster)
-  data.table::setkeyv(dat, c(sample.col, cluster.col))
+  data.table::setkeyv(dat, c('sample.id', cluster.col))
   #dat.N.cluster<-dat[data.table::CJ(sample, cluster, unique = TRUE), .N, by = .EACHI]
-  dat.N.cluster<-dat[data.table::CJ(get(sample.col), get(cluster.col), unique = TRUE), .N, by = .EACHI]
+  dat.N.cluster<-dat[data.table::CJ(get('sample.id'), get(cluster.col), unique = TRUE), .N, by = .EACHI]
   #dat.N.cluster[, prop := N/sum(N) * 100, by = sample]
-  dat.N.cluster[, 'prop' := get('N')/sum(get('N')) * 100, by = sample.col]
+  dat.N.cluster[, 'prop' := get('N')/sum(get('N')) * 100, by = 'sample.id']
   #dat.N.cluster[, per1million := N*(1E6/sum(N)), by = sample]
-  dat.N.cluster[, 'per1million' := get('N')*(1E6/sum(get('N'))), by = sample.col]
+  dat.N.cluster[, 'per1million' := get('N')*(1E6/sum(get('N'))), by = 'sample.id']
   ##
-  if(!all(sapply(strsplit(dat.N.cluster[[sample.col]],"_"),length)==length(sample.split.cols))){
+  if(!all(sapply(strsplit(dat.N.cluster[['sample.id']],"_"),length)==length(sample.split.cols))){
     stop("Splitting 'sample name' string by '_' results in a length != to length of 'sample.split.cols'")
   }
-  dat.N.cluster[,(sample.split.cols) := data.table::tstrsplit(get(sample.col),"_")]
+  dat.N.cluster[,(sample.split.cols) := data.table::tstrsplit(get('sample.id'),"_")]
   return(dat.N.cluster)
 }
 ##
