@@ -201,18 +201,27 @@ cytoplot <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,cluster
           dat[get('sample.id')==input$sample.id]
         },
         x = !!ggplot2::sym(input$marker1),
-        y = !!ggplot2::sym(input$marker2))
+        y = !!ggplot2::sym(input$marker2)
+        )
       }else if(asinh.view==TRUE){
         shiny::req(input$asinh.applied)
         if(input$asinh.applied=='Yes'){
-          p.tmp <- gg.func.bivariate(dat[get('sample.id')==input$sample.id][sample(.N,input$rowsamp)],
-                                     x = asinh(!!ggplot2::sym(input$marker1)/input$cofactor.xaxis),
-                                     y = asinh(!!ggplot2::sym(input$marker2)/input$cofactor.yaxis)
+          p.tmp <- gg.func.bivariate(dat = if(dat[get('sample.id')==input$sample.id,.N]>input$rowsamp){
+            dat[get('sample.id')==input$sample.id][sample(.N,input$rowsamp)]
+          }else{
+            dat[get('sample.id')==input$sample.id]
+          },
+          x = asinh(!!ggplot2::sym(input$marker1)/input$cofactor.xaxis),
+          y = asinh(!!ggplot2::sym(input$marker2)/input$cofactor.yaxis)
           )
         }else if(input$asinh.applied=='No'){
-          p.tmp <- gg.func.bivariate(dat[get('sample.id')==input$sample.id][sample(.N,input$rowsamp)],
-                                     x = !!ggplot2::sym(input$marker1),
-                                     y = !!ggplot2::sym(input$marker2)
+          p.tmp <- gg.func.bivariate(dat = if(dat[get('sample.id')==input$sample.id,.N]>input$rowsamp){
+            dat[get('sample.id')==input$sample.id][sample(.N,input$rowsamp)]
+          }else{
+            dat[get('sample.id')==input$sample.id]
+          },
+          x = !!ggplot2::sym(input$marker1),
+          y = !!ggplot2::sym(input$marker2)
           )
         }
       }
@@ -484,17 +493,18 @@ cluster.axis.selection.plotly.heatmap<- function(code.medians){
 # }
 
 gg.func.bivariate.cluster.overlay <- function(dat,...,bins=100,fill.limits=c(0,50),cluster.number=NULL,
-                                              overlay.total=1E5,use.labs=T){
+                                              overlay.total=1E5,per.sample.cluster.total=5E4,use.labs=F){
+  cluster.col<-cluster.col.check(names(dat))
   p<-ggplot2::ggplot(dat[sample(.N,overlay.total)],ggplot2::aes(...)) +
     ggplot2::geom_hex(fill = "gray", bins = bins) +
-    ggplot2::geom_hex(data=dat[cluster==cluster.number],bins=bins) +
+    ggplot2::geom_hex(data=subsample_dt_sample.id(dat[get(cluster.col)==cluster.number],per.sample.cluster.total),bins=bins) +
     viridis::scale_fill_viridis(option = "plasma", limits = fill.limits, oob = scales::squish) +
     ggplot2::theme_classic() +
     ggplot2::guides(fill='none')
   if(use.labs){
     p<-p+ggplot2::labs(title=paste("Cluster #:",cluster.number),
-                       subtitle = paste("Cell Type:",unique(dat[cluster==cluster.number,cell.type])),
-                       caption = paste(paste("# of events (cluster):",dat[cluster==cluster.number,.N]),
+                       subtitle = paste("Cell Type:",unique(dat[get(cluster.col)==cluster.number,cell.type])),
+                       caption = paste(paste("# of events (cluster):",dat[get(cluster.col)==cluster.number,.N]),
                                        paste("# of events (overlay):",overlay.total),
                                        paste('# of events (total)',dat[,.N]),
                                        sep="\n")
