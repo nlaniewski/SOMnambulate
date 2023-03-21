@@ -410,7 +410,7 @@ axis.selection.plotly.heatmap<-function(column.names){
   plotly.heatmap<-plotly::hide_colorbar(plotly.heatmap)
 }
 
-cluster.axis.selection.plotly.heatmap<- function(code.medians){
+cluster.axis.selection.plotly.heatmap<- function(code.medians,row.scale=T,break.vec=NULL){
   if(!'cluster' %in% colnames(code.medians)){
     stop("Need a 'cluster' column")
   }
@@ -418,17 +418,21 @@ cluster.axis.selection.plotly.heatmap<- function(code.medians){
     code.medians <- as.matrix(code.medians)
   }
   code.medians<-code.medians[,colnames(code.medians)!='cluster']
-  ##row-scale
   cols<-colnames(code.medians)
-  code.medians<-t(apply(code.medians,1,scale));colnames(code.medians)<-cols
+  ##row-scale
+  if(row.scale){
+    code.medians<-t(apply(code.medians,1,scale));colnames(code.medians)<-cols
+  }
   #prepare cluster ordering for plotly; uses dendgrogram sorting
   row.order <- rev(unlist(stats::as.dendrogram(stats::hclust(stats::dist(code.medians)))))
   col.order <- unlist(stats::as.dendrogram(stats::hclust(stats::dist(t(code.medians)))))
   code.medians<-code.medians[row.order,col.order]
   rownames(code.medians)<-row.order
   ##
-  r<-range(apply(code.medians,2,range))
-  break.vec<-seq(floor(min(r)),ceiling(max(r)),by=0.05)
+  if(is.null(break.vec)){
+    r<-range(apply(code.medians,2,range))
+    break.vec<-seq(floor(min(r)),ceiling(max(r)),by=0.05)
+  }
   color.breaks<-grDevices::colorRampPalette(RColorBrewer::brewer.pal(n = 9, name ="Greens"))(length(break.vec))
   #plotly heatmap
   plotly.heatmap <- plotly::plot_ly(x=colnames(code.medians),
