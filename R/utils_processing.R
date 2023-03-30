@@ -62,11 +62,20 @@ drop_extreme_events_fluors<-function(x,count.cut=3,quantile.cut=0.05){
 drop_extreme_events_time<-function(time.vector,plot.histogram=F,sample.name){
   b <- seq(min(time.vector), max(time.vector), length.out = 301)
   h <- graphics::hist(time.vector, breaks = b, plot = F)
-  for(i in 5:1){
-    if(sign(stats::median(h$counts)-stats::sd(h$counts)*i)==(-1)){
+  if(any(h$counts<(mean(h$counts)*.05))){
+    counts.cut<-min(which(h$counts<(mean(h$counts)*.05)))-1
+    hc<-h$counts[1:counts.cut]
+  }else{
+    hc<-h$counts
+  }
+  for (i in 5:1) {
+    if (sign(stats::median(hc) - stats::sd(hc) *
+             i) == (-1)) {
       next
-    }else{
-      drop.bins.i<-which(h$counts<(stats::median(h$counts)-stats::sd(h$counts)*i))
+    }
+    else {
+      drop.bins.i <- which(h$counts < (stats::median(hc) -
+                                         stats::sd(hc) * i))
       break
     }
   }
