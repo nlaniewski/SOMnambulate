@@ -70,12 +70,18 @@ drop_extreme_events_time<-function(time.vector,plot.histogram=F,sample.name){
       break
     }
   }
-  if(length(drop.bins.i)!=0){
-    time.break<-min(h$breaks[drop.bins.i])
+  ##
+  if(length(drop.bins.i) == 0){
+    drop.bin<-length(h$counts)
+    time.break <- max(time.vector)
   }else{
-    #message("Stable...")
-    time.break<-max(time.vector)
+    drop.bin<-min(drop.bins.i)
+    time.break <- h$breaks[drop.bin]
   }
+  if(abs(which.max(h$counts)-drop.bin)<5){
+    time.break<-h$breaks[max(which(sign(diff(h$counts[1:which.max(h$counts)]))==(-1)))]
+  }
+  ##
   if(plot.histogram){
     plot(h,main=sample.name)
     graphics::abline(v=time.break,col="red",lty='dashed',lwd=2)
