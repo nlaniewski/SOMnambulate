@@ -16,7 +16,7 @@ get.fcs.parameters<-function(fcs.file.paths,return.dt=F){
     },simplify = F)
     for(i in parm.letters){
       fill<-setdiff(seq(p.max),as.numeric(stringr::str_extract(names(p.list[[i]]),"[0-9]+")))
-      fill.names<-setNames(nm=paste0("$P",fill,i),rep(NA,length(fill)))
+      fill.names<-stats::setNames(nm=paste0("$P",fill,i),rep(NA,length(fill)))
       p.list[[i]]<-c(p.list[[i]],fill.names)
     }
     p.list<-lapply(p.list,function(p) p<-p[stringr::str_order(names(p),numeric = T)])
