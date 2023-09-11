@@ -29,3 +29,37 @@ get.fcs.parameters<-function(fcs.file.paths,return.dt=F){
   }
 }
 ##
+#' @title Get a \code{channel_alias} data.frame from .fcs file headers
+#' @description
+#' The resultant data.frame is to be used with the \code{channel_alias} argument of \code{flowCore::read.fcs(...)}
+#'
+#' @param fcs.file.paths Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.
+#'
+#' @return returns a data.frame containing a 'channels' and 'alias' column
+#' @export
+#'
+#'
+get.fcs.channel.alias<-function(fcs.file.paths){
+  p.list<-get.fcs.parameters(fcs.file.paths,return.dt = T)
+  channel_alias.list<-sapply(p.list,function(dt){
+    dt[is.na(S), S := N]
+    if(dt[,data.table::uniqueN(S)]!=dt[,.N]){
+      stop("Non-unique alias name")
+    }else{
+      data.table::setnames(dt,c('N','S'),c('channels','alias'))
+      return(dt[,.(channels,alias)])
+    }
+  },simplify = F)
+  ##
+  if(length(unique(channel_alias.list))==1){
+    return(unique(channel_alias.list)[[1]])
+  }else{
+    warning(paste(
+      'channel and/or alias conflict; resolve name discrepancy:',
+      paste0(setdiff(
+        Reduce(union,lapply(channel_alias.list,'[[','channels')),
+        Reduce(intersect,lapply(channel_alias.list,'[[','channels'))),collapse = " : ")
+    ),call. = F)
+    return(unique(channel_alias.list))
+  }
+}
