@@ -15,6 +15,29 @@ break.detection.histogram.counts<-function(x,zero.peak.knock.down=T){
   return(h$breaks[break.i])
 }
 ##
+get.valley<-function(x,quantile.trim=T,valley.return='min'){
+  if(quantile.trim){
+    q.vals <- stats::quantile(x, probs = c(0.001, 0.999))
+    d <- stats::density(x[x > q.vals[1] & x < q.vals[2]])
+  }else{
+    d <- stats::density(x)
+  }
+  diff.der.2<-diff(sign(diff(d$y)))==2
+  # return(diff.der.2)
+  if(length(which(diff.der.2))==1){
+    valley.max.x = max(d$x[which(diff.der.2)])
+    return(valley.max.x)
+  }else{
+    if(valley.return=='min'){
+      valley.min.x = min(d$x[which(diff.der.2)])
+      return(valley.min.x)
+    }else if(valley.return=='max'){
+      valley.max.x = max(d$x[which(diff.der.2)])
+      return(valley.max.x)
+    }
+  }
+}
+##
 barcode.assignment.codes<-function(codes,k=3){
   n<-ncol(codes)
   barcode.combinations <- t(utils::combn(n,k))
