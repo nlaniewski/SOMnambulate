@@ -57,8 +57,8 @@ get.fcs.channel.alias<-function(fcs.file.paths){
     warning(paste(
       'channel and/or alias conflict; resolve name discrepancy:',
       paste0(setdiff(
-        Reduce(union,lapply(channel_alias.list,'[[','channels')),
-        Reduce(intersect,lapply(channel_alias.list,'[[','channels'))),collapse = " : ")
+        Reduce(union,lapply(channel_alias.list,'[[','alias')),
+        Reduce(intersect,lapply(channel_alias.list,'[[','alias'))),collapse = " : ")
     ),call. = F)
     return(unique(channel_alias.list))
   }
