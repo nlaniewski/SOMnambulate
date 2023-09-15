@@ -15,7 +15,7 @@
 fsom.codes.to.clusters<-function(fsom,k=20,seed=1337,cluster.col=NULL){
   dims<-colnames(fsom$codes)
   cluster.ls<-list(cluster=list(fac=NULL,dat=list(medians=NULL,medians.scaled=NULL,medians.01=NULL)))
-  cluster.ls[['cluster']][['fac']]<-factor(FlowSOM::metaClustering_consensus(fsom$codes, k = 20, seed=seed))
+  cluster.ls[['cluster']][['fac']]<-factor(FlowSOM::metaClustering_consensus(fsom$codes, k = k, seed=seed))
   cluster.ls[['cluster']][['dat']][['medians']]<-data.table::data.table(fsom$codes,cluster=cluster.ls[['cluster']][['fac']])[
     ,lapply(.SD,stats::median),keyby = cluster]
   if(!is.null(cluster.col)) data.table::setnames(cluster.ls[['cluster']][['dat']][['medians']],'cluster',cluster.col)
