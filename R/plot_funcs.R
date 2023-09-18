@@ -3,7 +3,7 @@ density.dt<-function(dt,sd.cols,by.cols,trim.quantile=NULL){
     list(stats::density(
       if(!is.null(trim.quantile)){
         q.cut<-stats::quantile(x,trim.quantile)
-        x<-x[x>q.cut[1]|x<q.cut[2]]
+        x<-x[x>q.cut[1]&x<q.cut[2]]
       }else{
         x
       })[c('x','y')])
