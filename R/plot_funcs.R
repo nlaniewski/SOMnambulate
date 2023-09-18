@@ -1,5 +1,13 @@
-density.dt<-function(dt,sd.cols,by.cols){
-  dens.list<-dt[,lapply(.SD,function(x) list(stats::density(x[x>0.1&x<stats::quantile(x[x>0.1],.99)])[c('x','y')])),by=by.cols,.SDcols = sd.cols]
+density.dt<-function(dt,sd.cols,by.cols,trim=F){
+  dens.list<-dt[,lapply(.SD,function(x){
+    list(stats::density(
+      if(trim){
+        x[x>0.1&x<stats::quantile(x[x>0.1],.99)]
+      }else{
+        x
+      })[c('x','y')])
+    # list(stats::density(x[x>0.1&x<stats::quantile(x[x>0.1],.99)])[c('x','y')])
+  }),by=by.cols,.SDcols = sd.cols]
   dt.dens<-data.table::rbindlist(sapply(sd.cols,function(i){
     cbind(dens.list[,stats::setNames(sapply(get(i),'[',c('x','y')),c('density.x','density.y')),by=by.cols],variable=i)
   },simplify = F))
