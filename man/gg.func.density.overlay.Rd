@@ -4,7 +4,7 @@
 \alias{gg.func.density.overlay}
 \title{Plot overlaid (by factor) density distributions of selected columns from a \code{data.table}}
 \usage{
-gg.func.density.overlay(dt, sd.cols, by.cols)
+gg.func.density.overlay(dt, sd.cols, by.cols, trim.quantile = NULL)
 }
 \arguments{
 \item{dt}{\code{data.table} containing numeric columns and at least one factored column.}
@@ -12,6 +12,8 @@ gg.func.density.overlay(dt, sd.cols, by.cols)
 \item{sd.cols}{Character vector; used to define \code{data.table}'s \code{.SDcols} argument.}
 
 \item{by.cols}{Character vector; used to define \code{data.table}'s \code{by} argument; usually just a single factored column for use with \code{ggplot2::facet_wrap()}.}
+
+\item{trim.quantile}{Numeric vector of length 2; used to define \code{stats::quantile}'s \code{probs} argument; trims 'tails' in density plot.}
 }
 \value{
 A \code{ggplot2} object; if no LHS assignment, directly prints.

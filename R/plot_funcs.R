@@ -1,8 +1,9 @@
-density.dt<-function(dt,sd.cols,by.cols,trim=F){
+density.dt<-function(dt,sd.cols,by.cols,trim.quantile=NULL){
   dens.list<-dt[,lapply(.SD,function(x){
     list(stats::density(
-      if(trim){
-        x[x>0.1&x<stats::quantile(x[x>0.1],.99)]
+      if(!is.null(trim.quantile)){
+        q.cut<-stats::quantile(x,trim.quantile)
+        x<-x[x>q.cut[1]|x<q.cut[2]]
       }else{
         x
       })[c('x','y')])
@@ -21,12 +22,13 @@ density.dt<-function(dt,sd.cols,by.cols,trim=F){
 #' @param dt \code{data.table} containing numeric columns and at least one factored column.
 #' @param sd.cols Character vector; used to define \code{data.table}'s \code{.SDcols} argument.
 #' @param by.cols Character vector; used to define \code{data.table}'s \code{by} argument; usually just a single factored column for use with \code{ggplot2::facet_wrap()}.
+#' @param trim.quantile Numeric vector of length 2; used to define \code{stats::quantile}'s \code{probs} argument; trims 'tails' in density plot.
 #'
 #' @return A \code{ggplot2} object; if no LHS assignment, directly prints.
 #' @export
 #'
-gg.func.density.overlay<-function(dt,sd.cols,by.cols){
-  dt.dens<-density.dt(dt,sd.cols,by.cols)
+gg.func.density.overlay<-function(dt,sd.cols,by.cols,trim.quantile=NULL){
+  dt.dens<-density.dt(dt,sd.cols,by.cols,trim.quantile)
   ggplot2::ggplot(dt.dens,ggplot2::aes(!!as.name('density.x'),!!as.name('density.y'),color=get(names(Filter(is.factor,dt.dens[,!'variable']))))) +
     ggplot2::geom_line(linewidth=0.25) +
     ggplot2::facet_wrap(~variable,scales="free") +
