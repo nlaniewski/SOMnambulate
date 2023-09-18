@@ -16,7 +16,7 @@ showmeSOMething <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,
   if(!data.table::is.data.table(dat)) stop("Need a data.table...")
   ##
   dat.names <- names(dat)
-  cluster.col<-SOMnambulate:::cluster.col.check(dat.names)
+  cluster.col<-cluster.col.check(dat.names)
   ##
   if(!all(c('sample.id',cluster.col) %in% names(dat))) stop("Need 'sample.id' and 'pbmc_cluster' columns in the data.table")
   ##
@@ -392,7 +392,7 @@ gg.func.bivariate <- function(dat,...,bins=100,fill.limits=c(0,50)){
 }
 
 gg.func.boxplot.points <- function(dat,...){
-  cluster.col<-SOMnambulate:::cluster.col.check(names(dat))
+  cluster.col<-cluster.col.check(names(dat))
   ggplot2::ggplot(dat,ggplot2::aes(...)) +
     ggplot2::geom_boxplot(outlier.shape = NA) +
     ggplot2::geom_jitter(size=1.5) +
@@ -491,7 +491,7 @@ cluster.axis.selection.plotly.heatmap<- function(code.medians,row.scale=T,break.
 
 gg.func.bivariate.cluster.overlay <- function(dat,...,bins=100,fill.limits=c(0,50),cluster.number=NULL,
                                               overlay.total=1E5,per.sample.cluster.total=5E4,use.labs=F){
-  cluster.col<-SOMnambulate:::cluster.col.check(names(dat))
+  cluster.col<-cluster.col.check(names(dat))
   p<-ggplot2::ggplot(dat[sample(.N,overlay.total)],ggplot2::aes(...)) +
     ggplot2::geom_hex(fill = "gray", bins = bins) +
     ggplot2::geom_hex(data=subsample_dt_sample.id(dat[get(cluster.col)==cluster.number],per.sample.cluster.total),bins=bins) +

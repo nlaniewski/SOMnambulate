@@ -1,12 +1,12 @@
-generate_map_nodes_clusters <- function(dat,dims,scale.dims=T,subsample.val=2E5,k=20){
-  codes <- generate_fsom(dat,dims,scale.dims,subsample.val,return.codes = T)
-  mc <- generate_clusters(codes,k)
-  map <- generate_map_nodes(codes,dat,scale.dims)
-  return(data.table::setDT(list(node=map,
-                                cluster=mc[map])
-                           )
-  )
-}
+# generate_map_nodes_clusters <- function(dat,dims,scale.dims=T,subsample.val=2E5,k=20){
+#   codes <- generate_fsom(dat,dims,scale.dims,subsample.val,return.codes = T)
+#   mc <- generate_clusters(codes,k)
+#   map <- generate_map_nodes(codes,dat,scale.dims)
+#   return(data.table::setDT(list(node=map,
+#                                 cluster=mc[map])
+#                            )
+#   )
+# }
 
 #' @title Build a self-organizing map (wrapper)
 #' @description  A wrapper for \code{FlowSOM::SOM()} with a few \code{data.table} sensibilities for scaling/sampling
@@ -52,11 +52,11 @@ generate_clusters <- function(codes,k=20,seed=1337){
   FlowSOM::metaClustering_consensus(codes,k,seed)
 }
 
-generate_map_nodes <- function(codes,dat,scale.dims=T){
-  dims.codes <- colnames(codes)
-  if(scale.dims)
-    FlowSOM:::MapDataToCodes(codes,as.matrix(dat[, lapply(.SD, function(x) (x - mean(x))/stats::sd(x)),.SDcols=dims.codes]))[,1]
-}
+# generate_map_nodes <- function(codes,dat,scale.dims=T){
+#   dims.codes <- colnames(codes)
+#   if(scale.dims)
+#     FlowSOM:::MapDataToCodes(codes,as.matrix(dat[, lapply(.SD, function(x) (x - mean(x))/stats::sd(x)),.SDcols=dims.codes]))[,1]
+# }
 
 cluster.id<-function(dat,cell.type.marker,discriminating.markers){
   if(!cell.type.marker %in% names(dat)){
