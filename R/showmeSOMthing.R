@@ -1,34 +1,53 @@
-cytoplot <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,cluster.dims=NULL,
-                     cluster.counts=T){
-  if(!data.table::is.data.table(dat)) stop("Need a data.table returned from 'readFCS_dt'...")
+#' @title Interactive exploration of high-dimensional clustering (FlowSOM) results
+#' @description
+#' This interactive \code{shiny}\\code{shinydashboard} allows a visual exploration of FlowSOM clustering results. \code{plotly} clickable cluster heatmap dimensions and factored datapoints are the primary features.
+#'
+#'
+#' @param dat \code{data.table} containing a factored \code{FlowSOM} cluster column
+#' @param code.medians pre-calculated cluster medians; a listed result of \code{fsom.codes.to.clusters}
+#' @param marker.pair character vector of length 2; if defined, will pre-select the initially displayed dimensions for the bivariate plots.  The default \code{NULL} will pre-select the first two columns of dat for display.
+#' @param asinh.view Logical. By default, \code{FALSE}; if \code{TRUE}, will display an interactive plot to assess the effect of \code{ashinh} transformations on the primary data.
+#' @param use.cluster.counts Logical. By default, \code{TRUE}; will key \code{dat} by the unique identifier 'sample.id' and cluster column to generate per-sample cluster counts; cluster counts are used as input for factored boxplots.
+#'
+#' @return \code{shinyapp}
+#' @export
+#'
+showmeSOMething <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,use.cluster.counts=T){
+  if(!data.table::is.data.table(dat)) stop("Need a data.table...")
   ##
   dat.names <- names(dat)
+  cluster.col<-SOMnambulate:::cluster.col.check(dat.names)
   ##
-  sample.id.check(dat.names)
-  cluster.col<-cluster.col.check(dat.names)
-  if(cluster.counts){
-    clusters.seq<-sort(unique(dat[[cluster.col]]))
-    dat.N.cluster<-cluster_counts_long(dat)
+  if(!all(c('sample.id',cluster.col) %in% names(dat))) stop("Need 'sample.id' and 'pbmc_cluster' columns in the data.table")
+  ##
+  if(use.cluster.counts){
+    data.table::setkeyv(dat,c('sample.id',cluster.col))
+    cluster.counts<-dat[,unique(.SD),.SDcols = !is.numeric][dat[,.N,keyby = c('sample.id',cluster.col)]]
+    cluster.counts[,'percent.of' := N/sum(N)*100,by='sample.id']
+    ##
+    clusters.seq<-as.numeric(unique(cluster.counts[[cluster.col]]))
+    ##
+    samples <- unique(cluster.counts[['sample.id']])
+    ##
+    factor.choices <- grep(cluster.col,names(which(sapply(cluster.counts,is.factor))),invert = T,value = T)
+    value.choices <- names(which(sapply(cluster.counts,is.numeric)))
   }else{
-    clusters.seq<-NULL
-    message("'clusters' is NULL")
+    samples <- unique(dat[['sample.id']])
   }
   ##
   if(!is.null(marker.pair)){
     m1 <- marker.pair[1];m2 <- marker.pair[2]
   }else{
-    if(all(c('FSC-A','SSC-A') %in% dat.names)){
-      m1 <- 'FSC-A'
-      m2 <- 'SSC-A'
+    if(all(c('FSC_A','SSC_A') %in% dat.names)){
+      m1 <- 'FSC_A'
+      m2 <- 'SSC_A'
     }else{
       m1 <- dat.names[1]
       m2 <- dat.names[2]
     }
   }
   ##
-  samples<-unique(dat[['sample.id']])
-  ##
-  lims <- dat[,lapply(.SD,function(x) c(min(x),max(x))),.SDcols=is.numeric]
+  lims <- dat[,lapply(.SD,range),.SDcols=is.numeric]
   ##
   axis.click.select<-shiny::fluidRow(
     shinydashboard::box(
@@ -87,11 +106,11 @@ cytoplot <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,cluster
       tabName = "factors",
       shiny::selectInput(inputId = "factor.name",
                          label = "Factor (x):",
-                         choices = c('subject','visit','condition','batch','batch.date'),
+                         choices = unname(factor.choices),
                          selected = 'visit'),
       shiny::radioButtons(inputId = "value.y",
                           label = "Value (y):",
-                          choices= c("prop","per1million"),
+                          choices= value.choices,
                           selected = "prop",
                           inline = T)
     )
@@ -274,16 +293,26 @@ cytoplot <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,cluster
     }
     ##
     #if(!is.null(clusters.seq)){
-      factor_plot1 <- shiny::reactive({
-        shiny::req(input$factor.name,input$value.y)
-        plotly::ggplotly(
-          gg.func.boxplot.points(dat.N.cluster[get(cluster.col)==input$cluster.val],
-                                 x=!!ggplot2::sym(input$factor.name),
-                                 y=!!ggplot2::sym(input$value.y)
-          ),
-          tooltip = 'text',
-          source = 'sample.selection')
-      })
+    factor_plot1 <- shiny::reactive({
+      shiny::req(input$factor.name,input$value.y)
+      p<-plotly::ggplotly(
+        gg.func.boxplot.points(cluster.counts[get(cluster.col)==input$cluster.val],
+                               x=!!ggplot2::sym(input$factor.name),
+                               y=!!ggplot2::sym(input$value.y)
+        ) + ggplot2::labs(y=if(input$value.y=='percent.of'){
+          paste("% of",paste0(toupper(stringr::str_extract(cluster.col,"^[^_]+")),"+"),"Clusters")
+        }else if(input$value.y=='N'){
+          paste("Number of cells per",paste0(toupper(stringr::str_extract(cluster.col,"^[^_]+")),"+"),"Clusters")
+        }),
+        tooltip = 'text',
+        source = 'sample.selection'
+      )
+      for(i in factor.choices){
+        p$x$data[[2]]$text <- paste0(p$x$data[[2]]$text,'<br />',
+                                     paste(paste0(toupper(i),":"),cluster.counts[get(cluster.col)==input$cluster.val][[i]]))
+      }
+      return(p)
+    })
     #}
     ##
     output$ggbivariate_plot1 <- shiny::renderPlot({
@@ -340,7 +369,7 @@ cytoplot <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,cluster
     shiny::observeEvent(eventExpr = sample_click(),{
       pn <- sample_click()$pointNumber+1
       shiny::updateSelectInput(inputId = "sample.id",
-                               selected = dat.N.cluster[,unique(get('sample.id'))][pn]
+                               selected = cluster.counts[,unique(get('sample.id'))][pn]
       )
     })
     #}
@@ -363,16 +392,11 @@ gg.func.bivariate <- function(dat,...,bins=100,fill.limits=c(0,50)){
 }
 
 gg.func.boxplot.points <- function(dat,...){
-  cluster.col<-cluster.col.check(names(dat))
-  ggplot2::ggplot(dat,ggplot2::aes(...,
-                                   text=paste("Subject:",get('subject'),
-                                              "<br>Visit:",get('visit'),
-                                              "<br>Condition:",get('condition'),
-                                              "<br>Batch:",get('batch')
-                                   ))) +
-      ggplot2::geom_boxplot(outlier.shape = NA) +
-      ggplot2::geom_jitter(size=1.5) +
-      ggplot2::facet_wrap(cluster.col)
+  cluster.col<-SOMnambulate:::cluster.col.check(names(dat))
+  ggplot2::ggplot(dat,ggplot2::aes(...)) +
+    ggplot2::geom_boxplot(outlier.shape = NA) +
+    ggplot2::geom_jitter(size=1.5) +
+    ggplot2::facet_wrap(cluster.col)
 }
 
 axis.selection.plotly.heatmap<-function(column.names){
@@ -467,7 +491,7 @@ cluster.axis.selection.plotly.heatmap<- function(code.medians,row.scale=T,break.
 
 gg.func.bivariate.cluster.overlay <- function(dat,...,bins=100,fill.limits=c(0,50),cluster.number=NULL,
                                               overlay.total=1E5,per.sample.cluster.total=5E4,use.labs=F){
-  cluster.col<-cluster.col.check(names(dat))
+  cluster.col<-SOMnambulate:::cluster.col.check(names(dat))
   p<-ggplot2::ggplot(dat[sample(.N,overlay.total)],ggplot2::aes(...)) +
     ggplot2::geom_hex(fill = "gray", bins = bins) +
     ggplot2::geom_hex(data=subsample_dt_sample.id(dat[get(cluster.col)==cluster.number],per.sample.cluster.total),bins=bins) +
@@ -485,3 +509,4 @@ gg.func.bivariate.cluster.overlay <- function(dat,...,bins=100,fill.limits=c(0,5
   }
   return(p)
 }
+
