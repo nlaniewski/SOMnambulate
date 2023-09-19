@@ -178,7 +178,7 @@ showmeSOMething <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,
   )
   ##
   ui <- shinydashboard::dashboardPage(
-    shinydashboard::dashboardHeader(title = paste("Cyto Plot"),
+    shinydashboard::dashboardHeader(title = paste("showmeSOMthing"),
                                     disable = F),
     shinydashboard::dashboardSidebar(
       shinydashboard::sidebarMenu(

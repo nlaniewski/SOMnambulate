@@ -8,10 +8,11 @@
 #' @param trim.quantile Numeric vector of length 2; used to define \code{stats::quantile}'s \code{probs} argument; trims 'extreme events' before calculating density distributions.
 #'
 #' @return A \code{data.table} with pre-calculated 'density.x' and 'density.y' columns; used for plotting.
+#' @export
 #'
-density.dt<-function(dt,sd.cols=NULL,by.cols=NULL,trim.quantile=NULL){
-  if(is.null(sd.cols)){sd.cols<-dat[,names(.SD),.SDcols=is.numeric]}
-  if(is.null(by.cols)){by.cols<-dat[,names(.SD),.SDcols=!is.numeric]}
+dt.density<-function(dt,sd.cols=NULL,by.cols=NULL,trim.quantile=NULL){
+  if(is.null(sd.cols)){sd.cols<-dt[,names(.SD),.SDcols=is.numeric]}
+  if(is.null(by.cols)){by.cols<-dt[,names(.SD),.SDcols=!is.numeric]}
   dens.list<-dt[,lapply(.SD,function(x){
     list(stats::density(
       if(!is.null(trim.quantile)){
@@ -28,6 +29,7 @@ density.dt<-function(dt,sd.cols=NULL,by.cols=NULL,trim.quantile=NULL){
   dt.dens[,'variable' := factor(get('variable'),levels=unique(get('variable')))]
   return(dt.dens)
 }
-# subsample_dt_sample.id<-function(dat,subsample.val){
-#   dat[dat[,list(I=if(.N>subsample.val){.I[sample(.N,subsample.val)]}else{.I}),by=get('sample.id')][['I']]]
-# }
+
+subsample_dt_sample.id<-function(dat,subsample.val){
+  dat[dat[,list(I=if(.N>subsample.val){.I[sample(.N,subsample.val)]}else{.I}),by=get('sample.id')][['I']]]
+}
