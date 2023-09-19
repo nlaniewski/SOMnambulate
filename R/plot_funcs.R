@@ -1,4 +1,6 @@
 density.dt<-function(dt,sd.cols=NULL,by.cols=NULL,trim.quantile=NULL){
+  if(is.null(sd.cols)){sd.cols<-dat[,names(.SD),.SDcols=is.numeric]}
+  if(is.null(by.cols)){by.cols<-dat[,names(.SD),.SDcols=!is.numeric]}
   dens.list<-dt[,lapply(.SD,function(x){
     list(stats::density(
       if(!is.null(trim.quantile)){
@@ -7,10 +9,8 @@ density.dt<-function(dt,sd.cols=NULL,by.cols=NULL,trim.quantile=NULL){
       }else{
         x
       })[c('x','y')])
-    # list(stats::density(x[x>0.1&x<stats::quantile(x[x>0.1],.99)])[c('x','y')])
   }),
-  by=if(is.null(by.cols)){dat[,names(.SD),.SDcols=!is.numeric]}else{by.cols},
-  .SDcols = if(is.null(sd.cols)){dat[,names(.SD),.SDcols=is.numeric]}else{sd.cols}]
+  by=by.cols,.SDcols=sd.cols]
   dt.dens<-data.table::rbindlist(sapply(sd.cols,function(i){
     cbind(dens.list[,stats::setNames(sapply(get(i),'[',c('x','y')),c('density.x','density.y')),by=by.cols],variable=i)
   },simplify = F))
