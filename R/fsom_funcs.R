@@ -25,3 +25,26 @@ fsom.codes.to.clusters<-function(fsom,k=20,seed=1337,cluster.col=NULL){
     ,(dims) := lapply(.SD,function(x){scales::rescale(x, from=c(0, max(x)))}),.SDcols = dims]
   return(append(fsom,cluster.ls))
 }
+##
+#' @title Merge FlowSOM codes into a new cluster
+#'
+#' @param fsom FlowSOM object, as returned from \code{FlowSOM::SOM} and previously clustered using \code{fsom.codes.to.clusters}.
+#' @param codes.to.merge Numeric vector; individual codes to be manually merged into a new cluster.
+#'
+#' @return FlowSOM object with an updated cluster factor (\code{fsom$cluster$fac})
+#' @export
+#'
+#'
+fsom.merge.codes<-function (fsom, codes.to.merge)
+{
+  if (!is.null(fsom$cluster$fac)) {
+    stop("Need factored clusters; returned from 'fsom.codes.to.clusters(...)")
+  }
+  m <- fsom$cluster$fac
+  levels(m) <- c(levels(m), length(levels(m)) + 1)
+  m[codes.to.merge] <- length(levels(m))
+  m <- factor(m)
+  levels(m) <- c(1:length(levels(m)))
+  fsom$cluster$fac<-m
+  return(fsom)
+}

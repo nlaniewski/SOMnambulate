@@ -2,6 +2,7 @@
 
 export(dt.density)
 export(fsom.codes.to.clusters)
+export(fsom.merge.codes)
 export(generate_fsom)
 export(get.fcs.channel.alias)
 export(get.fcs.parameters)
