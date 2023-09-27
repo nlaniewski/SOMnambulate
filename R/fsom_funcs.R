@@ -37,7 +37,7 @@ fsom.codes.to.clusters<-function(fsom,k=20,seed=1337,cluster.col=NULL){
 #'
 fsom.merge.codes<-function (fsom, codes.to.merge)
 {
-  if (!is.null(fsom$cluster$fac)) {
+  if (is.null(fsom$cluster$fac)) {
     stop("Need factored clusters; returned from 'fsom.codes.to.clusters(...)")
   }
   m <- fsom$cluster$fac
