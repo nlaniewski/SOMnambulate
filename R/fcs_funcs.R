@@ -63,3 +63,50 @@ get.fcs.channel.alias<-function(fcs.file.paths){
     return(unique(channel_alias.list))
   }
 }
+##
+#' @title Convert a \code{data.table} of mass cytometry .fcs data into a new .fcs file
+#' @description
+#' After reading in (usually large amounts of) .fcs data and converting to a \code{data.table}, the process can be reversed and a new .fcs file created; new keywords are written to the header section and parameters updated using \code{FlowCore} functions.
+#'
+#'
+#' @param dt.data A \code{data.table} of .fcs data, as returned from \code{data.table::as.data.table(flowCore::read.FCS(...))}.
+#' @param reverse.asinh.cofactor If defined, will reverse the \code{asinh} transformation - using the same cofactor value - typically applied to mass cytometry .fcs data
+#' @param keywords.to.add A list of keywords to append to the header section of the .fcs file; if \code{NULL}, returns a 'basic' \code{flowCore::flowFrame}.
+#' @param fil If defined, will update the '$FIL' keyword; when writing the new .fcs file, '$FIL' is used to define the \code{flowCore::write.FCS(filename)} argument.
+#' @param out.path A \code{file.path}; will write the new .fcs to the defined directory; if \code{NULL}, returns an 'updated' \code{flowCore::flowFrame}.
+#'
+#' @return Depending on defined arguments, returns a \code{flowCore::flowFrame} with/without updated keywords or writes the .FCS to a defined directory.
+#' @export
+#'
+fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.add=NULL,fil=NULL,out.path=NULL){
+  maxRange<-NULL
+  if(!is.null(reverse.asinh.cofactor)){
+    if(!is.numeric(reverse.asinh.cofactor)) stop("Non-numeric value defined for 'reverse.asinh.cofactor'")
+    cols.metal <- grep("[0-9]{3}[A-Z]{1}[a-z]{1}",names(dt.data),value = T)
+    dt.data[ , (cols.metal) := lapply(.SD,function(x){sinh(x)*reverse.asinh.cofactor}), .SDcols = cols.metal]
+  }
+  parms.adf<-data.table::data.table(name = names(dt.data),desc = NA,dt.data[,.(minRange=0,maxRange=unlist(lapply(.SD,function(x) ceiling(max(x)))))])
+  parms.adf[,range:=(maxRange+1)]
+  ##
+  parms.list<-as.list(
+    stats::setNames(c(rep(c("32","0,0"),each=nrow(parms.adf)),parms.adf$range),
+                    nm=do.call(paste0, expand.grid(paste0('$P',seq(nrow(parms.adf))), c("B","E","R"))))
+  )
+  ##
+  if(!is.null(keywords.to.add)){
+    fcs.from.dt<-methods::new("flowFrame",exprs=as.matrix(dt.data),parameters=Biobase::AnnotatedDataFrame(parms.adf),description = parms.list)
+    flowCore::keyword(fcs.from.dt)<-c(flowCore::keyword(fcs.from.dt),keywords.to.add)
+    flowCore::keyword(fcs.from.dt)[['$CYT']]<-"R_FlowCore_fcs.from.dt.masscyto"
+    if(!is.null(fil)){
+      flowCore::keyword(fcs.from.dt)[['$FIL']] <- fil
+    }
+    if(is.null(out.path)){
+      return(fcs.from.dt)
+    }else{
+      if(!dir.exists(out.path)) dir.create(out.path,recursive = T)
+      flowCore::write.FCS(fcs.from.dt,file.path(out.path,flowCore::keyword(fcs.from.dt)[['$FIL']]))
+    }
+  }else{
+    return(methods::new("flowFrame",exprs=as.matrix(dt.data),parameters=Biobase::AnnotatedDataFrame(parms.adf),description = parms.list))
+  }
+}
