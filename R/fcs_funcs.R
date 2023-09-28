@@ -96,7 +96,7 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
   if(!is.null(keywords.to.add)){
     fcs.from.dt<-methods::new("flowFrame",exprs=as.matrix(dt.data),parameters=Biobase::AnnotatedDataFrame(parms.adf),description = parms.list)
     flowCore::keyword(fcs.from.dt)<-c(flowCore::keyword(fcs.from.dt),keywords.to.add)
-    flowCore::keyword(fcs.from.dt)[['$CYT']]<-"R_FlowCore_fcs.from.dt.masscyto"
+    flowCore::keyword(fcs.from.dt)[['modified.by']]<-"R_fcs.from.dt.masscyto"
     if(!is.null(fil)){
       flowCore::keyword(fcs.from.dt)[['$FIL']] <- fil
     }
