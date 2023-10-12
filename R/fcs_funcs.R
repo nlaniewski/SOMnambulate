@@ -1,4 +1,4 @@
-#' Get parameters ('$P') from .fcs file headers
+#' @title Get parameters ('$P') from .fcs file headers
 #'
 #' @param fcs.file.paths Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.
 #' @param return.dt Logical. By default, \code{FALSE}; if \code{TRUE}, will return a data.table of parameters per .fcs file
@@ -28,7 +28,27 @@ get.fcs.parameters<-function(fcs.file.paths,return.dt=F){
     return(fcs.parameters.list)
   }
 }
-##
+#' @title Get keyword metadata (!'$P') from .fcs file header(s)
+#'
+#' @param fcs.file.paths Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.
+#' @param return.dt Logical. By default, \code{FALSE}; if \code{TRUE}, will return a data.table of keyword/values per .fcs file
+#'
+#' @return a list of non-parameter ('$P') keywords per .fcs file; if \code{return.dt=T}, a data.table of keywords/values
+#' @export
+#'
+#'
+get.fcs.keywords.metadata <- function(fcs.file.paths,return.dt=F){
+  fcs.keywords.list <- sapply(flowCore::read.FCSheader(fcs.file.paths),function(h){
+    kw<-grep(paste0("\\$",c('B','D','E','M','N','P'),collapse = "|"),names(h),value = T,invert = T)
+    return(as.list(h[kw]))
+  },simplify = F)
+  if(return.dt){
+    fcs.keywords.list <- sapply(fcs.keywords.list, function(kw) data.table::setDT(kw),simplify = F)
+  }
+  else {
+    return(fcs.keywords.list)
+  }
+}
 #' @title Get a \code{channel_alias} data.frame from .fcs file headers
 #' @description
 #' The resultant data.frame is to be used with the \code{channel_alias} argument of \code{flowCore::read.fcs(...)}
