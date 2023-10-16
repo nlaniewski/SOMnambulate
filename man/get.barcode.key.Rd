@@ -9,7 +9,7 @@ get.barcode.key(barcode.dims, m = 3)
 \arguments{
 \item{barcode.dims}{Character vector}
 
-\item{m}{argument passed to \code{combn(x,m)}}
+\item{m}{argument passed to \code{utils::combn(x,m)}}
 }
 \value{
 a barcode key (matrix)
