@@ -9,11 +9,11 @@
 #'
 get.barcode.key<-function(barcode.dims,m=3){
   n <- length(barcode.dims)
-  barcode.combinations <- utils::combn(n, m)
-  barcode.key <- matrix(data = 0, nrow = n,
-                        ncol = ncol(barcode.combinations), dimnames = list(barcode.dims, NULL))
-  for (i in seq(ncol(barcode.key))) {
-    barcode.key[barcode.combinations[,i],i]<-1
+  barcode.combinations <- t(utils::combn(n, m));l<-nrow(barcode.combinations)
+  barcode.key <- matrix(data = 0, nrow = l,
+                        ncol = n, dimnames = list(NULL,barcode.dims))
+  for (i in seq(l)) {
+    barcode.key[i,barcode.combinations[i,]]<-1
   }
   return(barcode.key)
 }

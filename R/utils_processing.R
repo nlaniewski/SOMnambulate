@@ -47,7 +47,6 @@ barcode.assignment.codes<-function(codes,k=3){
   return(barcode.assignment)
 }
 ##
-##
 drop_extreme_events_fluors<-function(x,count.cut=3,quantile.cut=0.05){
   b <- seq(min(x), max(x), length.out = 301)
   h <- graphics::hist(x, breaks = b, plot = F)
