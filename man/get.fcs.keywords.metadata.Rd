@@ -4,12 +4,14 @@
 \alias{get.fcs.keywords.metadata}
 \title{Get keyword metadata (!'$P') from .fcs file header(s)}
 \usage{
-get.fcs.keywords.metadata(fcs.file.paths, return.dt = F)
+get.fcs.keywords.metadata(fcs.file.paths, return.dt = F, pattern = NULL)
 }
 \arguments{
 \item{fcs.file.paths}{Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.}
 
 \item{return.dt}{Logical. By default, \code{FALSE}; if \code{TRUE}, will return a data.table of keyword/values per .fcs file}
+
+\item{pattern}{Pattern used to split keyword character strings; specifically for use with barcoded/pooled .fcs files that contain 'collapsed' metadata.}
 }
 \value{
 a list of non-parameter ('$P') keywords per .fcs file; if \code{return.dt=T}, a data.table of keywords/values

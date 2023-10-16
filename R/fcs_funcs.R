@@ -32,18 +32,26 @@ get.fcs.parameters<-function(fcs.file.paths,return.dt=F){
 #'
 #' @param fcs.file.paths Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.
 #' @param return.dt Logical. By default, \code{FALSE}; if \code{TRUE}, will return a data.table of keyword/values per .fcs file
+#' @param pattern Pattern used to split keyword character strings; specifically for use with barcoded/pooled .fcs files that contain 'collapsed' metadata.
 #'
 #' @return a list of non-parameter ('$P') keywords per .fcs file; if \code{return.dt=T}, a data.table of keywords/values
 #' @export
 #'
 #'
-get.fcs.keywords.metadata <- function(fcs.file.paths,return.dt=F){
+get.fcs.keywords.metadata <- function(fcs.file.paths,return.dt=F,pattern=NULL){
   fcs.keywords.list <- sapply(flowCore::read.FCSheader(fcs.file.paths),function(h){
     kw<-grep(paste0("\\$",c('B','D','E','M','N','P'),collapse = "|"),names(h),value = T,invert = T)
     return(as.list(h[kw]))
   },simplify = F)
   if(return.dt){
     fcs.keywords.list <- sapply(fcs.keywords.list, function(kw) data.table::setDT(kw),simplify = F)
+    if(!is.null(pattern)){
+      fcs.keywords.list <- lapply(fcs.keywords.list,function(kws){
+        lapply(unique(stringr::str_count(kws,pattern)),function(s){
+          data.table::as.data.table(sapply(kws[which(stringr::str_count(kws,pattern)==s)],strsplit,pattern))
+        })
+      })
+    }
   }
   else {
     return(fcs.keywords.list)
