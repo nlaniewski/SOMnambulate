@@ -43,7 +43,7 @@ get.fcs.keywords.metadata <- function(fcs.file.paths,return.dt=F,pattern=NULL){
     kw<-grep(paste0("\\$",c('B','D','E','M','N','P'),collapse = "|"),names(h),value = T,invert = T)
     return(as.list(h[kw]))
   },simplify = F)
-  if(return.dt){
+  if(return.dt&is.null(pattern)){
     fcs.keywords.dt <- sapply(fcs.keywords.list, function(kw) data.table::setDT(kw),simplify = F)
   }else if(return.dt&!is.null(pattern)){
     fcs.keywords.dt.split <- lapply(fcs.keywords.list,function(kws){
