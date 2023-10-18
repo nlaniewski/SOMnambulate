@@ -85,3 +85,122 @@ barcode.assignment.fsom.codes<-function(fsom,m=3){
   fsom$barcodes<-barcode.assignment
   return(fsom)
 }
+#' @title Plot \code{fsom$codes} valleys
+#'
+#' @param fsom Object; the result of \code{FlowSOM::SOM(...)}
+#' @param out.name Character string for use in plot title; usually the 'batch' name
+#' @param plot.codes Numeric vector; if defined, will indicate expression level of specific codes
+#'
+#' @return \code{ggplot2} object
+#'
+#'
+#'
+valleys.density.rug<-function(fsom,out.name,plot.codes=NULL){
+  ##
+  node<-valley<-value<-NULL
+  ##
+  valleys<-data.frame(variable=colnames(fsom$codes),
+                      valley=apply(fsom$codes,2,get.valley),
+                      # valley.sd=apply(fsom$codes,2,get.valley,sd.adjust=2),
+                      row.names = NULL
+  )
+  dat.codes<-data.table::as.data.table(cbind(fsom$codes,node=seq(nrow(fsom$codes))))
+  ##
+  data.table::setorder(dat.codes,node)
+  dat.codes<-data.table::melt(dat.codes,id.vars=c('node'))
+  ##
+  valleys.plot<-ggplot2::ggplot() +
+    ggplot2::geom_rect(data=valleys,ggplot2::aes(xmin = -Inf, xmax = valley, ymin = -Inf, ymax = Inf),
+                       alpha = 1/15,fill = "red") +
+    ggplot2::geom_rect(data=valleys,ggplot2::aes(xmin = valley, xmax = Inf, ymin = -Inf, ymax = Inf),
+                       alpha = 1/15,fill = "green") +
+    ggplot2::geom_density(data=dat.codes,ggplot2::aes(x = value),fill="gray",alpha=.2) +
+    ggplot2::geom_rug(data=dat.codes,ggplot2::aes(x = value)) +
+    ggplot2::geom_vline(data = valleys,ggplot2::aes(xintercept = valley),color="red",linewidth=1,linetype='dashed') +
+    # ggplot2::geom_vline(data = valleys,ggplot2::aes(xintercept = valley.sd),color="purple",linewidth=1,linetype='dashed') +
+    ggplot2::geom_text(data = valleys, ggplot2::aes(x = valley, label = round(valley,3)), y = Inf,
+                       hjust = -0.25, vjust = 1.5) +
+    ggplot2::facet_wrap(~variable) +
+    ggplot2::theme(panel.background = ggplot2::element_blank()) +
+    ggplot2::xlab("Expression (Scaled)") +
+    ggplot2::labs(
+      subtitle = out.name,
+      title = "Density Distribution of FlowSOM Nodes Per CD45 Expression",
+      caption = paste("Density distribution of FlowSOM nodes (n=100) per unique CD45;",
+                      "rug-ticks indicate expression value of individual nodes;",
+                      "vertical, dashed red-line indicates derived 'valley' value for assignment of a 0 or 1 'barcode key-value'.",
+                      sep="\n")
+    )
+  if(!is.null(plot.codes)){
+    valleys.plot <- valleys.plot +
+      ggplot2::geom_vline(data = dat.codes[node %in% plot.codes],ggplot2::aes(xintercept= value),
+                          color="blue",linewidth=0.25) +
+      ggplot2::labs(subtitle = paste(valleys.plot$labels$subtitle,paste("Node(s):",paste(plot.codes,collapse = ", ")),sep="\n"))
+  }
+  return(valleys.plot)
+}
+#' @title Plot \code{fsom$codes} valleys with barcode-specific/code-specific indication of expression levels
+#'
+#' @param fsom Object; the result of \code{FlowSOM::SOM(...)}
+#' @param out.name Character string for use in plot title; usually the 'batch' name
+#'
+#' @return a printable list containing barcode-specific \code{ggplot2} objects
+#' @export
+#'
+#'
+valleys.density.rug.barcodes<-function(fsom,out.name){
+  ##
+  barcode<-node<-valley<-value<-NULL
+  ##
+  barcode.dims<-colnames(fsom$codes)
+  valleys<-data.frame(variable=barcode.dims,
+                      valley=apply(fsom$codes,2,get.valley),
+                      # valley.sd=apply(fsom$codes,2,get.valley,sd.adjust=2),
+                      row.names = NULL
+  )
+  dat.codes<-data.table::as.data.table(cbind(fsom$codes,node=seq(nrow(fsom$codes)),barcode=fsom$barcodes))
+  ##
+  data.table::setorder(dat.codes,barcode)
+  dat.codes<-data.table::melt(dat.codes,id.vars=c('node','barcode'))
+  ##
+  plotlist<-lapply(split(dat.codes[barcode!=0],by='barcode'),function(i){
+    barcode.num<-i[,unique(barcode)]
+    barcode.dims.pos<-barcode.dims[utils::combn(length(barcode.dims),3)[,barcode.num]]
+    barcode.alias<- paste0(stringr::str_extract(barcode.dims.pos,"[0-9]{3}"),collapse = " : ")
+    # codes.reassigned<-i[,unique(node)][sapply(i[,unique(node)],function(x){
+    #   any(i[node==x&variable %in% barcode.dims.pos,value]<=thresholds[barcode.dims.pos])
+    # })]
+    codes.reassigned<-NULL
+    ##
+    ggplot2::ggplot() +
+      ggplot2::geom_rect(data=valleys,ggplot2::aes(xmin = -Inf, xmax = valley, ymin = -Inf, ymax = Inf),
+                         alpha = 1/15,fill = "red") +
+      ggplot2::geom_rect(data=valleys,ggplot2::aes(xmin = valley, xmax = Inf, ymin = -Inf, ymax = Inf),
+                         alpha = 1/15,fill = "green") +
+      ggplot2::geom_density(data=dat.codes,ggplot2::aes(x = value),fill="gray",alpha=.5) +
+      ggplot2::geom_rug(data=dat.codes,ggplot2::aes(x = value)) +
+      ggplot2::geom_vline(data = valleys,ggplot2::aes(xintercept = valley),color="red",linewidth=0.25,linetype='dashed') +
+      ggplot2::geom_vline(data = i,ggplot2::aes(xintercept= value),color="blue",linewidth=0.25) +
+      ggplot2::facet_wrap(~variable) +
+      ggplot2::theme(panel.background = ggplot2::element_blank()) +
+      ggplot2::xlab("Expression (Scaled)") +
+      ggplot2::labs(
+        title = paste(paste("Barcode#",barcode.num,sep="  "),"Density Distribution of FlowSOM Nodes Per CD45 Expression",sep=" ; "),
+        subtitle = paste(
+          paste0("Batch: ",out.name),
+          paste("Barcode Alias:",barcode.alias),
+          if(length(codes.reassigned)>0){
+            paste(paste("Barcode-specific Node(s) ID:",paste0(i[,unique(node)],collapse = ",")),
+                  paste("Reassigned Node(s) ID:",paste0(codes.reassigned,collapse = ",")),sep = "    ")
+          }else{
+            paste("Barcode-specific Node(s) ID:",paste0(i[,unique(node)],collapse = ", "))
+          },
+          sep ="\n"),
+        caption = paste("Density distribution of FlowSOM nodes (n=100) per unique CD45;",
+                        "rug-ticks indicate expression value of individual nodes;",
+                        "vertical, dashed red-line indicates derived threshold value for assignment of a 0 (red-shade) or 1 (green-shade) 'barcode' value;",
+                        "vertical, solid blue-line indicates expression value of barcode-specific nodes",
+                        sep="\n")
+      )
+  })
+}
