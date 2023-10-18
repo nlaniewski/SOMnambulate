@@ -228,7 +228,7 @@ valleys.density.rug.barcodes<-function(fsom,out.name,barcode.ids=NULL){
 #'
 barcode.yield.plot<-function(dat,out.name,barcode.ids=NULL){
   ##
-  barcode<-barcode.ids<-total<-type<-y<-NULL
+  barcode<-total<-type<-y<-NULL
   ##
   if(!data.table::is.data.table(dat)&'barcode' %in% names(dat)){
     stop("Need a data.table with a 'barcode' column")
