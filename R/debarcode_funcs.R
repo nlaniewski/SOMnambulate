@@ -143,12 +143,13 @@ valleys.density.rug<-function(fsom,out.name,plot.codes=NULL){
 #'
 #' @param fsom Object; the result of \code{FlowSOM::SOM(...)}
 #' @param out.name Character string for use in plot title; usually the 'batch' name
+#' @param barcode.ids Named character vector; names should equal that of all unique barcode values, including zero; elements should be 'sample.ids'
 #'
 #' @return a printable list containing barcode-specific \code{ggplot2} objects
 #' @export
 #'
 #'
-valleys.density.rug.barcodes<-function(fsom,out.name){
+valleys.density.rug.barcodes<-function(fsom,out.name,barcode.ids=NULL){
   ##
   barcode<-node<-valley<-value<-NULL
   ##
@@ -159,12 +160,18 @@ valleys.density.rug.barcodes<-function(fsom,out.name){
                       row.names = NULL
   )
   dat.codes<-data.table::as.data.table(cbind(fsom$codes,node=seq(nrow(fsom$codes)),barcode=fsom$barcodes))
+  if(!is.null(barcode.ids)){
+    dat.codes[,barcode.id:=barcode.ids[as.character(barcode)]]
+  }
   ##
   data.table::setorder(dat.codes,barcode)
-  dat.codes<-data.table::melt(dat.codes,id.vars=c('node','barcode'))
+  dat.codes<-data.table::melt(dat.codes,measure.vars=barcode.dims)
   ##
   plotlist<-lapply(split(dat.codes[barcode!=0],by='barcode'),function(i){
     barcode.num<-i[,unique(barcode)]
+    if(!is.null(barcode.ids)){
+      barcode.id<-i[,unique(barcode.id)]
+    }
     barcode.dims.pos<-barcode.dims[utils::combn(length(barcode.dims),3)[,barcode.num]]
     barcode.alias<- paste0(stringr::str_extract(barcode.dims.pos,"[0-9]{3}"),collapse = " : ")
     # codes.reassigned<-i[,unique(node)][sapply(i[,unique(node)],function(x){
@@ -188,7 +195,12 @@ valleys.density.rug.barcodes<-function(fsom,out.name){
         title = paste(paste("Barcode#",barcode.num,sep="  "),"Density Distribution of FlowSOM Nodes Per CD45 Expression",sep=" ; "),
         subtitle = paste(
           paste0("Batch: ",out.name),
-          paste("Barcode Alias:",barcode.alias),
+          if(!is.null(barcode.ids)){
+            paste(paste("Barcode Alias:",barcode.alias),
+                  paste("Barcode ID:",barcode.id),sep = "    ")
+          }else{
+            paste("Barcode Alias:",barcode.alias)
+          },
           if(length(codes.reassigned)>0){
             paste(paste("Barcode-specific Node(s) ID:",paste0(i[,unique(node)],collapse = ",")),
                   paste("Reassigned Node(s) ID:",paste0(codes.reassigned,collapse = ",")),sep = "    ")

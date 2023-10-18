@@ -4,12 +4,14 @@
 \alias{valleys.density.rug.barcodes}
 \title{Plot \code{fsom$codes} valleys with barcode-specific/code-specific indication of expression levels}
 \usage{
-valleys.density.rug.barcodes(fsom, out.name)
+valleys.density.rug.barcodes(fsom, out.name, barcode.ids = NULL)
 }
 \arguments{
 \item{fsom}{Object; the result of \code{FlowSOM::SOM(...)}}
 
 \item{out.name}{Character string for use in plot title; usually the 'batch' name}
+
+\item{barcode.ids}{Named character vector; names should equal that of all unique barcode values, including zero; elements should be 'sample.ids'}
 }
 \value{
 a printable list containing barcode-specific \code{ggplot2} objects
