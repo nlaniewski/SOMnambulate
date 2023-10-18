@@ -151,7 +151,7 @@ valleys.density.rug<-function(fsom,out.name,plot.codes=NULL){
 #'
 valleys.density.rug.barcodes<-function(fsom,out.name,barcode.ids=NULL){
   ##
-  barcode<-node<-valley<-value<-NULL
+  barcode<-barcode.id<-node<-valley<-value<-NULL
   ##
   barcode.dims<-colnames(fsom$codes)
   valleys<-data.frame(variable=barcode.dims,
