@@ -204,3 +204,39 @@ valleys.density.rug.barcodes<-function(fsom,out.name){
       )
   })
 }
+#' @title Plot barcode yields
+#'
+#' @param dat a \code{data.table} with a 'barcode' column
+#' @param out.name Character string for use in plot title; usually the 'batch' name
+#'
+#' @return a printable list of \code{ggplot2} objects; barcode-specific yields: absolute number and '%'
+#' @export
+#'
+#'
+barcode.yield.plot<-function(dat,out.name){
+  ##
+  barcode<-total<-type<-y<-NULL
+  ##
+  if(!data.table::is.data.table(dat)&'barcode' %in% names(dat)){
+    stop("Need a data.table with a 'barcode' column")
+  }
+  n<-rbind(
+    cbind(dat[,.N,keyby=.(barcode)],type='Barcode 0 Included'),
+    cbind(dat[barcode!=0,.N,keyby=.(barcode)],type='Barcode 0 Excluded')
+  )
+  n[,type := factor(type,levels=c('Barcode 0 Included','Barcode 0 Excluded'))]
+  n[,y := N/sum(N)*100,by=.(type)]
+  ##
+  plot.list<-sapply(c('yield','N'),function(i){
+    ggplot2::ggplot(n,ggplot2::aes(x=factor(barcode),y=!!ggplot2::sym(ifelse(i=='yield','y','N')))) +
+      ggplot2::geom_col() +
+      ggplot2::facet_wrap(~type,scales = "free_y") +
+      ggplot2::geom_text(data=n[,.(total=sum(N)),by=.(type)],ggplot2::aes(x=Inf,y=Inf,hjust=1.15,vjust=1.15,label=paste("Total events:",total))) +
+      ggplot2::xlab("Barcode #") +
+      ggplot2::ylab(ifelse(i=='yield',"Yield (% of total)","# of Events")) +
+      ggplot2::labs(
+        title=paste0("Batch: ",out.name)
+        #caption=paste("Total events:",n[,sum(N)])
+      )
+  },simplify = F)
+}
