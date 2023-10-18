@@ -220,14 +220,15 @@ valleys.density.rug.barcodes<-function(fsom,out.name,barcode.ids=NULL){
 #'
 #' @param dat a \code{data.table} with a 'barcode' column
 #' @param out.name Character string for use in plot title; usually the 'batch' name
+#' @param barcode.ids Named character vector; names should equal that of all unique barcode values, including zero; elements should be some form of unique identifier (usually 'sample.id')
 #'
 #' @return a printable list of \code{ggplot2} objects; barcode-specific yields: absolute number and '%'
 #' @export
 #'
 #'
-barcode.yield.plot<-function(dat,out.name){
+barcode.yield.plot<-function(dat,out.name,barcode.ids=NULL){
   ##
-  barcode<-total<-type<-y<-NULL
+  barcode<-barcode.ids<-total<-type<-y<-NULL
   ##
   if(!data.table::is.data.table(dat)&'barcode' %in% names(dat)){
     stop("Need a data.table with a 'barcode' column")
@@ -238,9 +239,13 @@ barcode.yield.plot<-function(dat,out.name){
   )
   n[,type := factor(type,levels=c('Barcode 0 Included','Barcode 0 Excluded'))]
   n[,y := N/sum(N)*100,by=.(type)]
+  if(!is.null(barcode.ids)){
+    n[,barcode.ids:=barcode.ids[as.character(barcode)]]
+  }
+  n[,barcode:=factor(barcode)]
   ##
   plot.list<-sapply(c('yield','N'),function(i){
-    ggplot2::ggplot(n,ggplot2::aes(x=factor(barcode),y=!!ggplot2::sym(ifelse(i=='yield','y','N')))) +
+    p<-ggplot2::ggplot(n,ggplot2::aes(x=!!ggplot2::sym(ifelse(is.null(barcode.ids),'barcode','barcode.ids')),y=!!ggplot2::sym(ifelse(i=='yield','y','N')))) +
       ggplot2::geom_col() +
       ggplot2::facet_wrap(~type,scales = "free_y") +
       ggplot2::geom_text(data=n[,.(total=sum(N)),by=.(type)],ggplot2::aes(x=Inf,y=Inf,hjust=1.15,vjust=1.15,label=paste("Total events:",total))) +
@@ -250,5 +255,9 @@ barcode.yield.plot<-function(dat,out.name){
         title=paste0("Batch: ",out.name)
         #caption=paste("Total events:",n[,sum(N)])
       )
+    if(!is.null(barcode.ids)){
+      p<-p+ggplot2::theme(axis.text.x = ggplot2::element_text(angle=90,hjust=1,vjust=0.5))
+    }
+    return(p)
   },simplify = F)
 }

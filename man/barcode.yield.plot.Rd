@@ -4,12 +4,14 @@
 \alias{barcode.yield.plot}
 \title{Plot barcode yields}
 \usage{
-barcode.yield.plot(dat, out.name)
+barcode.yield.plot(dat, out.name, barcode.ids = NULL)
 }
 \arguments{
 \item{dat}{a \code{data.table} with a 'barcode' column}
 
 \item{out.name}{Character string for use in plot title; usually the 'batch' name}
+
+\item{barcode.ids}{Named character vector; names should equal that of all unique barcode values, including zero; elements should be some form of unique identifier (usually 'sample.id')}
 }
 \value{
 a printable list of \code{ggplot2} objects; barcode-specific yields: absolute number and '\%'
