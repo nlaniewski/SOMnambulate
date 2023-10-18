@@ -58,19 +58,19 @@ get.valley<-function(x,quantile.trim=T,sd.adjust=NULL){
 #' Based on the dimensions/markers used to barcode individual samples, this function will generate a unique barcode value for each SOM; the barcode value can then be assigned to the primary input data allowing for identification of sample-specific events/cells.
 #'
 #'
-#' @param codes The 'codes' (SOMs) result of a \code{FlowSOM::SOM} object; \code{fsom$codes}
+#' @param fsom Object; the result of \code{FlowSOM::SOM(...)}.  The 'codes' (SOMs) result will be used to generate 'code-specific' barcode values.
 #' @param m Numeric. Default = 3. Argument passed to \code{utils::combn(x,m)}; used to define the barcode 'scheme': x-choose-m
 #'
-#' @return Numeric vector of barcode values with length equal to the number of SOMs
+#' @return \code{fsom} object -- modified; list element (\code{fsom$barcodes}) with the barcoding result (numeric vector).
 #' @export
 #'
 #'
-barcode.assignment.fsom.codes<-function(codes,m=3){
-  n<-ncol(codes)
-  barcode.key<-get.barcode.key(colnames(codes),m=m)
-  valleys <- apply(codes,2,get.valley)
+barcode.assignment.fsom.codes<-function(fsom,m=3){
+  n<-ncol(fsom$codes)
+  barcode.key<-get.barcode.key(colnames(fsom$codes),m=m)
+  valleys <- apply(fsom$codes,2,get.valley)
   node.key <- sapply(names(valleys), function(x) {
-    key <- ifelse(codes[, x] > valleys[x], 1, 0)
+    key <- ifelse(fsom$codes[, x] > valleys[x], 1, 0)
   })
   node.key.t <- t(node.key)
   barcode.key.t<-t(barcode.key)
@@ -82,5 +82,6 @@ barcode.assignment.fsom.codes<-function(codes,m=3){
       barcode <- 0
     }
   })
-  return(barcode.assignment)
+  fsom$barcodes<-barcode.assignment
+  return(fsom)
 }

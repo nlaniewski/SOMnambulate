@@ -4,15 +4,15 @@
 \alias{barcode.assignment.fsom.codes}
 \title{Assign barcode values to the 'codes' result of a \code{FlowSOM::SOM} object based on an internally generated 'key'}
 \usage{
-barcode.assignment.fsom.codes(codes, m = 3)
+barcode.assignment.fsom.codes(fsom, m = 3)
 }
 \arguments{
-\item{codes}{The 'codes' (SOMs) result of a \code{FlowSOM::SOM} object; \code{fsom$codes}}
+\item{fsom}{Object; the result of \code{FlowSOM::SOM(...)}.  The 'codes' (SOMs) result will be used to generate 'code-specific' barcode values.}
 
 \item{m}{Numeric. Default = 3. Argument passed to \code{utils::combn(x,m)}; used to define the barcode 'scheme': x-choose-m}
 }
 \value{
-Numeric vector of barcode values with length equal to the number of SOMs
+\code{fsom} object -- modified; list element (\code{fsom$barcodes}) with the barcoding result (numeric vector).
 }
 \description{
 Based on the dimensions/markers used to barcode individual samples, this function will generate a unique barcode value for each SOM; the barcode value can then be assigned to the primary input data allowing for identification of sample-specific events/cells.
