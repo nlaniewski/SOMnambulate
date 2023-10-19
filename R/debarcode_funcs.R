@@ -53,6 +53,48 @@ get.valley<-function(x,quantile.trim=T,sd.adjust=NULL){
     )
   }
 }
+#' @title Find peaks and valley(s) from a density distribution
+#'
+#' @param x Numeric vector
+#' @param quantile.trim Logical. By default, \code{TRUE}; trims 'extreme' values.
+#' @param sd.adjust Numeric; if defined, will adjust the return value by multiples of density value standard deviations.
+#'
+#' @return a named list: \code{$peaks} (peak values) and \code{$valley} (valley values)
+#'
+#'
+#'
+get.peaks.and.valley<-function(x,quantile.trim=T,sd.adjust=NULL){
+  if(quantile.trim){
+    q.vals <- stats::quantile(x, probs = c(0.001, 0.999))#trim 'extreme' values
+    d <- stats::density(x[x > q.vals[1] & x < q.vals[2]])
+  }else{
+    d <- stats::density(x)
+  }
+  diff.derivative.1<-sign(diff(d$y))#(sign of) derivative 1 of density 'y' values; monotonic 'slopes'
+  diff.derivative.2<-diff(diff.derivative.1)#derivative 2; peaks and valleys
+  ##
+  peaks<-which(diff.derivative.2==(-2))#derivative 2 peaks are at -2
+  peaks.val<-d$x[peaks]
+  ##
+  valley<-which(diff.derivative.2==2)#derivative 2 valley(s) are at 2
+  ##
+  if(length(valley)==1){
+    if(!is.null(sd.adjust)){
+      valley.val <- d$x[valley]-stats::sd(d$y)*sd.adjust#return x value where valley occurs minus 'sd.adjust' multiples of y value standard deviations; 'expression' value
+    }else{
+      valley.val <- d$x[valley]#return x value where valley occurs; 'expression' value
+    }
+  }else{
+    message(paste(paste(length(valley),"Valleys detected..."),
+                  paste("Valleys at:",paste(round(d$x[valley],5),collapse = ' ; ')),
+                  sep='\n')
+    )
+    valley.val<-d$x[valley]
+  }
+  return(list(peaks=peaks.val,
+              valley=valley.val)
+  )
+}
 #' @title Assign barcode values to the 'codes' result of a \code{FlowSOM::SOM} object based on an internally generated 'key'
 #' @description
 #' Based on the dimensions/markers used to barcode individual samples, this function will generate a unique barcode value for each SOM; the barcode value can then be assigned to the primary input data allowing for identification of sample-specific events/cells.
