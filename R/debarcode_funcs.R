@@ -303,3 +303,67 @@ barcode.yield.plot<-function(dat,out.name,barcode.ids=NULL){
     return(p)
   },simplify = F)
 }
+#' @title Plot bivariate pairs showing sample-specific de-barcoding results
+#'
+#' @param dat a \code{data.table} with a 'barcode' column
+#' @param out.name Character string for use in plot title; usually the 'batch' name
+#' @param barcode.ids Named character vector; names should equal that of all unique barcode values, including zero; elements should be some form of unique identifier (usually 'sample.id')
+#' @param bin.number Numeric; argument passed to \code{ggplot2::geom_hex(...,bins=bin.number)}
+#'
+#' @return a list of \code{ggplot2} objects
+#' @export
+#'
+#'
+barcode.sample.plots<-function(dat,out.name,barcode.ids,bin.number=100){
+  ##
+  barcode<-barcode.id<-barcode_node<-yield<-NULL
+  ##
+  if (!"barcode" %in% names(dat)) {
+    stop("Need a 'barcode' column")
+  }
+  if(!all(data.table::key(dat) == c('barcode','barcode_node'))) data.table::setorder(dat,barcode,barcode_node)
+  ##
+  barcode.dims <- grep("CD45_", names(dat), value = T)
+  barcodes<-dat[,unique(barcode)]
+  barcode.key <- utils::combn(length(barcode.dims),3)
+  ##
+  mdat<-dat[,.N,by=.(barcode)]
+  mdat[,yield:=round(N/mdat[,sum(N)]*100,2),by=.(barcode)]
+  mdat[,barcode.id:=barcode.ids[as.character(barcode)]]
+  ##
+  quantile.trim<-sort(unique(dat[,unlist(lapply(.SD,function(x) .I[x>stats::quantile(x,.99999)]),use.names = F),.SDcols=barcode.dims]))
+  plot.lims <- dat[-quantile.trim, lapply(.SD, function(x) range(x)),.SDcols=barcode.dims]
+  pair.list<-plot.pairs(barcode.dims)
+  ##
+  dat.bkgd<-dat[-quantile.trim][{set.seed(1337);sample(.N,1E5)}]
+  ##
+  barcode.plot.list<-lapply(split(dat,by='barcode'),function(dat.bc){
+    bc<-dat.bc[,unique(barcode)]
+    ##
+    plot.list <- lapply(pair.list, function(i, cartesian_lims = plot.lims) {
+      p <- ggplot2::ggplot(dat.bkgd, ggplot2::aes(x = !!ggplot2::sym(i[1]),
+                                                  y = !!ggplot2::sym(i[2])))
+      p <- p + ggplot2::geom_hex(fill = "gray", bins = bin.number)
+      p <- p + ggplot2::geom_hex(data = dat.bc,bins = bin.number) +
+        viridis::scale_fill_viridis(option = "plasma",limits = c(0, bin.number), oob = scales::squish) +
+        ggplot2::theme_classic() + ggplot2::guides(fill = "none")
+      p <- p + ggplot2::coord_cartesian(xlim = cartesian_lims[,get(i[1])],
+                                        ylim = cartesian_lims[,get(i[2])])
+      return(p)
+    })
+    title.sample<-paste("Sample:",mdat[barcode==bc,barcode.id])
+    title.sample.n<-paste("n =",mdat[barcode==bc,N])
+    title.sample.yield<-paste0("(",mdat[barcode==bc,yield],"%)")
+    title.barcode.number<-paste("Barcode:",bc)
+    title.barcode.combination<-paste(stringr::str_extract(barcode.dims[barcode.key[,bc]],"[0-9]{3}"),collapse=" : ")
+    title.barcode<-paste(title.barcode.number,title.barcode.combination,sep="     ")
+    ##
+    plots.arragned<-gridExtra::arrangeGrob(grobs=plot.list,
+                                           nrow=2,
+                                           ncol=2,
+                                           top=paste(out.name,title.sample,title.barcode,sep="\n"),
+                                           bottom=paste(title.sample.n,title.sample.yield,sep=" ; ")
+    )
+    return(plots.arragned)
+  })
+}
