@@ -16,7 +16,7 @@ barcode.sample.plots(dat, out.name, barcode.ids, bin.number = 100)
 \item{bin.number}{Numeric; argument passed to \code{ggplot2::geom_hex(...,bins=bin.number)}}
 }
 \value{
-a list of \code{ggplot2} objects
+a list of \code{gridExtra} objects containing arranged \code{ggplot2} objects
 }
 \description{
 Plot bivariate pairs showing sample-specific de-barcoding results

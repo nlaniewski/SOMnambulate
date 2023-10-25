@@ -346,7 +346,7 @@ barcode.yield.plot<-function(dat,out.name,barcode.ids=NULL){
 #' @param barcode.ids Named character vector; names should equal that of all unique barcode values, including zero; elements should be some form of unique identifier (usually 'sample.id')
 #' @param bin.number Numeric; argument passed to \code{ggplot2::geom_hex(...,bins=bin.number)}
 #'
-#' @return a list of \code{ggplot2} objects
+#' @return a list of \code{gridExtra} objects containing arranged \code{ggplot2} objects
 #' @export
 #'
 #'
@@ -394,6 +394,59 @@ barcode.sample.plots<-function(dat,out.name,barcode.ids,bin.number=100){
     title.barcode.combination<-paste(stringr::str_extract(barcode.dims[barcode.key[,bc]],"[0-9]{3}"),collapse=" : ")
     title.barcode<-paste(title.barcode.number,title.barcode.combination,sep="     ")
     ##
+    plots.arragned<-gridExtra::arrangeGrob(grobs=plot.list,
+                                           nrow=2,
+                                           ncol=2,
+                                           top=paste(out.name,title.sample,title.barcode,sep="\n"),
+                                           bottom=paste(title.sample.n,title.sample.yield,sep=" ; ")
+    )
+    return(plots.arragned)
+  })
+}
+#' @title Plot bivariate pairs showing convoluted de-barcoding results
+#'
+#' @param dat0 a \code{data.table} with 'barcode' and 'barcode_node' columns; a subset of data contaning only barcode 'zero' values \code{dat[barcode==0]}
+#' @param out.name Character string for use in plot title; usually the 'batch' name
+#' @param bin.number Numeric; argument passed to \code{ggplot2::geom_hex(...,bins=bin.number)}
+#'
+#' @return a list of \code{gridExtra} objects containing arranged \code{ggplot2} objects
+#' @export
+#'
+#'
+barcode0.node.plots<-function(dat0,out.name,bin.number=100){
+  ##
+  barcode<-barcode_node<-yield<-NULL
+  ##
+  if(dat0[, unique(barcode)]!=0) stop("Expect only barcode 'zero' data; did you subset the dat? dat0=dat[barcode==0]")
+  ##
+  if(!"barcode_node" %in% names(dat0)) stop("Need a 'barcode_node' column")
+  ##
+  barcode.dims<-grep("CD45_",names(dat0),value=T)
+  ##
+  mdat<-dat0[,.N,keyby=.(barcode_node)]
+  mdat[,yield:=round(N/mdat[,sum(N)]*100,2),by=.(barcode_node)]
+  quantile.trim<-sort(unique(dat0[,unlist(lapply(.SD,function(x) .I[x>stats::quantile(x,.999)]),use.names = F),.SDcols=barcode.dims]))
+  plot.lims <- dat0[-quantile.trim, lapply(.SD, function(x) range(x)),.SDcols=barcode.dims]
+  pair.list<-plot.pairs(barcode.dims)
+  dat.bkgd<-dat0[-quantile.trim][{set.seed(1337);sample(.N,1E5)}]
+  barcode.node.plot.list<-lapply(split(dat0,by="barcode_node",sorted=T),function(dat.bc){
+    bc<-dat.bc[,unique(barcode_node)]
+    plot.list<-lapply(pair.list,function(i,cartesian_lims=plot.lims){
+      p <- ggplot2::ggplot(dat.bkgd, ggplot2::aes(x = !!ggplot2::sym(i[1]),
+                                                  y = !!ggplot2::sym(i[2])))
+      p <- p + ggplot2::geom_hex(fill = "gray", bins = bin.number)
+      p <- p + ggplot2::geom_hex(data = dat.bc, bins = bin.number) +
+        viridis::scale_fill_viridis(option = "plasma",
+                                    limits = c(0, bin.number), oob = scales::squish) +
+        ggplot2::theme_classic() + ggplot2::guides(fill = "none")
+      p <- p + ggplot2::coord_cartesian(xlim = cartesian_lims[,
+                                                              get(i[1])], ylim = cartesian_lims[, get(i[2])])
+      return(p)
+    })
+    title.sample<-'Sample: Convoluted'
+    title.sample.n<-paste("n =",mdat[barcode_node==bc,N])
+    title.sample.yield<-paste0("(",mdat[barcode_node==bc,yield],"%)")
+    title.barcode<-paste("Barcode Node:",bc)
     plots.arragned<-gridExtra::arrangeGrob(grobs=plot.list,
                                            nrow=2,
                                            ncol=2,
