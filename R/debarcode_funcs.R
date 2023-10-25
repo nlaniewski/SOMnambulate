@@ -127,6 +127,42 @@ barcode.assignment.fsom.codes<-function(fsom,m=3){
   fsom$barcodes<-barcode.assignment
   return(fsom)
 }
+#' @title Generate barcode assignments based on the result of \code{FlowSOM::SOM}
+#'
+#' @param dat A \code{data.table} of transformed .fcs data containing the markers used to barcode individual samples; usually CD45 for 'live-cell' barcoding. A 'barcode_node' column must also be present -- the result of \code{FlowSOM::SOM$mapping}.
+#' @param barcode.dims Unless defined, \code{barcode.dims} will include any 'CD45' columns -- those used for 'live-cell' barcoding and as input for \code{FlowSOM::SOM}
+#' @param m Numeric. Default = 3. Argument passed to \code{utils::combn(x,m)}; used to define the barcode 'scheme': x-choose-m
+#' @param delta Numeric. Default = 0.2. Defines the delta/minimum distance between lowest positive barcode marker and highest negative barcode marker; used when assigning barcodes to 'ambiguous' nodes -- those that do not have exactly 3 positive markers by the 'valley' metric.
+#'
+#' @return Numeric vector of barcode assignments.
+#' @export
+#'
+#'
+barcode.assignment<-function(dat,barcode.dims=NULL,m=3,delta=0.2){
+  ##
+  barcode_node<-NULL
+  ##
+  if(!data.table::is.data.table(dat)) stop("Need a data.table")
+  if(!'barcode_node' %in% names(dat)) stop("Need a 'barcode_node' column")
+  if(is.null(barcode.dims)) barcode.dims<-grep("CD45_",names(dat),value = T);l<-length(barcode.dims)
+  ##
+  means<-dat[,lapply(.SD,mean),.SDcols = barcode.dims,keyby=barcode_node]
+  valleys<-dat[,lapply(.SD,get.valley),.SDcols = barcode.dims]
+  barcode.assignment<-apply(means[,barcode.dims,with = F],1,function(x,v=valleys,key=utils::combn(l,m)){
+    s<-sum(x>v)
+    if(s==0|s>=4){
+      0
+    }else if(s==3){
+      which(apply(key,2,function(i) all(i==which(x>v))))
+    }else if(s==2|s==1){
+      if((sort(x)[[4]]-sort(x)[[3]])>delta){
+        which(apply(key,2,function(i) all(i==sort(order(x,decreasing = T)[1:3]))))
+      }else{
+        0
+      }
+    }
+  })
+}
 #' @title Plot \code{fsom$codes} valleys
 #'
 #' @param fsom Object; the result of \code{FlowSOM::SOM(...)}
