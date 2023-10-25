@@ -4,14 +4,12 @@
 \alias{get.valley}
 \title{Find a density distribution 'valley'}
 \usage{
-get.valley(x, quantile.trim = T, sd.adjust = NULL)
+get.valley(x, quantile.trim = T)
 }
 \arguments{
 \item{x}{Numeric vector}
 
 \item{quantile.trim}{Logical. By default, \code{TRUE}; trims 'extreme' values.}
-
-\item{sd.adjust}{Numeric; if defined, will adjust the return value by multiples of density value standard deviations.}
 }
 \value{
 Numeric representing the 'valley' value in a density distribution.

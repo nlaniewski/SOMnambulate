@@ -24,13 +24,12 @@ get.barcode.key<-function(barcode.dims,m=3){
 #'
 #' @param x Numeric vector
 #' @param quantile.trim Logical. By default, \code{TRUE}; trims 'extreme' values.
-#' @param sd.adjust Numeric; if defined, will adjust the return value by multiples of density value standard deviations.
 #'
 #' @return Numeric representing the 'valley' value in a density distribution.
 #'
 #'
 #'
-get.valley<-function(x,quantile.trim=T,sd.adjust=NULL){
+get.valley<-function(x,quantile.trim=T){
   if(quantile.trim){
     q.vals <- stats::quantile(x, probs = c(0.001, 0.999))#trim 'extreme' values
     d <- stats::density(x[x > q.vals[1] & x < q.vals[2]])
@@ -40,18 +39,26 @@ get.valley<-function(x,quantile.trim=T,sd.adjust=NULL){
   diff.derivative.1<-sign(diff(d$y))#(sign of) derivative 1 of density 'y' values; monotonic 'slopes'
   diff.derivative.2<-diff(diff.derivative.1)#derivative 2; peaks and valleys
   valley<-which(diff.derivative.2==2)#-2 == peak(s);2 == valley
-  if(length(valley)==1){
-    if(!is.null(sd.adjust)){
-      return(d$x[valley]-stats::sd(d$y)*sd.adjust)#return x value where valley occurs minus 'sd.adjust' multiples of y value standard deviations; 'expression' value
-    }else{
-      return(d$x[valley])#return x value where valley occurs; 'expression' value
-    }
-  }else{
-    stop(paste(paste(length(valley),"Valleys detected..."),
-               paste("Valleys at:",paste(round(d$x[valley],5),collapse = ' ; ')),
-               sep='\n')
-    )
+  if(length(valley)!=1){
+    valley<-valley[which.min(d$y[valley])]
   }
+  if(length(valley)==1){
+    return(d$x[valley])
+  }else{
+    stop("Can't get a valley value; check density distribution")
+  }
+  # if(length(valley)==1){
+  #   if(!is.null(sd.adjust)){
+  #     return(d$x[valley]-stats::sd(d$y)*sd.adjust)#return x value where valley occurs minus 'sd.adjust' multiples of y value standard deviations; 'expression' value
+  #   }else{
+  #     return(d$x[valley])#return x value where valley occurs; 'expression' value
+  #   }
+  # }else{
+  #   stop(paste(paste(length(valley),"Valleys detected..."),
+  #              paste("Valleys at:",paste(round(d$x[valley],5),collapse = ' ; ')),
+  #              sep='\n')
+  #   )
+  # }
 }
 #' @title Find peaks and valley(s) from a density distribution
 #'
