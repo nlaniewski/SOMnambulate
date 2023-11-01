@@ -24,12 +24,13 @@ get.barcode.key<-function(barcode.dims,m=3){
 #'
 #' @param x Numeric vector
 #' @param quantile.trim Logical. By default, \code{TRUE}; trims 'extreme' values.
+#' @param no.valley.override Numeric. By default, \code{NULL}; If defined and no valley is detected, this value will be used in place.
 #'
 #' @return Numeric representing the 'valley' value in a density distribution.
 #'
 #'
 #'
-get.valley<-function(x,quantile.trim=T){
+get.valley<-function(x,quantile.trim=T,no.valley.override=NULL){
   if(quantile.trim){
     q.vals <- stats::quantile(x, probs = c(0.001, 0.999))#trim 'extreme' values
     d <- stats::density(x[x > q.vals[1] & x < q.vals[2]])
@@ -45,7 +46,11 @@ get.valley<-function(x,quantile.trim=T){
   if(length(valley)==1){
     return(d$x[valley])
   }else{
-    stop("Can't get a valley value; check density distribution")
+    if(!is.null(no.valley.override)){
+      return(no.valley.override)
+    }else{
+      stop("Can't get a valley value; check density distribution")
+    }
   }
   # if(length(valley)==1){
   #   if(!is.null(sd.adjust)){
@@ -140,12 +145,13 @@ barcode.assignment.fsom.codes<-function(fsom,m=3){
 #' @param barcode.dims Unless defined, \code{barcode.dims} will include any 'CD45' columns -- those used for 'live-cell' barcoding and as input for \code{FlowSOM::SOM}
 #' @param m Numeric. Default = 3. Argument passed to \code{utils::combn(x,m)}; used to define the barcode 'scheme': x-choose-m
 #' @param delta Numeric. Default = 0.2. Defines the delta/minimum distance between lowest positive barcode marker and highest negative barcode marker; used when assigning barcodes to 'ambiguous' nodes -- those that do not have exactly 3 positive markers by the 'valley' metric.
+#' @param ... Argument passed to \code{SOMnambulate:::get.valley(...)}; specifically: \code{no.valley.override}
 #'
 #' @return Numeric vector of barcode assignments.
 #' @export
 #'
 #'
-barcode.assignment<-function(dat,barcode.dims=NULL,m=3,delta=0.2){
+barcode.assignment<-function(dat,barcode.dims=NULL,m=3,delta=0.2,...){
   ##
   barcode_node<-NULL
   ##
@@ -154,7 +160,7 @@ barcode.assignment<-function(dat,barcode.dims=NULL,m=3,delta=0.2){
   if(is.null(barcode.dims)) barcode.dims<-grep("CD45_",names(dat),value = T);l<-length(barcode.dims)
   ##
   means<-dat[,lapply(.SD,mean),.SDcols = barcode.dims,keyby=barcode_node]
-  valleys<-dat[,lapply(.SD,get.valley),.SDcols = barcode.dims]
+  valleys<-dat[,lapply(.SD,get.valley,...),.SDcols = barcode.dims]
   barcode.assignment<-apply(means[,barcode.dims,with = F],1,function(x,v=valleys,key=utils::combn(l,m)){
     s<-sum(x>v)
     if(s==0|s>=4){

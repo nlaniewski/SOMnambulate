@@ -4,7 +4,7 @@
 \alias{barcode.assignment}
 \title{Generate barcode assignments based on the result of \code{FlowSOM::SOM}}
 \usage{
-barcode.assignment(dat, barcode.dims = NULL, m = 3, delta = 0.2)
+barcode.assignment(dat, barcode.dims = NULL, m = 3, delta = 0.2, ...)
 }
 \arguments{
 \item{dat}{A \code{data.table} of transformed .fcs data containing the markers used to barcode individual samples; usually CD45 for 'live-cell' barcoding. A 'barcode_node' column must also be present -- the result of \code{FlowSOM::SOM$mapping}.}
@@ -14,6 +14,8 @@ barcode.assignment(dat, barcode.dims = NULL, m = 3, delta = 0.2)
 \item{m}{Numeric. Default = 3. Argument passed to \code{utils::combn(x,m)}; used to define the barcode 'scheme': x-choose-m}
 
 \item{delta}{Numeric. Default = 0.2. Defines the delta/minimum distance between lowest positive barcode marker and highest negative barcode marker; used when assigning barcodes to 'ambiguous' nodes -- those that do not have exactly 3 positive markers by the 'valley' metric.}
+
+\item{...}{Argument passed to \code{SOMnambulate:::get.valley(...)}; specifically: \code{no.valley.override}}
 }
 \value{
 Numeric vector of barcode assignments.

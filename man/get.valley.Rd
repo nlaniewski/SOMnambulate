@@ -4,12 +4,14 @@
 \alias{get.valley}
 \title{Find a density distribution 'valley'}
 \usage{
-get.valley(x, quantile.trim = T)
+get.valley(x, quantile.trim = T, no.valley.override = NULL)
 }
 \arguments{
 \item{x}{Numeric vector}
 
 \item{quantile.trim}{Logical. By default, \code{TRUE}; trims 'extreme' values.}
+
+\item{no.valley.override}{Numeric. By default, \code{NULL}; If defined and no valley is detected, this value will be used in place.}
 }
 \value{
 Numeric representing the 'valley' value in a density distribution.
