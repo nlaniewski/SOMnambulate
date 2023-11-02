@@ -164,11 +164,11 @@ barcode.assignment<-function(dat,barcode.dims=NULL,m=3,delta=0.2,...){
   valleys<-dat[,lapply(.SD,get.valley,...),.SDcols = barcode.dims]
   barcode.assignment<-apply(means[,barcode.dims,with = F],1,function(x,v=valleys,key=utils::combn(l,m)){
     s<-sum(x>v)
-    if(s==0|s>=4){
+    if(s>=4){
       0
     }else if(s==3){
       which(apply(key,2,function(i) all(i==which(x>v))))
-    }else if(s==2|s==1){
+    }else if(s<=2){
       if((sort(x)[[l-2]]-sort(x)[[l-3]])>delta){
         which(apply(key,2,function(i) all(i==sort(order(x,decreasing = T)[1:3]))))
       }else{
