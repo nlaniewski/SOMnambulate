@@ -48,7 +48,7 @@ get.fcs.keywords.metadata <- function(fcs.file.paths,return.dt=F,pattern=NULL,pa
     fcs.keywords.dt <- sapply(fcs.keywords.list, function(kw) data.table::setDT(kw),simplify = F)
   }else if(return.dt&!is.null(pattern)){
     fcs.keywords.dt.split <- lapply(fcs.keywords.list,function(kws){
-      lapply(unique(stringr::str_count(kws,pattern)),function(s){
+      lapply(sort(unique(stringr::str_count(kws,pattern))),function(s){
         data.table::as.data.table(sapply(kws[which(stringr::str_count(kws,pattern)==s)],strsplit,pattern))
       })
     })
