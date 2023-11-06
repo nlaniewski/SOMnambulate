@@ -40,6 +40,8 @@ fsom.codes.to.clusters<-function(fsom,k=20,seed=1337,cluster.col=NULL){
     ,(dims) := lapply(.SD, function(x) (x - mean(x))/stats::sd(x)),.SDcols = dims]
   cluster.ls$cluster$dat$medians.01<-data.table::copy(cluster.ls$cluster$dat$medians)[
     ,(dims) := lapply(.SD,function(x){scales::rescale(x, from=c(0, max(x)))}),.SDcols = dims]
+  ##
+  fsom$cluster<-NULL
   return(append(fsom,cluster.ls))
 }
 ##
