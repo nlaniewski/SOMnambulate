@@ -22,5 +22,5 @@ FlowSOM object appended with list-structured results
 Cluster FlowSOM codes; calculate per-cluster median expression values
 }
 \details{
-\code{fsom.codes.to.clusters} uses \code{fsom$codes} to first generate metaclusters, then calculates per-cluster median expression values for use primarily in heatmaps/visualizations.
+\code{fsom.codes.to.clusters} uses \code{fsom$codes} to first generate metaclusters, then calculates per-cluster median expression values for use primarily in heatmaps/visualizations. If factored clusters already exist (\code{fsom$cluster$fac}), medians will be updated -- useful following \code{fsom.merge.codes}.
 }
