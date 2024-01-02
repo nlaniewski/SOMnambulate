@@ -398,7 +398,13 @@ gg.func.bivariate <- function(dat,...,bins=100,fill.limits=c(0,50)){
 }
 
 gg.func.boxplot.points <- function(dat,...){
-  cluster.col<-cluster.col.check(names(dat))
+  cluster.col<-grep("cluster",names(dat),value = T)
+  if(length(cluster.col)>1){
+    stop("More than one cluster column...")
+  }else if(length(cluster.col)==0){
+    stop("Cluster column not found...")
+  }
+  # cluster.col<-cluster.col.check(names(dat))
   ggplot2::ggplot(dat,ggplot2::aes(...)) +
     ggplot2::geom_boxplot(outlier.shape = NA) +
     ggplot2::geom_jitter(size=1.5) +
@@ -497,7 +503,13 @@ cluster.axis.selection.plotly.heatmap<- function(code.medians,row.scale=T,break.
 
 gg.func.bivariate.cluster.overlay <- function(dat,...,bins=100,fill.limits=c(0,50),cluster.number=NULL,
                                               overlay.total=1E5,per.sample.cluster.total=5E4,use.labs=F){
-  cluster.col<-cluster.col.check(names(dat))
+  cluster.col<-grep("cluster",names(dat),value = T)
+  if(length(cluster.col)>1){
+    stop("More than one cluster column...")
+  }else if(length(cluster.col)==0){
+    stop("Cluster column not found...")
+  }
+  # cluster.col<-cluster.col.check(names(dat))
   p<-ggplot2::ggplot(dat[sample(.N,overlay.total)],ggplot2::aes(...)) +
     ggplot2::geom_hex(fill = "gray", bins = bins) +
     ggplot2::geom_hex(data=subsample_dt_sample.id(dat[get(cluster.col)==cluster.number],per.sample.cluster.total),bins=bins) +
