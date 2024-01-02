@@ -16,9 +16,15 @@ showmeSOMething <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,
   if(!data.table::is.data.table(dat)) stop("Need a data.table...")
   ##
   dat.names <- names(dat)
-  cluster.col<-cluster.col.check(dat.names)
+  # cluster.col<-cluster.col.check(dat.names)
+  cluster.col<-grep("cluster",names(dat),value = T)
+  if(length(cluster.col)>1){
+    stop("More than one cluster column...")
+  }else if(length(cluster.col)==0){
+    stop("Cluster column not found...")
+  }
   ##
-  if(!all(c('sample.id',cluster.col) %in% names(dat))) stop("Need 'sample.id' and 'pbmc_cluster' columns in the data.table")
+  if(!all(c('sample.id',cluster.col) %in% names(dat))) stop("Need 'sample.id' and 'cluster' columns in the data.table")
   ##
   if(use.cluster.counts){
     data.table::setkeyv(dat,c('sample.id',cluster.col))
