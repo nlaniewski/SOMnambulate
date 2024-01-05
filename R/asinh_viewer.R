@@ -12,7 +12,7 @@ cofactor.viewer<-function(dat){
   fluors<-grep("Time|FSC|SSC",cols$num,value = T,invert = T)
   cuts<-Reduce(union,dat[, lapply(.SD, function(x){q<-stats::quantile(x,probs=c(0.0001,.9999));which(x<q[1]|x>q[2])}), .SDcols = fluors])
   if('sample.id' %in% cols$char){
-    samples<-sort(unique(dat[['sample.id']]))
+    samples<-c('combined',sort(unique(dat[['sample.id']])))
   }else{
     message("Sample selction requires a 'sample.id' column (character strings).")
   }
@@ -61,9 +61,14 @@ cofactor.viewer<-function(dat){
   server <- function(input, output) {
     ##
     ggbivariate_plot1 <- shiny::reactive({
-      p <- gg.func.bivariate(dat=dat[-cuts][get("sample.id") == input$sample.id],
-                             x = asinh(!!ggplot2::sym(input$marker1)/input$cofactor.x),
-                             y = asinh(!!ggplot2::sym(input$marker2)/input$cofactor.y)
+      p <- gg.func.bivariate(
+        dat=if(input$sample.id=='combined'){
+          dat[-cuts]
+        }else{
+          dat[-cuts][get("sample.id") == input$sample.id]
+        },
+        x = asinh(!!ggplot2::sym(input$marker1)/input$cofactor.x),
+        y = asinh(!!ggplot2::sym(input$marker2)/input$cofactor.y)
       )
       p<-p+ggplot2::xlab(input$marker1) + ggplot2::ylab(input$marker2)
       return(p)
