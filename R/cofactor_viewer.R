@@ -95,7 +95,16 @@ cofactor.viewer<-function(dat,cofactors.file.path=NULL,filename.suffix=NULL){
     ##
     if(!is.null(cofactors.file.path)){
       session$onSessionEnded(function(){
-        shiny::isolate(saveRDS(data.table::data.table(rv$cofactors), file = file.path(cofactors.file.path,sprintf("%s_%s.RDS","cofactors",Sys.Date()))))
+        shiny::isolate(
+          saveRDS(data.table::data.table(rv$cofactors),
+                  file = file.path(cofactors.file.path,
+                                   ifelse(is.null(filename.suffix),
+                                          sprintf("%s_%s.RDS","cofactors",Sys.Date()),
+                                          sprintf("%s_%s_%s.RDS","cofactors",filename.suffix,Sys.Date())
+                                   )
+                  )
+          )
+        )
       })
     }
     ##
