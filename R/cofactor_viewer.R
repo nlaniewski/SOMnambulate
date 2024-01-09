@@ -1,12 +1,13 @@
-#' @title Interactive asinh transformation of cytometry data
+#' @title Interactive asinh transformation of cytometry data for determining optimal cofactor values
 #'
-#' @param dat \code{data.table} containing raw, untransformed cytometry data
-#' @param cofactors.file.path if provided, will save the cofactor values to the specified \code{file.path}
+#' @param dat \code{data.table} containing raw, un-transformed cytometry data
+#' @param cofactors.file.path if provided, will save (.RDS) the cofactor values to the specified \code{file.path}
+#' @param filename.suffix Character string; if provided, will be appended to the end of the file name
 #'
 #' @return \code{shinyapp}; if \code{cofactors.file.path} is provided, a \code{data.table} of cofactor values will be saved for use in transforming raw data values.
 #' @export
 #'
-cofactor.viewer<-function(dat,cofactors.file.path=NULL){
+cofactor.viewer<-function(dat,cofactors.file.path=NULL,filename.suffix=NULL){
   ##
   vars<-stats::setNames(nm=c("num","fac","char"),c("is.numeric","is.factor","is.character"))
   cols<-sapply(vars,function(i) stringr::str_sort(names(dat[,.SD,.SDcols = get(i)]),numeric = T))
