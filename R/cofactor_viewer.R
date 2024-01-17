@@ -94,7 +94,9 @@ cofactor.viewer<-function(dat,cofactors.file.path=NULL,filename.suffix=NULL){
     ##
     output$cofactors <- shiny::renderTable(rv$cofactors,striped = T,digits = 0)
     ##
-    shiny::observe(input$stop,{shiny::stopApp()})
+    shiny::observeEvent(input$stop, {
+      shiny::stopApp()
+    })
     ##
     if(!is.null(cofactors.file.path)){
       session$onSessionEnded(function(){
