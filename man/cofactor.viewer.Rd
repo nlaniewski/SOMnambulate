@@ -2,18 +2,20 @@
 % Please edit documentation in R/cofactor_viewer.R
 \name{cofactor.viewer}
 \alias{cofactor.viewer}
-\title{Interactive asinh transformation of cytometry data}
+\title{Interactive asinh transformation of cytometry data for determining optimal cofactor values}
 \usage{
-cofactor.viewer(dat, cofactors.file.path = NULL)
+cofactor.viewer(dat, cofactors.file.path = NULL, filename.suffix = NULL)
 }
 \arguments{
-\item{dat}{\code{data.table} containing raw, untransformed cytometry data}
+\item{dat}{\code{data.table} containing raw, un-transformed cytometry data}
 
-\item{cofactors.file.path}{if provided, will save the cofactor values to the specified \code{file.path}}
+\item{cofactors.file.path}{if provided, will save (.RDS) the cofactor values to the specified \code{file.path}}
+
+\item{filename.suffix}{Character string; if provided, will be appended to the end of the file name}
 }
 \value{
 \code{shinyapp}; if \code{cofactors.file.path} is provided, a \code{data.table} of cofactor values will be saved for use in transforming raw data values.
 }
 \description{
-Interactive asinh transformation of cytometry data
+Interactive asinh transformation of cytometry data for determining optimal cofactor values
 }
