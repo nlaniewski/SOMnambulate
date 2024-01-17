@@ -47,6 +47,7 @@ cofactor.viewer<-function(dat,cofactors.file.path=NULL,filename.suffix=NULL){
                        min = slider.vals[["min"]], max = slider.vals[["max"]],
                        value = slider.vals[["value"]], step = slider.vals[["step"]]),
     shiny::actionButton("save.cofactors","Save Cofactors"),
+    shiny::actionButton("stop","Quit App -- Return Cofactors"),
     width = 3
   )
   ##
@@ -92,6 +93,8 @@ cofactor.viewer<-function(dat,cofactors.file.path=NULL,filename.suffix=NULL){
     })
     ##
     output$cofactors <- shiny::renderTable(rv$cofactors,striped = T,digits = 0)
+    ##
+    shiny::observe(input$stop,{stopApp()})
     ##
     if(!is.null(cofactors.file.path)){
       session$onSessionEnded(function(){
