@@ -28,7 +28,7 @@ get.fcs.parameters<-function(fcs.file.paths,return.dt=F){
     return(fcs.parameters.list)
   }
 }
-#' @title Get keyword metadata (!'$P') from .fcs file header(s)
+#' @title Get keyword metadata (!'$P') from .fcs files
 #'
 #' @param fcs.file.paths Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.
 #' @param return.dt Logical. By default, \code{FALSE}; if \code{TRUE}, will return a data.table of keyword/values per .fcs file
@@ -41,8 +41,9 @@ get.fcs.parameters<-function(fcs.file.paths,return.dt=F){
 #'
 get.fcs.keywords.metadata <- function(fcs.file.paths,return.dt=F,pattern=NULL,pattern.unique=T){
   fcs.keywords.list <- sapply(flowCore::read.FCSheader(fcs.file.paths),function(h){
-    kw<-grep(paste0("\\$",c('B','D','E','M','N','P'),collapse = "|"),names(h),value = T,invert = T)
-    return(as.list(h[kw]))
+    #drop-terms: '$P[0-9]+' (parameters); 'P[0-9]+DISPLAY' (Cytek specific?); Spill(over)
+    h<-h[-grep('\\$PAR|\\$P[0-9]+|P[0-9]+DISPLAY|spill',names(h),ignore.case = T)]
+    return(as.list(h))
   },simplify = F)
   if(return.dt&is.null(pattern)){
     fcs.keywords.dt <- sapply(fcs.keywords.list, function(kw) data.table::setDT(kw),simplify = F)
@@ -64,6 +65,46 @@ get.fcs.keywords.metadata <- function(fcs.file.paths,return.dt=F,pattern=NULL,pa
   }else{
     return(fcs.keywords.list)
   }
+}
+#' @title Get a `data.table` of .fcs file paths and related metadata.
+#'
+#' @param fcs.file.paths Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.
+#'
+#' @return a `data.table` of full length .fcs file paths and related metadata (parsed from the text header).
+#' @export
+#'
+#'
+get.fcs.file.dt<-function(fcs.file.paths){
+  f.path<-source.name<-file.size.MB<-NULL
+  dt<-data.table::data.table(f.path=fcs.file.paths)
+  dt[,source.name:=basename(f.path)]
+  dt[,file.size.MB:=signif(file.size(f.path)/1024^2,3)]
+  ##
+  dts<-get.fcs.keywords.metadata(fcs.file.paths,return.dt = T)
+  dt<-cbind(dt,data.table::rbindlist(dts,fill=T))
+  #synatically valid names; drop keyword identifier '$'
+  names(dt)<-sub("\\$","",names(dt))
+  #drop conserved keywords that are non-informative to the user
+  drop.terms<-c(
+    paste0(c('BEGIN','END'),c('ANALYSIS')),
+    paste0(c('BEGIN','END'),c('DATA')),
+    paste0(c('BEGINS','ENDS'),c('TEXT')),
+    "MODE",
+    'BYTEORD',
+    'DATATYPE',
+    'NEXTDATA',
+    'TIMESTEP',
+    'APPLY COMPENSATION',
+    'USERSETTINGNAME',
+    'CHARSET'
+  )
+  dt<-dt[,!drop.terms[drop.terms %in% names(dt)],with=F]
+  #do a few conversions
+  for(j in c('DATE')){data.table::set(dt,j=j,value=data.table::as.IDate(dt[[j]],format="%d-%b-%Y"))}
+  for(j in c('BTIM','ETIM')){data.table::set(dt,j=j,value=data.table::as.ITime(dt[[j]]))}
+  for(j in grep("TOT|DELAY|ASF|VOL$",names(dt),value = T)){data.table::set(dt,j=j,value=as.numeric(dt[[j]]))}
+  ##
+  return(dt)
 }
 #' @title Get a \code{channel_alias} data.frame from .fcs file headers
 #' @description

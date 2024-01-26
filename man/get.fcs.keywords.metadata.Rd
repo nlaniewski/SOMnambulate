@@ -2,7 +2,7 @@
 % Please edit documentation in R/fcs_funcs.R
 \name{get.fcs.keywords.metadata}
 \alias{get.fcs.keywords.metadata}
-\title{Get keyword metadata (!'$P') from .fcs file header(s)}
+\title{Get keyword metadata (!'$P') from .fcs files}
 \usage{
 get.fcs.keywords.metadata(
   fcs.file.paths,
@@ -24,5 +24,5 @@ get.fcs.keywords.metadata(
 a list of non-parameter ('$P') keywords per .fcs file; if \code{return.dt=T}, a data.table of keywords/values
 }
 \description{
-Get keyword metadata (!'$P') from .fcs file header(s)
+Get keyword metadata (!'$P') from .fcs files
 }
