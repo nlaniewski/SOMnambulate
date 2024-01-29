@@ -4,13 +4,17 @@
 \alias{get.fcs.channel.alias}
 \title{Get a \code{channel_alias} data.frame from .fcs file headers}
 \usage{
-get.fcs.channel.alias(fcs.file.paths)
+get.fcs.channel.alias(fcs.file.paths, name.sub = NULL, order.alias = F)
 }
 \arguments{
 \item{fcs.file.paths}{Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.}
+
+\item{name.sub}{Named character vector for use in resolving name conflicts/discrepancies; the vector element(s) should equal a pattern and the name(s) a replacement string.}
+
+\item{order.alias}{Logical; if \code{TRUE}, the \code{channel_alias} 'alias' column will be sensibly ordered.}
 }
 \value{
-returns a data.frame containing a 'channels' and 'alias' column
+returns a \code{data.frame} containing a 'channels' and 'alias' column; returns a list of \code{data.frame}s if not unique
 }
 \description{
 The resultant data.frame is to be used with the \code{channel_alias} argument of \code{flowCore::read.fcs(...)}

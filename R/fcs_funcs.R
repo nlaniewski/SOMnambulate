@@ -111,12 +111,14 @@ get.fcs.file.dt<-function(fcs.file.paths){
 #' The resultant data.frame is to be used with the \code{channel_alias} argument of \code{flowCore::read.fcs(...)}
 #'
 #' @param fcs.file.paths Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.
+#' @param name.sub Named character vector for use in resolving name conflicts/discrepancies; the vector element(s) should equal a pattern and the name(s) a replacement string.
+#' @param order.alias Logical; if `TRUE`, the `channel_alias` 'alias' column will be sensibly ordered.
 #'
-#' @return returns a data.frame containing a 'channels' and 'alias' column
+#' @return returns a `data.frame` containing a 'channels' and 'alias' column; returns a list of `data.frame`s if not unique
 #' @export
 #'
 #'
-get.fcs.channel.alias<-function(fcs.file.paths){
+get.fcs.channel.alias<-function(fcs.file.paths,name.sub=NULL,order.alias=F){
   p.list<-get.fcs.parameters(fcs.file.paths,return.dt = T)
   channel_alias.list<-sapply(p.list,function(dt){
     dt[is.na(S), S := N]
@@ -127,9 +129,24 @@ get.fcs.channel.alias<-function(fcs.file.paths){
       return(dt[,.(channels,alias)])
     }
   },simplify = F)
+  #for resolving name discrepancies; use a named vector for grep pattern (element) and replacement (name)
+  if(!is.null(name.sub)){
+    channel_alias.list<-lapply(channel_alias.list,function(ca){
+      for(n in names(name.sub)){
+        data.table::set(ca,i=grep(name.sub[[n]],ca$alias),j='alias',value=n)
+      }
+      return(ca)
+    })
+  }
   ##
   if(length(unique(channel_alias.list))==1){
-    return(unique(channel_alias.list)[[1]])
+    ca<-unique(channel_alias.list)[[1]]
+    if(order.alias){
+      alias.order<-c('Time',sort(grep('FSC|SSC',ca$alias,value = T)))
+      alias.order<-c(alias.order,ca[!alias %in% alias.order,stringr::str_sort(alias,numeric = T)])
+      data.table::setorder(ca[, 'ord' := match(alias,alias.order)],'ord')[,'ord' := NULL]
+    }
+    return(ca[])
   }else{
     warning(paste(
       'channel and/or alias conflict; resolve name discrepancy:',
