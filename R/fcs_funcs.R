@@ -207,18 +207,24 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
 #'
 #' @param fcs.dt a `data.table` as returned from `get.fcs.file.dt`
 #' @param channel_alias as returned from `get.fcs.channel.alias`
+#' @param alias.order Logical. If `TRUE`, the `data.table` columns will be ordered to match that of the `channel_alias` 'alias' column.
 #'
 #' @return a `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns
 #' @export
 #'
 #'
-fcs.to.dt<-function(fcs.dt,channel_alias=NULL){
+fcs.to.dt<-function(fcs.dt,channel_alias=NULL,alias.order=F){
   #read .fcs file ('.path')
   #if defined, rename columns using 'channel_alias' as returned from 'get.fcs.channel.alias'
   fcs.tmp<-flowCore::read.FCS(fcs.dt[['f.path']],transformation = F,truncate_max_range = F,
                               channel_alias = if(!is.null(channel_alias)) channel_alias)
   #convert the expression matrix (raw, un-transformed data values) into a data.table
   dt<-data.table::setDT(as.data.frame(fcs.tmp@exprs))
+  #reorder columns according to an ordered alias
+  if(alias.order){
+    data.table::setcolorder(dt,channel_alias$alias)
+  }
+  #column-bind identifier columns
   if(length((fcs.dt[,!'f.path']))>0){
     dt<-cbind(dt,fcs.dt[,!'f.path'])
   }

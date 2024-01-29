@@ -4,12 +4,14 @@
 \alias{fcs.to.dt}
 \title{reads a .fcs file and converts it to \code{data.table}}
 \usage{
-fcs.to.dt(fcs.dt, channel_alias = NULL)
+fcs.to.dt(fcs.dt, channel_alias = NULL, alias.order = F)
 }
 \arguments{
 \item{fcs.dt}{a \code{data.table} as returned from \code{get.fcs.file.dt}}
 
 \item{channel_alias}{as returned from \code{get.fcs.channel.alias}}
+
+\item{alias.order}{Logical. If \code{TRUE}, the \code{data.table} columns will be ordered to match that of the \code{channel_alias} 'alias' column.}
 }
 \value{
 a \code{data.table} of raw, un-transformed numeric expression values with character/factor identifier columns
