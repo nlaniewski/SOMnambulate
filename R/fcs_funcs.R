@@ -140,7 +140,6 @@ get.fcs.channel.alias<-function(fcs.file.paths){
     return(unique(channel_alias.list))
   }
 }
-##
 #' @title Convert a \code{data.table} of mass cytometry .fcs data into a new .fcs file
 #' @description
 #' After reading in (usually large amounts of) .fcs data and converting to a \code{data.table}, the process can be reversed and a new .fcs file created; new keywords are written to the header section and parameters updated using \code{FlowCore} functions.
@@ -186,4 +185,48 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
   }else{
     return(methods::new("flowFrame",exprs=as.matrix(dt.data),parameters=Biobase::AnnotatedDataFrame(parms.adf),description = parms.list))
   }
+}
+#' @title reads a .fcs file and converts it to `data.table`
+#'
+#' @param fcs.dt a `data.table` as returned from `get.fcs.file.dt`
+#' @param channel_alias as returned from `get.fcs.channel.alias`
+#'
+#' @return a `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns
+#' @export
+#'
+#'
+fcs.to.dt<-function(fcs.dt,channel_alias=NULL){
+  #read .fcs file ('.path')
+  #if defined, rename columns using 'channel_alias' as returned from 'get.fcs.channel.alias'
+  fcs.tmp<-flowCore::read.FCS(fcs.dt[['f.path']],transformation = F,truncate_max_range = F,
+                              channel_alias = if(!is.null(channel_alias)) channel_alias)
+  #convert the expression matrix (raw, un-transformed data values) into a data.table
+  dt<-data.table::setDT(as.data.frame(fcs.tmp@exprs))
+  if(length((fcs.dt[,!'f.path']))>0){
+    dt<-cbind(dt,fcs.dt[,!'f.path'])
+  }
+  return(dt)
+}
+#' @title a parallelized version of `fcs.to.dt`; essentially a wrapper around `parallel` package functions
+#'
+#' @param fcs.dt a `data.table` as returned from `get.fcs.file.dt`
+#' @param channel_alias as returned from `get.fcs.channel.alias`
+#'
+#' @return a row-bound `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns
+#' @export
+#'
+#'
+fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL){
+  n.cores<-parallel::detectCores()
+  n.paths<-fcs.dt[,.N]
+  n<-ifelse(n.paths>n.cores,n.cores,n.paths)
+  cl<-parallel::makeCluster(n)
+  if(!is.null(channel_alias)){
+    parallel::clusterExport(cl,'channel_alias',envir = environment())
+  }
+  ##
+  dt<-data.table::rbindlist(parallel::parLapply(cl,split(fcs.dt,by='f.path'),fcs.to.dt))
+  ##
+  on.exit({parallel::stopCluster(cl);invisible(gc())})
+  return(dt)
 }
