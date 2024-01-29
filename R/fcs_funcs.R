@@ -225,7 +225,7 @@ fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL){
     parallel::clusterExport(cl,'channel_alias',envir = environment())
   }
   ##
-  dt<-data.table::rbindlist(parallel::parLapply(cl,split(fcs.dt,by='f.path'),fcs.to.dt))
+  dt<-data.table::rbindlist(parallel::parLapply(cl,split(fcs.dt,by='f.path'),fcs.to.dt,channel_alias = if(!is.null(channel_alias)) channel_alias))
   ##
   on.exit({parallel::stopCluster(cl);invisible(gc())})
   return(dt)
