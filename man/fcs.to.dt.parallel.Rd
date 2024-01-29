@@ -4,12 +4,14 @@
 \alias{fcs.to.dt.parallel}
 \title{a parallelized version of \code{fcs.to.dt}; essentially a wrapper around \code{parallel} package functions}
 \usage{
-fcs.to.dt.parallel(fcs.dt, channel_alias = NULL)
+fcs.to.dt.parallel(fcs.dt, channel_alias = NULL, alias.order = F)
 }
 \arguments{
 \item{fcs.dt}{a \code{data.table} as returned from \code{get.fcs.file.dt}}
 
 \item{channel_alias}{as returned from \code{get.fcs.channel.alias}}
+
+\item{alias.order}{Logical. If \code{TRUE}, the \code{data.table} columns will be ordered to match that of the \code{channel_alias} 'alias' column.}
 }
 \value{
 a row-bound \code{data.table} of raw, un-transformed numeric expression values with character/factor identifier columns

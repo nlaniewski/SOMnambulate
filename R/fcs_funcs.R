@@ -234,12 +234,13 @@ fcs.to.dt<-function(fcs.dt,channel_alias=NULL,alias.order=F){
 #'
 #' @param fcs.dt a `data.table` as returned from `get.fcs.file.dt`
 #' @param channel_alias as returned from `get.fcs.channel.alias`
+#' @param alias.order Logical. If `TRUE`, the `data.table` columns will be ordered to match that of the `channel_alias` 'alias' column.
 #'
 #' @return a row-bound `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns
 #' @export
 #'
 #'
-fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL){
+fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL,alias.order=F){
   n.cores<-parallel::detectCores()
   n.paths<-fcs.dt[,.N]
   n<-ifelse(n.paths>n.cores,n.cores,n.paths)
@@ -247,8 +248,11 @@ fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL){
   if(!is.null(channel_alias)){
     parallel::clusterExport(cl,'channel_alias',envir = environment())
   }
+  parallel::clusterExport(cl,'alias.order',envir = environment())
   ##
-  dt<-data.table::rbindlist(parallel::parLapply(cl,split(fcs.dt,by='f.path'),fcs.to.dt,channel_alias = if(!is.null(channel_alias)) channel_alias))
+  dt<-data.table::rbindlist(parallel::parLapply(cl,split(fcs.dt,by='f.path'),fcs.to.dt,
+                                                channel_alias = if(!is.null(channel_alias)) channel_alias,
+                                                alias.order=alias.order))
   ##
   on.exit({parallel::stopCluster(cl);invisible(gc())})
   return(dt)
