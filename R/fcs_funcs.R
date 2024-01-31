@@ -257,3 +257,85 @@ fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL,alias.order=F){
   on.exit({parallel::stopCluster(cl);invisible(gc())})
   return(dt)
 }
+#' @title Generate a `data.table` of .fcs parameters
+#'
+#' @param dt `data.table` returned from `fcs.to.dt`; some mix of .fcs expression values and character/factor values.
+#' @param type.convert Character vector; will attempt to convert each string element (named column in `dt`) to numeric
+#' @param name.fix a `data.table` with two columns: 'name' and 'name.fix'; if 'name' matches, the value will be replaced with 'name.fix'.
+#'
+#' @return a `data.table` of .fcs parameters; used to define `flowCore::flowFrame(...,parameters = Biobase::AnnotatedDataFrame(...))`.
+#'
+#'
+#'
+parms.adf.dt<-function(dt,type.convert=NULL,name.fix=NULL){
+  #for R CMD check; data.table vars
+  name<-desc<-range<-minRange<-maxRange<-value<-NULL
+  #
+  col.classes<-sapply(dt,class)
+  if(is.null(type.convert)&any(unique(col.classes)!='numeric')){
+    message(
+      paste("Using numeric columns only; use the 'type.convert' argument if the following are to be included:",
+            paste("Non-numeric cols:",paste0(names(col.classes[col.classes!="numeric"]),collapse=" ; ")),
+            sep = "\n")
+    )
+  }else if(!is.null(type.convert)){
+    type.test<-suppressWarnings(dt[,.SD,.SDcols = type.convert][,lapply(.SD,function(x){any(is.na(as.numeric(x)))})])
+    if(any(type.test)){
+      stop("Column(s) as defined by 'type.convert' could not be converted to numeric; NAs introduced by coercion")
+    }else{
+      col.classes[names(col.classes) %in% type.convert]<-'numeric'
+    }
+  }
+  numeric.cols<-names(col.classes)[col.classes=="numeric"]
+  #
+  parms.adf<-data.table::melt(dt[,.SD,.SDcols = numeric.cols][,lapply(.SD,as.numeric)],
+                              measure.vars=numeric.cols,variable.name='name')[
+                                ,stats::setNames(as.list(range(value)),nm=c('minRange','maxRange')),by=name]
+  parms.adf[,minRange := floor(minRange)];parms.adf[,maxRange := ceiling(maxRange)]
+  parms.adf[,range:=(maxRange)-(minRange)]
+  if(!is.null(name.fix)){
+    parms.adf<-merge(parms.adf,name.fix,all.x = T,sort=F)
+    parms.adf[is.na(name.fix),name.fix:=name]
+    parms.adf[,name:=name.fix];parms.adf[,name.fix:=NULL]
+  }
+  #
+  parms.adf[,desc:=NA]
+  #
+  data.table::setcolorder(parms.adf,c('name','desc','range','minRange','maxRange'))
+  #
+  return(parms.adf[])
+}
+#' @title Generate a list of .fcs meta-data
+#'
+#' @param parms.adf `data.table` returned from `parms.adf.dt`
+#' @param cyto.method A single argument for now; 'spectral'; depending on cytometry platform -- 'spectral','conventional','mass' -- list types might change.
+#'
+#' @return a list of .fcs meta-data; used to define `flowCore::flowFrame(...,description = ...)`.
+#'
+#'
+#'
+parms.list.from.adf<-function(parms.adf,cyto.method='spectral'){
+  #for R CMD check; data.table vars
+  name<-desc<-NULL
+  parms.list <- as.list(
+    c(stats::setNames(
+      c(rep(c("32", "0,0"),each = parms.adf[,.N]), parms.adf$range),
+      nm = do.call(paste0,expand.grid(paste0("$P", seq(nrow(parms.adf))),c('B','E','R')))))
+  )
+  parms.list<-append(parms.list,stats::setNames(parms.adf[,name],nm=paste0("$P",seq(parms.adf[,.N]),'N')))
+  if(parms.adf[!is.na(desc),.N]>0){
+    parms.list<-append(parms.list,stats::setNames(parms.adf[!is.na(desc),desc],nm=paste0("$P",parms.adf[,.I[!is.na(desc)]],'S')))
+  }
+  #
+  if(cyto.method=='spectral'){
+    types<-parms.adf[,ifelse(grepl('Time',name),'Time',
+                             ifelse(grepl('FSC',name),"Forward_Scatter",
+                                    ifelse(grepl('SSC',name),"Side_Scatter",
+                                           ifelse(grepl('node|cluster',name),"FlowSOM_derivative","Unmixed_Fluorescence"))))]
+    parms.type<-as.list(stats::setNames(types,nm=paste0("$P",seq(parms.adf[,.N]),'TYPE')))
+    volt.names<-paste0("$P",grep("fluorescence|scatter",parms.type,ignore.case = T),'V')
+    parms.volts<-as.list(stats::setNames(rep(0,length(volt.names)),nm=volt.names))
+    parms.list<-c(parms.list,parms.type,parms.volts)
+  }
+  return(parms.list)
+}
