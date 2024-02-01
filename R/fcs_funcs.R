@@ -317,6 +317,7 @@ parms.adf.dt<-function(dt,type.convert=NULL,name.fix=NULL){
 parms.list.from.adf<-function(parms.adf,cyto.method='spectral'){
   #for R CMD check; data.table vars
   name<-desc<-NULL
+  #
   parms.list <- as.list(
     c(stats::setNames(
       c(rep(c("32", "0,0"),each = parms.adf[,.N]), parms.adf$range),
@@ -339,3 +340,112 @@ parms.list.from.adf<-function(parms.adf,cyto.method='spectral'){
   }
   return(parms.list)
 }
+#' @title Convert a `data.table` into a new .fcs file
+#' @description
+#' After reading in (usually large amounts of) .fcs data and converting to a `data.table`, the process can be reversed and a new .fcs file created; new keywords are written to the header section and parameters updated using `FlowCore` functions.
+#'
+#'
+#' @param dt Object returned from `fcs.to.dt`.
+#' @param fcs.files.dt Object returned from `get.fcs.file.dt`.
+#' @param parse.by Character string; a named column in `dt` that contains unique identifiers; used to both index the `dt` and generate individual, unique .fcs file names.
+#' @param type.convert Argument as defined in `parms.adf.dt`
+#' @param name.fix Argument as defined in `parms.adf.dt`
+#' @param cyto.method Argument as defined in `parms.list.from.adf`
+#' @param write Logical; default `TRUE`. A new .fcs file will be written to `out.dir`, using the 'batch' column from `dt` as a sub-directory.
+#' @param out.dir File path; default "./data_modified". As files will be modified with both new data columns (`FlowSOM` derived) and keywords/meta-data, they should be written to a "./data_modified" folder so that the source is left intact.
+#'
+#' @return If `write` is set to `FALSE`, a `flowCore::flowFrame` will be returned; otherwise, a new .fcs file will be written.
+#' @export
+#'
+#'
+dt.to.fcs<-function(dt,fcs.files.dt,parse.by='sample.id',type.convert=NULL,name.fix=NULL,cyto.method="spectral",write=T,out.dir="./data_modified"){
+  #for R CMD check; data.table vars
+  sample.id<-f.path<-batch<-NULL
+  #
+  drop.terms<-c(
+    paste0(c('BEGIN','END'),c('ANALYSIS')),
+    paste0(c('BEGIN','END'),c('DATA')),
+    paste0(c('BEGINS','ENDS'),c('TEXT')),
+    "MODE",
+    'BYTEORD',
+    'DATATYPE',
+    'PAR',
+    'TOT',
+    'NEXTDATA',
+    'DISPLAY'
+  )
+  #
+  parse.ids<-dt[,unique(get(parse.by))]
+  #
+  for(i in parse.ids){
+    parms.adf<-parms.adf.dt(dt[sample.id %in% i],type.convert = type.convert,name.fix = name.fix)
+    parms.list<-parms.list.from.adf(parms.adf,cyto.method = cyto.method)
+    keywords<-as.list(flowCore::read.FCSheader(fcs.files.dt[sample.id %in% i,f.path])[[1]])
+    if(any(grepl("\\$P[0-9]+V",names(keywords)))){
+      if(any(unlist(keywords[grep("\\$P[0-9]+V",names(keywords))])!=0)){
+        volt.values<-unlist(keywords[grep("\\$P[0-9]+V",names(keywords),value = T)])
+        volt.values<-volt.values[volt.values!=0]
+        volts.tmp<-stats::setNames(volt.values,nm=sub("_B","B",gsub("-","_",unlist(keywords[sub('V','N',names(volt.values))]))))
+        #
+        for(v in names(volts.tmp)){
+          parms.list[[sub("N","V",names(grep(v,parms.list,value = T)))]]<-volts.tmp[[v]]
+        }
+      }
+    }
+    keywords.inherit<-keywords[grep("\\$P[0-9]+",names(keywords),value = T,invert = T)]
+    keywords.inherit<-keywords.inherit[grep(paste0(drop.terms,collapse = "|"),names(keywords.inherit),value = T,invert = T)]
+    #
+    keywords.add<-grep(paste0(sub("\\$","",names(keywords.inherit)),collapse = "|"),names(fcs.files.dt[sample.id %in% i]),value = T,invert = T)
+    keywords.add<-grep(paste0(c(drop.terms,'f.path','file.size.MB'),collapse = "|"),keywords.add,invert = T,value = T)
+    keywords.inherit<-c(keywords.inherit,as.list(fcs.files.dt[sample.id %in% i,keywords.add,with=F]))
+    keywords.inherit[["modified"]]<-'TRUE'
+    keywords.inherit[["modified.by"]]<-'SOMnambulate::dt.to.fcs'
+    keywords.inherit[["modified.date"]]<-Sys.Date()
+    keywords.inherit<-keywords.inherit[which(!is.na(keywords.inherit))]
+    #spillover fix
+    # spill<-parms.list[names(parms.list) %in% paste0(stringr::str_extract(names(grep("unmixed",parms.list,ignore.case = T,value = T)),"\\$P[0-9]+"),'N')]
+    # spill.mat<-matrix(0,nrow=length(spill),ncol=length(spill),dimnames = list(NULL,unlist(spill)))
+    # diag(spill.mat)<-1
+    # keywords.inherit$`$SPILLOVER`<-spill.mat
+    keywords.inherit$`$SPILLOVER`<-NULL
+    #
+    parms.adf<-data.frame(parms.adf)
+    rownames(parms.adf)<-paste0("$P",rownames(parms.adf))
+    #
+    exprs<-as.matrix(
+      dt[sample.id %in% i,.SD,.SDcols = c(dt[,names(.SD),.SDcols = is.numeric],grep(type.convert,names(dt),value = T))][
+        ,lapply(.SD,as.numeric)]
+    )
+    colnames(exprs)<-parms.adf$name
+    #
+    fcs.from.dt<-methods::new("flowFrame",
+                              exprs=exprs,
+                              parameters=Biobase::AnnotatedDataFrame(parms.adf),
+                              description=parms.list
+    )
+    flowCore::keyword(fcs.from.dt) <- c(flowCore::keyword(fcs.from.dt),
+                                        keywords.inherit)
+    flowCore::keyword(fcs.from.dt)[["$FIL"]]<-paste0(flowCore::keyword(fcs.from.dt)[["sample.id"]],".fcs")
+    #
+    if(!write){
+      return(fcs.from.dt)
+    }else{
+      out.batch<-fcs.files.dt[sample.id %in% i,as.character(batch)]
+      out.path<-file.path(out.dir,out.batch)
+      out.name<-flowCore::keyword(fcs.from.dt)[["$FIL"]]
+      message(
+        paste(
+          paste("Writing the following .fcs file:", out.name),
+          paste("To the following directory:",out.path),
+          sep = "\n"
+        )
+      )
+      if(!dir.exists(out.path)){
+        dir.create(out.path, recursive = T)
+      }
+      flowCore::write.FCS(fcs.from.dt, file.path(out.path,out.name))
+    }
+    #
+  }
+}
+
