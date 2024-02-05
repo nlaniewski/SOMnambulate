@@ -4,10 +4,10 @@
 \alias{cofactor.viewer}
 \title{Interactive asinh transformation of cytometry data for determining optimal cofactor values}
 \usage{
-cofactor.viewer(dat, cofactors.file.path = NULL, filename.suffix = NULL)
+cofactor.viewer(dt, cofactors.file.path = NULL, filename.suffix = NULL)
 }
 \arguments{
-\item{dat}{\code{data.table} containing raw, un-transformed cytometry data}
+\item{dt}{\code{data.table} containing raw, un-transformed cytometry data; as returned from \code{fcs.to.dt}}
 
 \item{cofactors.file.path}{if provided, will save (.RDS) the cofactor values to the specified \code{file.path}}
 

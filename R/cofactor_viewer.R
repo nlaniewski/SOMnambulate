@@ -1,22 +1,22 @@
 #' @title Interactive asinh transformation of cytometry data for determining optimal cofactor values
 #'
-#' @param dat \code{data.table} containing raw, un-transformed cytometry data
+#' @param dt `data.table` containing raw, un-transformed cytometry data; as returned from `fcs.to.dt`
 #' @param cofactors.file.path if provided, will save (.RDS) the cofactor values to the specified \code{file.path}
 #' @param filename.suffix Character string; if provided, will be appended to the end of the file name
 #'
 #' @return \code{shinyapp}; if \code{cofactors.file.path} is provided, a \code{data.table} of cofactor values will be saved for use in transforming raw data values.
 #' @export
 #'
-cofactor.viewer<-function(dat,cofactors.file.path=NULL,filename.suffix=NULL){
+cofactor.viewer<-function(dt,cofactors.file.path=NULL,filename.suffix=NULL){
   ##
-  vars<-stats::setNames(nm=c("num","fac","char"),c("is.numeric","is.factor","is.character"))
-  cols<-sapply(vars,function(i) stringr::str_sort(names(dat[,.SD,.SDcols = get(i)]),numeric = T))
-  fluors<-grep("Time|FSC|SSC",cols$num,value = T,invert = T)
-  cuts<-Reduce(union,dat[, lapply(.SD, function(x){q<-stats::quantile(x,probs=c(0.0001,.9999));which(x<q[1]|x>q[2])}), .SDcols = fluors])
-  if('sample.id' %in% cols$char){
-    samples<-c('combined',sort(unique(dat[['sample.id']])))
+  col.classes<-unlist(sapply(dt,class))
+  col.vars<-sapply(unique(col.classes),function(i) names(col.classes[col.classes %in% i]))
+  fluors <- grep("Time|FSC|SSC|node|cluster", col.vars$numeric, value = T, invert = T)
+  cuts<-Reduce(union,dt[, lapply(.SD, function(x){q<-stats::quantile(x,probs=c(0.0001,.9999));which(x<q[1]|x>q[2])}), .SDcols = fluors])
+  if('sample.id' %in% col.vars$character){
+    samples<-c('combined',sort(unique(dt[['sample.id']])))
   }else{
-    message("Sample selction requires a 'sample.id' column (character strings).")
+    message("Sample selection requires a 'sample.id' column (character).")
   }
   ##
   slider.vals <- stats::setNames(nm = c("min","max","value","step"), c(100, 10000, 1000, 50))
@@ -34,14 +34,14 @@ cofactor.viewer<-function(dat,cofactors.file.path=NULL,filename.suffix=NULL){
                        choices = samples, selected = samples[1]),
     shiny::selectInput(inputId = "marker1",
                        label = "Marker (x):",
-                       choices = cols$num, selected = cols$num[1]),
+                       choices = col.vars$numeric, selected = col.vars$numeric[1]),
     shiny::sliderInput(inputId = "cofactor.x",
                        label = "Cofactor: X-axis",
                        min = slider.vals[["min"]], max = slider.vals[["max"]],
                        value = slider.vals[["value"]], step = slider.vals[["step"]]),
     shiny::selectInput(inputId = "marker2",
                        label = "Marker (y):",
-                       choices = cols$num, selected = cols$num[2]),
+                       choices = col.vars$numeric, selected = col.vars$numeric[2]),
     shiny::sliderInput(inputId = "cofactor.y",
                        label = "Cofactor: Y-axis",
                        min = slider.vals[["min"]], max = slider.vals[["max"]],
@@ -71,9 +71,9 @@ cofactor.viewer<-function(dat,cofactors.file.path=NULL,filename.suffix=NULL){
     ggbivariate_plot1 <- shiny::reactive({
       p <- gg.func.bivariate(
         dat=if(input$sample.id=='combined'){
-          dat[-cuts]
+          dt[-cuts]
         }else{
-          dat[-cuts][get("sample.id") == input$sample.id]
+          dt[-cuts][get("sample.id") == input$sample.id]
         },
         x = asinh(!!ggplot2::sym(input$marker1)/input$cofactor.x),
         y = asinh(!!ggplot2::sym(input$marker2)/input$cofactor.y)
