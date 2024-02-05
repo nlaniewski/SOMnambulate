@@ -6,20 +6,20 @@
 \usage{
 showmeSOMething(
   dat,
+  cluster.col = NULL,
   code.medians = NULL,
   marker.pair = NULL,
-  asinh.view = F,
   use.cluster.counts = T
 )
 }
 \arguments{
 \item{dat}{\code{data.table} containing a factored \code{FlowSOM} cluster column}
 
+\item{cluster.col}{Character string; a named column that identifies factored clusters.}
+
 \item{code.medians}{pre-calculated cluster medians; a listed result of \code{fsom.codes.to.clusters}}
 
 \item{marker.pair}{character vector of length 2; if defined, will pre-select the initially displayed dimensions for the bivariate plots.  The default \code{NULL} will pre-select the first two columns of dat for display.}
-
-\item{asinh.view}{Logical. By default, \code{FALSE}; if \code{TRUE}, will display an interactive plot to assess the effect of \code{ashinh} transformations on the primary data.}
 
 \item{use.cluster.counts}{Logical. By default, \code{TRUE}; will key \code{dat} by the unique identifier 'sample.id' and cluster column to generate per-sample cluster counts; cluster counts are used as input for factored boxplots.}
 }

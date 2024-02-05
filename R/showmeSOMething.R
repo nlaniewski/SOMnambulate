@@ -4,22 +4,27 @@
 #'
 #'
 #' @param dat \code{data.table} containing a factored \code{FlowSOM} cluster column
+#' @param cluster.col Character string; a named column that identifies factored clusters.
 #' @param code.medians pre-calculated cluster medians; a listed result of \code{fsom.codes.to.clusters}
 #' @param marker.pair character vector of length 2; if defined, will pre-select the initially displayed dimensions for the bivariate plots.  The default \code{NULL} will pre-select the first two columns of dat for display.
-#' @param asinh.view Logical. By default, \code{FALSE}; if \code{TRUE}, will display an interactive plot to assess the effect of \code{ashinh} transformations on the primary data.
 #' @param use.cluster.counts Logical. By default, \code{TRUE}; will key \code{dat} by the unique identifier 'sample.id' and cluster column to generate per-sample cluster counts; cluster counts are used as input for factored boxplots.
 #'
 #' @return \code{shinyapp}
 #' @export
 #'
-showmeSOMething <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,use.cluster.counts=T){
+showmeSOMething <- function(dat,cluster.col=NULL,code.medians=NULL,marker.pair=NULL,use.cluster.counts=T){
   if(!data.table::is.data.table(dat)) stop("Need a data.table...")
   ##
   dat.names <- names(dat)
-  # cluster.col<-cluster.col.check(dat.names)
-  cluster.col<-grep("cluster",names(dat),value = T)
+  if(is.null(cluster.col)){
+    cluster.col<-grep("cluster",names(dat),value = T)
+  }
   if(length(cluster.col)>1){
-    stop("More than one cluster column...")
+    stop(paste("More than one cluster column:",
+               paste(cluster.col,collapse = " ; "),
+               "Define 'cluster.col' argument.",
+               sep="\n")
+    )
   }else if(length(cluster.col)==0){
     stop("Cluster column not found...")
   }
@@ -62,16 +67,6 @@ showmeSOMething <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,
       width=10
     )
   )
-  ##
-  if(asinh.view==T){
-    slider.vals <- stats::setNames(nm=c('min','max','value','step'),
-                                   c(1,3000,1000,50)
-    )
-    # any(dat==0)&dat[,.N]*ncol(dat)/length(which(dat==0))>1
-    if(sum(dat[,lapply(.SD,function(x)length(which(x==0)))])/dat[,.N]*ncol(dat)*100>1){#preponderance of zeroes in mass cyto. data
-      slider.vals[1:4] <- c(1,10,2,1)
-    }
-  }
   ##shinydashboard items;store as variables
   par.menu <- shinydashboard::menuItem(
     "Parameter Selection:",
@@ -121,35 +116,6 @@ showmeSOMething <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,
                           inline = T)
     )
   })
-  asinh.menu <- shinydashboard::renderMenu({
-    shinydashboard::menuItem(
-      "Asinh Transform:",
-      tabName = "asinh",
-      shiny::radioButtons(
-        inputId = 'asinh.applied',
-        label="Apply asinh?",
-        choices = c('Yes',"No"),
-        selected = 'No',
-        inline = T
-      ),
-      shiny::sliderInput(
-        inputId = 'cofactor.xaxis',
-        label = "Cofactor: X-axis",
-        min = slider.vals[['min']],
-        max = slider.vals[['max']],
-        value = slider.vals[['value']],
-        step = slider.vals[['step']]
-      ),
-      shiny::sliderInput(
-        inputId = 'cofactor.yaxis',
-        label = "Cofactor: Y-axis",
-        min = slider.vals[['min']],
-        max = slider.vals[['max']],
-        value = slider.vals[['value']],
-        step = slider.vals[['step']]
-      )
-    )
-  })
   cyto.plots<-shiny::fluidRow(
     shinydashboard::box(
       collapsible = T,
@@ -189,8 +155,7 @@ showmeSOMething <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,
     shinydashboard::dashboardSidebar(
       shinydashboard::sidebarMenu(
         par.menu,
-        shinydashboard::menuItemOutput('factor.menu'),
-        shinydashboard::menuItemOutput('asinh.menu')
+        shinydashboard::menuItemOutput('factor.menu')
       )
     ),
     shinydashboard::dashboardBody(
@@ -201,10 +166,6 @@ showmeSOMething <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,
   )
 
   server <- function(input, output) {
-    ##
-    if(asinh.view==TRUE){
-      output$asinh.menu <- asinh.menu
-    }
     ##
     if(!is.null(clusters.seq)){
       output$factor.menu <- factor.menu
@@ -219,58 +180,31 @@ showmeSOMething <- function(dat,code.medians=NULL,marker.pair=NULL,asinh.view=F,
     })
     ##
     ggbivariate_plot1 <- shiny::reactive({
-      if(asinh.view==FALSE){
-        p.tmp <- gg.func.bivariate(dat = if(dat[get('sample.id')==input$sample.id,.N]>input$rowsamp){
-          dat[get('sample.id')==input$sample.id][sample(.N,input$rowsamp)]
-        }else{
-          dat[get('sample.id')==input$sample.id]
-        },
-        x = !!ggplot2::sym(input$marker1),
-        y = !!ggplot2::sym(input$marker2)
-        )
-      }else if(asinh.view==TRUE){
-        shiny::req(input$asinh.applied)
-        if(input$asinh.applied=='Yes'){
-          p.tmp <- gg.func.bivariate(dat = if(dat[get('sample.id')==input$sample.id,.N]>input$rowsamp){
-            dat[get('sample.id')==input$sample.id][sample(.N,input$rowsamp)]
-          }else{
-            dat[get('sample.id')==input$sample.id]
-          },
-          x = asinh(!!ggplot2::sym(input$marker1)/input$cofactor.xaxis),
-          y = asinh(!!ggplot2::sym(input$marker2)/input$cofactor.yaxis)
-          )
-        }else if(input$asinh.applied=='No'){
-          p.tmp <- gg.func.bivariate(dat = if(dat[get('sample.id')==input$sample.id,.N]>input$rowsamp){
-            dat[get('sample.id')==input$sample.id][sample(.N,input$rowsamp)]
-          }else{
-            dat[get('sample.id')==input$sample.id]
-          },
-          x = !!ggplot2::sym(input$marker1),
-          y = !!ggplot2::sym(input$marker2)
-          )
-        }
-      }
+      p.tmp <- gg.func.bivariate(dat = if(dat[get('sample.id')==input$sample.id,.N]>input$rowsamp){
+        dat[get('sample.id')==input$sample.id][sample(.N,input$rowsamp)]
+      }else{
+        dat[get('sample.id')==input$sample.id]
+      },
+      x = !!ggplot2::sym(input$marker1),
+      y = !!ggplot2::sym(input$marker2)
+      )
       p.tmp <- p.tmp +
         ggplot2::labs(title = "All Events",
                       subtitle = paste(input$rowsamp, "of", dat[get('sample.id')==input$sample.id,.N], "displayed")) +
         ggplot2::xlab(input$marker1) +
         ggplot2::ylab(input$marker2)
-      if(asinh.view==TRUE){
-        return(p.tmp)
-      }else{
-        if(all(c(input$marker1,input$marker2) %in% names(lims))){
-          p.tmp <- p.tmp +
-            ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)],
-                                     ylim=lims[,get(input$marker2)])
-        }else if(input$marker1 %in% names(lims)){
-          p.tmp <- p.tmp +
-            ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)])
-        }else if(input$marker2 %in% names(lims)){
-          p.tmp <- p.tmp +
-            ggplot2::coord_cartesian(ylim=lims[,get(input$marker2)])
-        }
-        return(p.tmp)
+      if(all(c(input$marker1,input$marker2) %in% names(lims))){
+        p.tmp <- p.tmp +
+          ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)],
+                                   ylim=lims[,get(input$marker2)])
+      }else if(input$marker1 %in% names(lims)){
+        p.tmp <- p.tmp +
+          ggplot2::coord_cartesian(xlim=lims[,get(input$marker1)])
+      }else if(input$marker2 %in% names(lims)){
+        p.tmp <- p.tmp +
+          ggplot2::coord_cartesian(ylim=lims[,get(input$marker2)])
       }
+      return(p.tmp)
     })
     ##
     if(!is.null(clusters.seq)){
