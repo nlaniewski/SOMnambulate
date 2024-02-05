@@ -13,8 +13,9 @@ cofactor.viewer<-function(dt,cofactors.file.path=NULL,filename.suffix=NULL){
   col.vars<-sapply(unique(col.classes),function(i) names(col.classes[col.classes %in% i]),simplify = F)
   fluors <- grep("Time|FSC|SSC|node|cluster", col.vars$numeric, value = T, invert = T)
   cuts<-Reduce(union,dt[, lapply(.SD, function(x){q<-stats::quantile(x,probs=c(0.0001,.9999));which(x<q[1]|x>q[2])}), .SDcols = fluors])
-  if('sample.id' %in% col.vars$character){
-    samples<-c('combined',sort(unique(dt[['sample.id']])))
+  samples<-'combined'
+  if(!is.null(col.vars$character)&'sample.id' %in% col.vars$character){
+    samples<-c(samples,sort(unique(dt[['sample.id']])))
   }else{
     message("Sample selection requires a 'sample.id' column (character).")
   }
