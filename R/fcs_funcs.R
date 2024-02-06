@@ -68,13 +68,14 @@ get.fcs.keywords.metadata <- function(fcs.file.paths,return.dt=F,pattern=NULL,pa
 }
 #' @title Get a `data.table` of .fcs file paths and related metadata.
 #'
-#' @param fcs.file.paths Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.
+#' @param fcs.file.paths Character string; path(s) usually returned from `list.files(...,full.names=T,pattern=".fcs")`.
+#' @param factor.cols Character string; column names to be converted to factor.
 #'
 #' @return a `data.table` of full length .fcs file paths and related metadata (parsed from the text header).
 #' @export
 #'
 #'
-get.fcs.file.dt<-function(fcs.file.paths){
+get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
   f.path<-source.name<-file.size.MB<-NULL
   dt<-data.table::data.table(f.path=fcs.file.paths)
   dt[,source.name:=basename(f.path)]
@@ -103,6 +104,9 @@ get.fcs.file.dt<-function(fcs.file.paths){
   for(j in c('DATE')){data.table::set(dt,j=j,value=data.table::as.IDate(dt[[j]],format="%d-%b-%Y"))}
   for(j in c('BTIM','ETIM')){data.table::set(dt,j=j,value=data.table::as.ITime(dt[[j]]))}
   for(j in grep("TOT|DELAY|ASF|VOL$",names(dt),value = T)){data.table::set(dt,j=j,value=as.numeric(dt[[j]]))}
+  if(!is.null(factor.cols)){
+    for(j in factor.cols){if(j %in% names(dt)) data.table::set(dt,j=j,value=factor(dt[[j]]))}
+  }
   ##
   return(dt)
 }

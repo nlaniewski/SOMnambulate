@@ -4,10 +4,12 @@
 \alias{get.fcs.file.dt}
 \title{Get a \code{data.table} of .fcs file paths and related metadata.}
 \usage{
-get.fcs.file.dt(fcs.file.paths)
+get.fcs.file.dt(fcs.file.paths, factor.cols = NULL)
 }
 \arguments{
 \item{fcs.file.paths}{Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.}
+
+\item{factor.cols}{Character string; column names to be converted to factor.}
 }
 \value{
 a \code{data.table} of full length .fcs file paths and related metadata (parsed from the text header).
