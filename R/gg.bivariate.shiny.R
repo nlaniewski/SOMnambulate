@@ -19,7 +19,7 @@ selection.heatmap<-function(vars,type=c('xy','factor')){
   }else if(type=='factor'){
     vars<-c('none',vars)
     bar1<-rep(c(0,1),length(vars))[seq(vars)]
-    bars<-matrix(bar1,nrow=2,dimnames=list(vars,'click.factor'))
+    bars<-matrix(bar1,ncol=1,dimnames=list(vars,'click.factor'))
   }
   plotly.heatmap <- plotly::plot_ly(
     x = colnames(bars),
