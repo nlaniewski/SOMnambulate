@@ -124,7 +124,8 @@ gg.bivariate.shiny<-function(dt){
     })
     #
     output$gg <- shiny::renderPlot({
-      ggplot2::ggplot(dt, ggplot2::aes(!!as.name(clicks.xy$x),!!as.name(clicks.xy$y))) +
+      ggplot2::ggplot(if(is.null(input$cluster)){dt}else{dt[get(cluster.var) %in% input$cluster]},
+                      ggplot2::aes(!!as.name(clicks.xy$x),!!as.name(clicks.xy$y))) +
         #programmatically determine optimal bin number?
         ggplot2::geom_hex(bins=200) +
         viridis::scale_fill_viridis(option='plasma') +
