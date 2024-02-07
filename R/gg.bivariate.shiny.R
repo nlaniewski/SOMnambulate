@@ -59,6 +59,12 @@ selection.heatmap<-function(vars,type=c('xy','factor')){
 gg.bivariate.shiny<-function(dt){
   xy.vars<-colnames(dt)[sapply(dt,class) %in% "numeric"]
   f.vars<-colnames(dt)[sapply(dt,class) %in% "factor"]
+  if(any(grepl('cluster',f.vars))){
+    cluster.var<-grep('cluster',f.vars,value = T)
+    cluster.vals<-dt[,levels(get(cluster.var))]
+  }else{
+    cluster.var<-NULL
+  }
   #
   ui<-shiny::fluidPage(
     shiny::sidebarLayout(
@@ -69,6 +75,16 @@ gg.bivariate.shiny<-function(dt){
         shiny::fluidRow(
           plotly::plotlyOutput(outputId = "factor.select",height = "20vh")
         ),
+        if(!is.null(cluster.var)){
+          shiny::fluidRow(
+            shiny::selectInput(
+              inputId = 'cluster',
+              label = 'Cluster #',
+              choices = cluster.vals,
+              selected = NULL
+            )
+          )
+        },
         width=3
       ),
       shiny::mainPanel(
