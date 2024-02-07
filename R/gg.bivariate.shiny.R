@@ -70,7 +70,7 @@ gg.bivariate.shiny<-function(dt){
     shiny::sidebarLayout(
       shiny::sidebarPanel(
         shiny::fluidRow(
-          plotly::plotlyOutput(outputId = "xy.select",height = "80vh")
+          plotly::plotlyOutput(outputId = "xy.select",height = "70vh")
         ),
         shiny::fluidRow(
           plotly::plotlyOutput(outputId = "factor.select",height = "20vh")
