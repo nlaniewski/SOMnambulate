@@ -80,7 +80,7 @@ gg.bivariate.shiny<-function(dt){
             shiny::selectInput(
               inputId = 'cluster',
               label = 'Cluster #',
-              choices = cluster.vals,
+              choices = c('unselected',cluster.vals),
               selected = NULL
             )
           )
@@ -124,7 +124,7 @@ gg.bivariate.shiny<-function(dt){
     })
     #
     output$gg <- shiny::renderPlot({
-      ggplot2::ggplot(if(is.null(input$cluster)){dt}else{dt[get(cluster.var) %in% input$cluster]},
+      ggplot2::ggplot(if(input$cluster=='unselected'){dt}else{dt[get(cluster.var) %in% input$cluster]},
                       ggplot2::aes(!!as.name(clicks.xy$x),!!as.name(clicks.xy$y))) +
         #programmatically determine optimal bin number?
         ggplot2::geom_hex(bins=200) +
