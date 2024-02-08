@@ -4,12 +4,12 @@
 \alias{selection.heatmap}
 \title{Create a clickable \code{plotly::plot_ly} heatmap}
 \usage{
-selection.heatmap(vars, type = c("xy", "factor"))
+selection.heatmap(vars, type = c("xy", "factor", "cluster"))
 }
 \arguments{
 \item{vars}{Character string ('variables') of class \code{numeric} or \code{factor}}
 
-\item{type}{\code{xy} returns a clickable heatmap of numeric variables; \code{factor} returns a clickable heatmap of factored variables.}
+\item{type}{\code{xy} returns a clickable heatmap of numeric variables; \code{factor} returns a clickable heatmap of factored variables; \code{cluster} (if column is present) returns a clickable heatmap of cluster numbers.}
 }
 \value{
 a \code{plotly::plot_ly} heatmap; allows for clickable selection of reactive variables when used with \code{shiny}

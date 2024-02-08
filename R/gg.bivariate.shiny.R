@@ -1,13 +1,13 @@
 #' @title Create a clickable `plotly::plot_ly` heatmap
 #'
 #' @param vars Character string ('variables') of class `numeric` or `factor`
-#' @param type `xy` returns a clickable heatmap of numeric variables; `factor` returns a clickable heatmap of factored variables.
+#' @param type `xy` returns a clickable heatmap of numeric variables; `factor` returns a clickable heatmap of factored variables; `cluster` (if column is present) returns a clickable heatmap of cluster numbers.
 #'
 #' @return a `plotly::plot_ly` heatmap; allows for clickable selection of reactive variables when used with `shiny`
 #'
 #'
 #'
-selection.heatmap<-function(vars,type=c('xy','factor')){
+selection.heatmap<-function(vars,type=c('xy','factor','cluster')){
   if(type=='xy'){
     bar1<-rep(c(0,1),length(vars))[seq(vars)]
     if(length(bar1) %%2 == 1){
@@ -16,10 +16,10 @@ selection.heatmap<-function(vars,type=c('xy','factor')){
       bar2<-rev(bar1)
     }
     bars<-matrix(c(bar1,bar2),ncol=2,dimnames=list(vars,c('click.x','click.y')))
-  }else if(type=='factor'){
-    vars<-c('none',vars)
+  }else{
+    vars<-c('NULL',vars)
     bar1<-rep(c(0,1),length(vars))[seq(vars)]
-    bars<-matrix(bar1,ncol=1,dimnames=list(vars,'click.factor'))
+    bars<-matrix(bar1,ncol=1,dimnames=list(vars,paste0('click.',type)))
   }
   plotly.heatmap <- plotly::plot_ly(
     x = colnames(bars),
@@ -33,8 +33,9 @@ selection.heatmap<-function(vars,type=c('xy','factor')){
   )
   plotly.heatmap <- plotly::layout(
     plotly.heatmap,
-    title=ifelse(type=='xy',"Axis (x,y) Selection","Factor Selection"),
-    xaxis = list(tickfont = list(size = 10),type = "category")
+    title=ifelse(type=='xy',"Axis Selection",ifelse(type=='factor',"Factor Selection","Cluster Selection")),
+    xaxis = list(tickfont = list(size = 10),type = "category"),
+    yaxis = list(tickfont = list(size = 10),type = "category")
   )
   plotly.heatmap <- plotly::config(
     plotly.heatmap,
