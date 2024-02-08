@@ -71,44 +71,44 @@ gg.bivariate.shiny<-function(dt){
     shiny::sidebarLayout(
       shiny::sidebarPanel(
         shiny::fluidRow(
-          plotly::plotlyOutput(outputId = "xy.select",height = "70vh")
-        ),
-        shiny::fluidRow(
-          plotly::plotlyOutput(outputId = "factor.select",height = "20vh")
-        ),
-        if(!is.null(cluster.var)){
-          shiny::fluidRow(
-            shiny::selectInput(
-              inputId = 'cluster',
-              label = 'Cluster #',
-              choices = c('unselected',cluster.vals),
-              selected = NULL
+          shiny::column(
+            width = 4,
+            plotly::plotlyOutput(outputId = "axis.select",height = "80vh")
+          ),
+          shiny::column(
+            width = 4,
+            plotly::plotlyOutput(outputId = "factor.select",height = "20vh")
+          ),
+          if(!is.null(cluster.var)){
+            shiny::column(
+              width= 4,
+              plotly::plotlyOutput(outputId = "cluster.select",height = "80vh")
             )
-          )
-        },
-        width=3
+          }
+        ),
+        width=6
       ),
       shiny::mainPanel(
         shiny::plotOutput(outputId = 'gg',height = "800px"),
-        width=9
+        width=6
       )
     )
   )
   #
   server<-function(input, output, session) {
-    output$xy.select <- plotly::renderPlotly(selection.heatmap(vars=xy.vars,type='xy'))
-    clicks.xy <- shiny::reactiveValues(x=xy.vars[1],y=xy.vars[2])
-    clicked.xy <- shiny::reactive({
+    output$axis.select <- plotly::renderPlotly(selection.heatmap(vars=xy.vars,type='xy'))
+    clicks.axis <- shiny::reactiveValues(x=xy.vars[1],y=xy.vars[2])
+    clicked.axis <- shiny::reactive({
       plotly::event_data(
         event = "plotly_click",
         source = "xy.select",
         priority = "event")
     })
-    shiny::observeEvent(eventExpr = clicked.xy(),{
-      if(clicked.xy()$x=='click.x'){
-        clicks.xy$x<-clicked.xy()$y
-      }else if(clicked.xy()$x=='click.y'){
-        clicks.xy$y<-clicked.xy()$y
+    shiny::observeEvent(eventExpr = clicked.axis(),{
+      if(clicked.axis()$x=='click.x'){
+        clicks.axis$x<-clicked.axis()$y
+      }else if(clicked.axis()$x=='click.y'){
+        clicks.axis$y<-clicked.axis()$y
       }
     })
     #
@@ -124,16 +124,30 @@ gg.bivariate.shiny<-function(dt){
       clicks.factor$x<-clicked.factor()$y
     })
     #
+    if(!is.null(cluster.var)){
+      output$cluster.select <- plotly::renderPlotly(selection.heatmap(vars=cluster.vals,type='cluster'))
+      clicks.cluster <- shiny::reactiveVal('NULL')
+      clicked.cluster <- shiny::reactive({
+        plotly::event_data(
+          event = "plotly_click",
+          source = "cluster.select",
+          priority = "event")
+      })
+      shiny::observeEvent(eventExpr = clicked.cluster(),{
+        clicks.cluster(clicked.cluster()$y)
+      })
+    }
+    #
     output$gg <- shiny::renderPlot({
       ggplot2::ggplot(
         if(is.null(cluster.var)){
           dt
-        }else if(!is.null(cluster.var)&input$cluster=='unselected'){
+        }else if(!is.null(cluster.var)&clicks.cluster()=='NULL'){
           dt
-        }else if(!is.null(cluster.var)&input$cluster!='unselected'){
-          dt[get(cluster.var) %in% input$cluster]
+        }else if(!is.null(cluster.var)&clicks.cluster()!='NULL'){
+          dt[get(cluster.var) %in% clicks.cluster()]
         },
-        ggplot2::aes(!!as.name(clicks.xy$x),!!as.name(clicks.xy$y))) +
+        ggplot2::aes(!!as.name(clicks.axis$x),!!as.name(clicks.axis$y))) +
         #programmatically determine optimal bin number?
         ggplot2::geom_hex(bins=200) +
         viridis::scale_fill_viridis(option='plasma') +
