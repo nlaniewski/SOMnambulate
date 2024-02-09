@@ -154,6 +154,15 @@ gg.bivariate.shiny<-function(dt){
         ggplot2::facet_wrap(ifelse(clicks.factor$x=='none',NA,clicks.factor$x))
     })
   }
+  #code chunk from: https://www.garrickadenbuie.com/blog/shiny-tip-option-where-to-run/
+  if (
+    # Make sure that {rstudioapi} is available
+    requireNamespace("rstudioapi", quietly = TRUE) &&
+    # Returns TRUE if RStudio is running
+    rstudioapi::hasFun("viewer")
+  ) {
+    options(shiny.launch.browser = .rs.invokeShinyWindowViewer)
+  }
   #
   shiny::shinyApp(ui, server)
 }

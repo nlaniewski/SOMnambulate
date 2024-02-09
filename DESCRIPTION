@@ -18,6 +18,7 @@ Imports:
     methods,
     plotly,
     RColorBrewer,
+    rstudioapi,
     scales,
     shiny,
     shinydashboard,
