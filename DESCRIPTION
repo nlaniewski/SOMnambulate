@@ -24,5 +24,6 @@ Imports:
     shinydashboard,
     stats,
     stringr,
+    uwot,
     viridis
 biocViews:

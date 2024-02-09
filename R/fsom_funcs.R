@@ -67,3 +67,71 @@ fsom.merge.codes<-function (fsom, codes.to.merge)
   fsom$cluster$fac<-m
   return(fsom)
 }
+#' @title Build a self-organized map (SOM)
+#'
+#' @description
+#' Essentially a wrapper for `FlowSOM::SOM` with a few `data.table`-specific operations.
+#'
+#'
+#' @param dt A `data.table` as returned from `fcs.to.dt`; the `dt` should be subset to only include columns-of-interest for training the SOM; coerced to matrix.
+#' @param .scale Logical: default `FALSE`; if `TRUE`, the (subset) `dt` will be scaled using an internally-defined function.
+#' @param scale.func Default `NULL`; if defined and `.scale=TRUE`, will use the supplied function to override the default internally-defined function.
+#' @param seed.val An elite random seed value used to control otherwise random starts.
+#' @param ... further arguments passed to `FlowSOM::SOM(...)`
+#'
+#' @return A `FlowSOM` object; a list containing parameters/results.
+#' @export
+#'
+#'
+som<-function(dt,.scale=F,scale.func=NULL,seed.val=1337,...){
+  if(is.null(scale.func)){
+    scale.func<-function(x){(x - mean(x))/stats::sd(x)}
+  }
+  time.start<-Sys.time()
+  set.seed(seed.val)
+  fsom<-FlowSOM::SOM(as.matrix(if(.scale){dt[,lapply(.SD,scale.func)]}else{dt}),...)
+  time.end<-Sys.time()
+  elapsed<-as.numeric((time.end)-(time.start))
+  if(elapsed<60){tm<-'Seconds'}else{tm<-'Minutes';elapsed<-elapsed/60}
+  message(paste(tm,"elapsed:",round(elapsed,3)))
+  class(fsom) <- c(class(fsom),"FlowSOM")
+  return(fsom)
+}
+#' @title Update a `FlowSOM` object with a `data.table` of clustered codes/SOMs.
+#'
+#' @param fsom A `FlowSOM` object as returned from `som`.
+#' @param append.name Character string; will be used to append the otherwise generically named 'node' and 'cluster' columns.
+#' @param k Numeric; if defined, will generate `k` clusters using `FlowSOM::metaClustering_consensus()`.
+#' @param umap.codes Logical: default `FALSE`; if `TRUE`, the codes/SOMs will be embedded using `uwot::umap()`.
+#' @param seed.val An elite random seed value used to control otherwise random starts.
+#'
+#' @return A list appended `FlowSOM`object updated with a `$code.dt` containing clusters.
+#' @export
+#'
+#'
+fsom.codes.dt<-function(fsom,append.name=NULL,k=NULL,umap.codes=F,seed.val=1337){
+  #for R CMD check; data.table vars
+  node<-NULL
+  #
+  if(!"FlowSOM" %in% class(fsom)){
+    stop("Need a 'FlowSOM' object as returned from 'FlowSOM::BuildSOM(())'or 'SOMnambulate::som'")
+  }
+  dt.codes<-data.table::data.table(fsom$codes)
+  dt.codes[,node:=seq(.N)]
+  if(!is.null(k)){
+    message(paste("Generating", k, "clusters using FlowSOM::metaClustering_consensus(...)"))
+    dt.codes[,cluster:=factor(FlowSOM::metaClustering_consensus(fsom$codes,k=k,seed=seed.val))]
+  }
+  if(umap.codes){
+    message("UMAP embedding of 'fsom$codes' using uwot::umap(...)")
+    set.seed(seed.val)
+    dt.codes[,paste0('umap.',1:2) := as.list(as.data.frame(uwot::umap(fsom$codes)))]
+  }
+  if(!is.null(append.name)){
+    old<-grep("node|cluster",names(dt.codes),value = T)
+    new<-paste(old,append.name,sep="_")
+    data.table::setnames(dt.codes,old,new)
+  }
+  fsom<-append(fsom,list(codes.dt=dt.codes))
+  return(fsom)
+}
