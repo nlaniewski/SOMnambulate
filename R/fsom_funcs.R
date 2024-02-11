@@ -79,7 +79,7 @@ fsom.merge.codes<-function (fsom, codes.to.merge)
 #' @param seed.val An elite random seed value used to control otherwise random starts.
 #' @param ... further arguments passed to `FlowSOM::SOM(...)`
 #'
-#' @return A `FlowSOM` object; a list containing parameters/results.
+#' @return A list containing `FlowSOM::SOM`-specific parameters/results. Of primary importance is the list element `[['codes]]`.
 #' @export
 #'
 #'
@@ -89,27 +89,26 @@ som<-function(dt,.scale=F,scale.func=NULL,seed.val=1337,...){
   }
   time.start<-Sys.time()
   set.seed(seed.val)
-  fsom<-FlowSOM::SOM(as.matrix(if(.scale){dt[,lapply(.SD,scale.func)]}else{dt}),...)
+  fsom<-FlowSOM::SOM(as.matrix(if(.scale){dt[,lapply(.SD,scale.func)]}else{dt}),...,silent=T)
   time.end<-Sys.time()
   elapsed<-as.numeric((time.end)-(time.start))
   if(elapsed<60){tm<-'Seconds'}else{tm<-'Minutes';elapsed<-elapsed/60}
   message(paste(tm,"elapsed:",round(elapsed,3)))
-  class(fsom) <- c(class(fsom),"FlowSOM")
   return(fsom)
 }
-#' @title Update a `FlowSOM` object with a `data.table` of clustered codes/SOMs.
+#' @title Generate a `data.table` of clustered `FlowSOM` codes/SOMs.
 #'
-#' @param fsom A `FlowSOM` object as returned from `som`.
+#' @param fsom A `FlowSOM::SOM` result as returned from `SOMnambulate::som()`.
 #' @param append.name Character string; will be used to append the otherwise generically named 'node' and 'cluster' columns.
 #' @param k Numeric; if defined, will generate `k` clusters using `FlowSOM::metaClustering_consensus()`.
 #' @param umap.codes Logical: default `FALSE`; if `TRUE`, the codes/SOMs will be embedded using `uwot::umap()`.
 #' @param seed.val An elite random seed value used to control otherwise random starts.
 #'
-#' @return A list appended `FlowSOM`object updated with a `$code.dt` containing clusters.
+#' @return A `data.table` of clustered (factor) codes that represents the direct result of `FlowSOM::SOM`.
 #' @export
 #'
 #'
-fsom.codes.dt<-function(fsom,append.name=NULL,k=NULL,umap.codes=F,seed.val=1337){
+som.codes.dt<-function(fsom,append.name=NULL,k=NULL,umap.codes=F,seed.val=1337){
   #for R CMD check; data.table vars
   node<-NULL
   #
@@ -132,6 +131,5 @@ fsom.codes.dt<-function(fsom,append.name=NULL,k=NULL,umap.codes=F,seed.val=1337)
     new<-paste(old,append.name,sep="_")
     data.table::setnames(dt.codes,old,new)
   }
-  fsom<-append(fsom,list(codes.dt=dt.codes))
-  return(fsom)
+  return(dt.codes)
 }
