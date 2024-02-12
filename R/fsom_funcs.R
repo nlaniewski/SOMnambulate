@@ -79,7 +79,7 @@ fsom.merge.codes<-function (fsom, codes.to.merge)
 #' @param seed.val An elite random seed value used to control otherwise random starts.
 #' @param ... further arguments passed to `FlowSOM::SOM(...)`
 #'
-#' @return A list containing `FlowSOM::SOM`-specific parameters/results. Of primary importance is the list element `[['codes]]`.
+#' @return A list containing `FlowSOM::SOM`-specific parameters/results. Of primary importance is the list element `[['codes']]`.
 #' @export
 #'
 #'
@@ -94,6 +94,10 @@ som<-function(dt,.scale=F,scale.func=NULL,seed.val=1337,...){
   elapsed<-as.numeric((time.end)-(time.start))
   if(elapsed<60){tm<-'Seconds'}else{tm<-'Minutes';elapsed<-elapsed/60}
   message(paste(tm,"elapsed:",round(elapsed,3)))
+  if(.scale){
+    fsom$scale<-TRUE
+    fsom$scale.func<-scale.func
+  }
   return(fsom)
 }
 #' @title Generate a `data.table` of clustered `FlowSOM` codes/SOMs.
