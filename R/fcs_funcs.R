@@ -249,7 +249,6 @@ fcs.to.dt<-function(fcs.dt,channel_alias=NULL,alias.order=F,cofactors=NULL){
     dt<-cbind(dt,fcs.dt[,!'f.path'])
   }
   #
-  data.table::setattr(dt, "class", append(class(dt),ifelse(is.null(cofactors),"fcs.data.raw","fcs.data.asinh")))
   invisible(dt)
 }
 #' @title a parallelized version of `fcs.to.dt`; essentially a wrapper around `parallel` package functions
@@ -282,8 +281,6 @@ fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL,alias.order=F,cofactors=N
                                                 cofactors = if(!is.null(cofactors)) cofactors))
   ##
   on.exit({parallel::stopCluster(cl);invisible(gc())})
-  #data.table::rbindlist does not preserve attributes; append as in 'fcs.to.dt'
-  data.table::setattr(dt, "class", append(class(dt),ifelse(is.null(cofactors),"fcs.data.raw","fcs.data.asinh")))
   invisible(dt)
 }
 #' @title Generate a `data.table` of .fcs parameters
