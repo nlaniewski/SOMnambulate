@@ -212,18 +212,34 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
 #' @param fcs.dt a `data.table` as returned from `get.fcs.file.dt`
 #' @param channel_alias as returned from `get.fcs.channel.alias`
 #' @param alias.order Logical. If `TRUE`, the `data.table` columns will be ordered to match that of the `channel_alias` 'alias' column.
+#' @param cofactors A named numeric vector; names must match those found in `fcs.dt`; named columns will be `asinh` transformed with the supplied cofactor (numeric).
 #'
-#' @return a `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns
+#' @return a `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be `asinh`-transformed.
 #' @export
 #'
 #'
-fcs.to.dt<-function(fcs.dt,channel_alias=NULL,alias.order=F){
+fcs.to.dt<-function(fcs.dt,channel_alias=NULL,alias.order=F,cofactors=NULL){
   #read .fcs file ('.path')
   #if defined, rename columns using 'channel_alias' as returned from 'get.fcs.channel.alias'
   fcs.tmp<-flowCore::read.FCS(fcs.dt[['f.path']],transformation = F,truncate_max_range = F,
                               channel_alias = if(!is.null(channel_alias)) channel_alias)
   #convert the expression matrix (raw, un-transformed data values) into a data.table
   dt<-data.table::setDT(as.data.frame(fcs.tmp@exprs))
+  #if defined, transform named columns with supplied cofactors
+  if(!is.null(cofactors)){
+    if(!all(names(cofactors) %in% names(dt))){
+      not.found<-names(cofactors)[!names(cofactors) %in% names(dt)]
+      stop(paste("The following supplied cofactors are not named columns in 'fcs.dt':",
+                 paste0(not.found,collapse = " ; "),
+                 sep = "\n"
+                 )
+      )
+    }else{
+      for(j in names(cofactors)){
+        data.table::set(dt,j=j,value = asinh(dt[[j]]/cofactors[[j]]))
+      }
+    }
+  }
   #reorder columns according to an ordered alias
   if(alias.order){
     data.table::setcolorder(dt,channel_alias$alias)
@@ -233,7 +249,7 @@ fcs.to.dt<-function(fcs.dt,channel_alias=NULL,alias.order=F){
     dt<-cbind(dt,fcs.dt[,!'f.path'])
   }
   #
-  data.table::setattr(dt, "class", append(class(dt),"fcs.data.raw"))
+  data.table::setattr(dt, "class", append(class(dt),ifelse(is.null(cofactors),"fcs.data.raw","fcs.data.asinh")))
   invisible(dt)
 }
 #' @title a parallelized version of `fcs.to.dt`; essentially a wrapper around `parallel` package functions
@@ -241,12 +257,13 @@ fcs.to.dt<-function(fcs.dt,channel_alias=NULL,alias.order=F){
 #' @param fcs.dt a `data.table` as returned from `get.fcs.file.dt`
 #' @param channel_alias as returned from `get.fcs.channel.alias`
 #' @param alias.order Logical. If `TRUE`, the `data.table` columns will be ordered to match that of the `channel_alias` 'alias' column.
+#' @param cofactors A named numeric vector; names must match those found in `fcs.dt`; named columns will be `asinh` transformed with the supplied cofactor (numeric).
 #'
-#' @return a row-bound `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns
+#' @return a `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be `asinh`-transformed.
 #' @export
 #'
 #'
-fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL,alias.order=F){
+fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL,alias.order=F,cofactors=NULL){
   n.cores<-parallel::detectCores()
   n.paths<-fcs.dt[,.N]
   n<-ifelse(n.paths>n.cores,n.cores,n.paths)
@@ -255,12 +272,18 @@ fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL,alias.order=F){
     parallel::clusterExport(cl,'channel_alias',envir = environment())
   }
   parallel::clusterExport(cl,'alias.order',envir = environment())
+  if(!is.null(cofactors)){
+    parallel::clusterExport(cl,'cofactors',envir = environment())
+  }
   ##
   dt<-data.table::rbindlist(parallel::parLapply(cl,split(fcs.dt,by='f.path'),fcs.to.dt,
                                                 channel_alias = if(!is.null(channel_alias)) channel_alias,
-                                                alias.order=alias.order))
+                                                alias.order=alias.order,
+                                                cofactors = if(!is.null(cofactors)) cofactors))
   ##
   on.exit({parallel::stopCluster(cl);invisible(gc())})
+  #data.table::rbindlist does not preserve attributes; append as in 'fcs.to.dt'
+  data.table::setattr(dt, "class", append(class(dt),ifelse(is.null(cofactors),"fcs.data.raw","fcs.data.asinh")))
   invisible(dt)
 }
 #' @title Generate a `data.table` of .fcs parameters

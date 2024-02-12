@@ -4,7 +4,12 @@
 \alias{fcs.to.dt.parallel}
 \title{a parallelized version of \code{fcs.to.dt}; essentially a wrapper around \code{parallel} package functions}
 \usage{
-fcs.to.dt.parallel(fcs.dt, channel_alias = NULL, alias.order = F)
+fcs.to.dt.parallel(
+  fcs.dt,
+  channel_alias = NULL,
+  alias.order = F,
+  cofactors = NULL
+)
 }
 \arguments{
 \item{fcs.dt}{a \code{data.table} as returned from \code{get.fcs.file.dt}}
@@ -12,9 +17,11 @@ fcs.to.dt.parallel(fcs.dt, channel_alias = NULL, alias.order = F)
 \item{channel_alias}{as returned from \code{get.fcs.channel.alias}}
 
 \item{alias.order}{Logical. If \code{TRUE}, the \code{data.table} columns will be ordered to match that of the \code{channel_alias} 'alias' column.}
+
+\item{cofactors}{A named numeric vector; names must match those found in \code{fcs.dt}; named columns will be \code{asinh} transformed with the supplied cofactor (numeric).}
 }
 \value{
-a row-bound \code{data.table} of raw, un-transformed numeric expression values with character/factor identifier columns
+a \code{data.table} of raw, un-transformed numeric expression values with character/factor identifier columns; if \code{cofactors} is defined, the raw expression values will be \code{asinh}-transformed.
 }
 \description{
 a parallelized version of \code{fcs.to.dt}; essentially a wrapper around \code{parallel} package functions
