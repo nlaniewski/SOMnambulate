@@ -232,7 +232,9 @@ fcs.to.dt<-function(fcs.dt,channel_alias=NULL,alias.order=F){
   if(length((fcs.dt[,!'f.path']))>0){
     dt<-cbind(dt,fcs.dt[,!'f.path'])
   }
-  return(dt)
+  #
+  data.table::setattr(dt, "class", append(class(dt),"fcs.data.raw"))
+  invisible(dt)
 }
 #' @title a parallelized version of `fcs.to.dt`; essentially a wrapper around `parallel` package functions
 #'
@@ -259,7 +261,7 @@ fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL,alias.order=F){
                                                 alias.order=alias.order))
   ##
   on.exit({parallel::stopCluster(cl);invisible(gc())})
-  return(dt)
+  invisible(dt)
 }
 #' @title Generate a `data.table` of .fcs parameters
 #'
