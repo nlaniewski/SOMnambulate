@@ -97,6 +97,8 @@ som<-function(dt,.scale=F,scale.func=NULL,seed.val=1337,...){
   if(.scale){
     fsom$scale<-TRUE
     fsom$scale.func<-scale.func
+  }else{
+    fsom$scale<-FALSE
   }
   return(fsom)
 }
@@ -116,8 +118,8 @@ som.codes.dt<-function(fsom,append.name=NULL,k=NULL,umap.codes=F,seed.val=1337){
   #for R CMD check; data.table vars
   node<-NULL
   #
-  if(!"FlowSOM" %in% class(fsom)){
-    stop("Need a 'FlowSOM' object as returned from 'FlowSOM::BuildSOM(())'or 'SOMnambulate::som'")
+  if(!"codes" %in% names(fsom)){
+    stop("Need a 'FlowSOM' object as returned from 'FlowSOM::BuildSOM()'or 'SOMnambulate::som()'")
   }
   dt.codes<-data.table::data.table(fsom$codes)
   dt.codes[,node:=seq(.N)]
