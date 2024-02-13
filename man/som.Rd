@@ -7,9 +7,9 @@
 som(dt, .scale = F, scale.func = NULL, seed.val = 1337, ...)
 }
 \arguments{
-\item{dt}{A \code{data.table} as returned from \code{fcs.to.dt}; the \code{dt} should be subset to only include columns-of-interest for training the SOM; coerced to matrix.}
+\item{dt}{A \code{data.table} as returned from \code{fcs.to.dt}; the \code{dt} should be subset to only include numeric columns-of-interest for training the SOM; coerced to matrix.}
 
-\item{.scale}{Logical: default \code{FALSE}; if \code{TRUE}, the (subset) \code{dt} will be scaled using an internally-defined function.}
+\item{.scale}{Logical: default \code{FALSE}; if \code{TRUE}, \code{dt} will be scaled using an internally-defined function.}
 
 \item{scale.func}{Default \code{NULL}; if defined and \code{.scale=TRUE}, will use the supplied function to override the default internally-defined function.}
 
@@ -18,7 +18,7 @@ som(dt, .scale = F, scale.func = NULL, seed.val = 1337, ...)
 \item{...}{further arguments passed to \code{FlowSOM::SOM(...)}}
 }
 \value{
-A list containing \code{FlowSOM::SOM}-specific parameters/results. Of primary importance is the list element \verb{[['codes]]}.
+A list containing \code{FlowSOM::SOM}-specific parameters/results. Of primary importance is the list element \verb{[['codes']]}.
 }
 \description{
 Essentially a wrapper for \code{FlowSOM::SOM} with a few \code{data.table}-specific operations.

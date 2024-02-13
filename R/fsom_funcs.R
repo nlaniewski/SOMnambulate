@@ -73,8 +73,8 @@ fsom.merge.codes<-function (fsom, codes.to.merge)
 #' Essentially a wrapper for `FlowSOM::SOM` with a few `data.table`-specific operations.
 #'
 #'
-#' @param dt A `data.table` as returned from `fcs.to.dt`; the `dt` should be subset to only include columns-of-interest for training the SOM; coerced to matrix.
-#' @param .scale Logical: default `FALSE`; if `TRUE`, the (subset) `dt` will be scaled using an internally-defined function.
+#' @param dt A `data.table` as returned from `fcs.to.dt`; the `dt` should be subset to only include numeric columns-of-interest for training the SOM; coerced to matrix.
+#' @param .scale Logical: default `FALSE`; if `TRUE`, `dt` will be scaled using an internally-defined function.
 #' @param scale.func Default `NULL`; if defined and `.scale=TRUE`, will use the supplied function to override the default internally-defined function.
 #' @param seed.val An elite random seed value used to control otherwise random starts.
 #' @param ... further arguments passed to `FlowSOM::SOM(...)`
@@ -138,4 +138,50 @@ som.codes.dt<-function(fsom,append.name=NULL,k=NULL,umap.codes=F,seed.val=1337){
     data.table::setnames(dt.codes,old,new)
   }
   return(dt.codes)
+}
+#' @title Map individual data points to nearest node.
+#' @description
+#' This function is entirely dependent on the compiled C code found in (hidden function) `FlowSOM:::MapDataToCodes`; as an incredibly useful function, it is used here to map (often tens of millions) data points to their nearest node based on the training SOM.  The result of `FlowSOM:::MapDataToCodes` is a two column matrix but in this function it is added to `dt` by 'reference' so that no copy is made.
+#'
+#'
+#' @param fsom An object as returned from \link{som}
+#' @param dt An object as returned from \link{fcs.to.dt}
+#'
+#' @return This function modifies `dt` by reference using `data.table`'s `:=` and `set` functions; two derived columns of 'mapped' data -- named generically as 'node' and 'node_dist' -- are added to `dt`. If `fsom` has been list-appended with the return of \link{som.codes.dt}, then an additional column -- 'cluster' -- will be added by reference.
+#' @note Assignment operators \link[base]{<-} should not be used with this function as it modifies `dt` by reference; the intent is to avoid copying an often large `dt` object.
+#' @references Van Gassen, Sofie, Britt Callebaut, Mary J Van Helden, Bart N Lambrecht, Piet Demeester, Tom Dhaene, and Yvan Saeys. 2015. “FlowSOM: Using Self-Organizing Maps for Visualization and Interpretation of Cytometry Data.” Cytometry Part A 87 (7): 636–45. https://onlinelibrary.wiley.com/doi/full/10.1002/cyto.a.22625.
+#' @export
+#'
+#'
+map.som.data<-function(fsom,dt){
+  #retrieve hidden function from FlowSOM package
+  map.data<-utils::getFromNamespace("MapDataToCodes","FlowSOM")
+  #retrieve node/cluster names from fsom$codes.dt
+  if(!is.null(fsom$codes.dt)){
+    node.col<-grep("node",names(fsom$codes.dt),value = T)
+    node.cols<-c(node.col,sub("node","node_dist",node.col))
+    cluster.col<-grep("cluster",names(fsom$codes.dt),value = T)
+  }else{
+    node.col<-"node"
+    node.cols<-c("node","node_dist")
+  }
+  #
+  dt[,(node.cols) := as.list(
+    as.data.frame(
+      map.data(
+        fsom$codes,
+        as.matrix(if(fsom$scale){
+          dt[,lapply(.SD,fsom$scale.func),.SDcols = colnames(fsom$codes)]
+        }else{
+          dt[,colnames(fsom$codes),with=F]
+        })
+      )
+    )
+  )]
+  #
+  if(!is.null(fsom$codes.dt)){
+    data.table::set(dt,j=cluster.col,value = fsom$codes.dt[[cluster.col]][dt[[node.col]]])
+  }
+  #
+  invisible(dt[])
 }
