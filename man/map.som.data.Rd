@@ -15,7 +15,7 @@ map.som.data(fsom, dt)
 This function modifies \code{dt} by reference using \code{data.table}'s \verb{:=} and \code{set} functions; two derived columns of 'mapped' data -- named generically as 'node' and 'node_dist' -- are added to \code{dt}. If \code{fsom} has been list-appended with the return of \link{som.codes.dt}, then an additional column -- 'cluster' -- will be added by reference.
 }
 \description{
-This function is entirely dependent on the compiled C code found in (hidden function) \code{FlowSOM:::MapDataToCodes}; as an incredibly useful function, it is used here to map (often tens of millions) data points to their nearest node based on the training SOM.  The result of \code{FlowSOM:::MapDataToCodes} is a two column matrix but in this function it is added to \code{dt} by 'reference' so that no copy is made.
+This function is entirely dependent on the compiled C code found in (hidden function) \code{FlowSOM:::MapDataToCodes}; as an incredibly useful function, it is used here to map (often tens of millions) data points to their nearest node based on the trained SOM.  The result of \code{FlowSOM:::MapDataToCodes} is a two column matrix but in this function it is added to \code{dt} by 'reference' so that no copy is made.
 }
 \note{
 Assignment operators \link[base]{<-} should not be used with this function as it modifies \code{dt} by reference; the intent is to avoid copying an often large \code{dt} object.

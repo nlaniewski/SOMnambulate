@@ -104,13 +104,13 @@ som<-function(dt,.scale=F,scale.func=NULL,seed.val=1337,...){
 }
 #' @title Generate a `data.table` of clustered `FlowSOM` codes/SOMs.
 #'
-#' @param fsom A `FlowSOM::SOM` result as returned from `SOMnambulate::som()`.
+#' @param fsom A `FlowSOM::SOM` result as returned from \link{som}.
 #' @param append.name Character string; will be used to append the otherwise generically named 'node' and 'cluster' columns.
-#' @param k Numeric; if defined, will generate `k` clusters using `FlowSOM::metaClustering_consensus()`.
-#' @param umap.codes Logical: default `FALSE`; if `TRUE`, the codes/SOMs will be embedded using `uwot::umap()`.
+#' @param k Numeric; if defined, will generate `k` clusters using \link[FlowSOM]{metaClustering_consensus}.
+#' @param umap.codes Logical: default `FALSE`; if `TRUE`, the codes/SOMs will be embedded using \link[uwot]{umap}.
 #' @param seed.val An elite random seed value used to control otherwise random starts.
 #'
-#' @return A `data.table` of clustered (factor) codes that represents the direct result of `FlowSOM::SOM`.
+#' @return A `data.table` of clustered (factor) codes that represents the direct result of \link[FlowSOM]{SOM}.
 #' @export
 #'
 #'
@@ -141,7 +141,7 @@ som.codes.dt<-function(fsom,append.name=NULL,k=NULL,umap.codes=F,seed.val=1337){
 }
 #' @title Map individual data points to nearest node.
 #' @description
-#' This function is entirely dependent on the compiled C code found in (hidden function) `FlowSOM:::MapDataToCodes`; as an incredibly useful function, it is used here to map (often tens of millions) data points to their nearest node based on the training SOM.  The result of `FlowSOM:::MapDataToCodes` is a two column matrix but in this function it is added to `dt` by 'reference' so that no copy is made.
+#' This function is entirely dependent on the compiled C code found in (hidden function) `FlowSOM:::MapDataToCodes`; as an incredibly useful function, it is used here to map (often tens of millions) data points to their nearest node based on the trained SOM.  The result of `FlowSOM:::MapDataToCodes` is a two column matrix but in this function it is added to `dt` by 'reference' so that no copy is made.
 #'
 #'
 #' @param fsom An object as returned from \link{som}
@@ -166,6 +166,11 @@ map.som.data<-function(fsom,dt){
     node.cols<-c("node","node_dist")
   }
   #
+  message(paste(
+    "Mapping data using FlowSOM:::MapDataToCodes;",
+    paste("adding columns",paste0("'",node.cols,"'",collapse = " and "),"-- by reference -- to 'dt'."),
+    sep = "\n"
+  ))
   dt[,(node.cols) := as.list(
     as.data.frame(
       map.data(
@@ -180,6 +185,7 @@ map.som.data<-function(fsom,dt){
   )]
   #
   if(!is.null(fsom$codes.dt)){
+    message(paste("Adding column",paste0("'",cluster.col,"'"),"(factor) -- by reference -- to 'dt"))
     data.table::set(dt,j=cluster.col,value = fsom$codes.dt[[cluster.col]][dt[[node.col]]])
   }
   #

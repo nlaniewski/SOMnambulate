@@ -13,18 +13,18 @@ som.codes.dt(
 )
 }
 \arguments{
-\item{fsom}{A \code{FlowSOM::SOM} result as returned from \code{SOMnambulate::som()}.}
+\item{fsom}{A \code{FlowSOM::SOM} result as returned from \link{som}.}
 
 \item{append.name}{Character string; will be used to append the otherwise generically named 'node' and 'cluster' columns.}
 
-\item{k}{Numeric; if defined, will generate \code{k} clusters using \code{FlowSOM::metaClustering_consensus()}.}
+\item{k}{Numeric; if defined, will generate \code{k} clusters using \link[FlowSOM]{metaClustering_consensus}.}
 
-\item{umap.codes}{Logical: default \code{FALSE}; if \code{TRUE}, the codes/SOMs will be embedded using \code{uwot::umap()}.}
+\item{umap.codes}{Logical: default \code{FALSE}; if \code{TRUE}, the codes/SOMs will be embedded using \link[uwot]{umap}.}
 
 \item{seed.val}{An elite random seed value used to control otherwise random starts.}
 }
 \value{
-A \code{data.table} of clustered (factor) codes that represents the direct result of \code{FlowSOM::SOM}.
+A \code{data.table} of clustered (factor) codes that represents the direct result of \link[FlowSOM]{SOM}.
 }
 \description{
 Generate a \code{data.table} of clustered \code{FlowSOM} codes/SOMs.
