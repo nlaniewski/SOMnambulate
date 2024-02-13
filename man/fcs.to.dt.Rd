@@ -4,12 +4,20 @@
 \alias{fcs.to.dt}
 \title{reads a .fcs file and converts it to \code{data.table}}
 \usage{
-fcs.to.dt(fcs.dt, channel_alias = NULL, alias.order = F, cofactors = NULL)
+fcs.to.dt(
+  fcs.dt,
+  channel_alias = NULL,
+  alias.pattern = F,
+  alias.order = F,
+  cofactors = NULL
+)
 }
 \arguments{
 \item{fcs.dt}{a \code{data.table} as returned from \code{get.fcs.file.dt}}
 
 \item{channel_alias}{as returned from \code{get.fcs.channel.alias}}
+
+\item{alias.pattern}{Logical; default \code{FALSE}. If \code{TRUE} and \code{channel_alias} is defined, the 'alias' column will be used as a pattern to define the \code{FlowCore::read.FCS(column.pattern = ...)} argument.}
 
 \item{alias.order}{Logical. If \code{TRUE}, the \code{data.table} columns will be ordered to match that of the \code{channel_alias} 'alias' column.}
 

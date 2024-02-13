@@ -211,6 +211,7 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
 #'
 #' @param fcs.dt a `data.table` as returned from `get.fcs.file.dt`
 #' @param channel_alias as returned from `get.fcs.channel.alias`
+#' @param alias.pattern Logical; default `FALSE`. If `TRUE` and `channel_alias` is defined, the 'alias' column will be used as a pattern to define the `FlowCore::read.FCS(column.pattern = ...)` argument.
 #' @param alias.order Logical. If `TRUE`, the `data.table` columns will be ordered to match that of the `channel_alias` 'alias' column.
 #' @param cofactors A named numeric vector; names must match those found in `fcs.dt`; named columns will be `asinh` transformed with the supplied cofactor (numeric).
 #'
@@ -218,11 +219,13 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
 #' @export
 #'
 #'
-fcs.to.dt<-function(fcs.dt,channel_alias=NULL,alias.order=F,cofactors=NULL){
+fcs.to.dt<-function(fcs.dt,channel_alias=NULL,alias.pattern=F,alias.order=F,cofactors=NULL){
   #read .fcs file ('.path')
   #if defined, rename columns using 'channel_alias' as returned from 'get.fcs.channel.alias'
   fcs.tmp<-flowCore::read.FCS(fcs.dt[['f.path']],transformation = F,truncate_max_range = F,
-                              channel_alias = if(!is.null(channel_alias)) channel_alias)
+                              channel_alias = if(!is.null(channel_alias)) channel_alias,
+                              column.pattern = if(!is.null(channel_alias) & alias.pattern) paste0(channel_alias$alias,collapse = "|")
+  )
   #convert the expression matrix (raw, un-transformed data values) into a data.table
   dt<-data.table::setDT(as.data.frame(fcs.tmp@exprs))
   #if defined, transform named columns with supplied cofactors
@@ -255,6 +258,7 @@ fcs.to.dt<-function(fcs.dt,channel_alias=NULL,alias.order=F,cofactors=NULL){
 #'
 #' @param fcs.dt a `data.table` as returned from `get.fcs.file.dt`
 #' @param channel_alias as returned from `get.fcs.channel.alias`
+#' @param alias.pattern Logical; default `FALSE`. If `TRUE` and `channel_alias` is defined, the 'alias' column will be used as a pattern to define the `FlowCore::read.FCS(column.pattern = ...)` argument.
 #' @param alias.order Logical. If `TRUE`, the `data.table` columns will be ordered to match that of the `channel_alias` 'alias' column.
 #' @param cofactors A named numeric vector; names must match those found in `fcs.dt`; named columns will be `asinh` transformed with the supplied cofactor (numeric).
 #'
@@ -262,7 +266,7 @@ fcs.to.dt<-function(fcs.dt,channel_alias=NULL,alias.order=F,cofactors=NULL){
 #' @export
 #'
 #'
-fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL,alias.order=F,cofactors=NULL){
+fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL,alias.pattern=F,alias.order=F,cofactors=NULL){
   n.cores<-parallel::detectCores()
   n.paths<-fcs.dt[,.N]
   n<-ifelse(n.paths>n.cores,n.cores,n.paths)
@@ -270,6 +274,7 @@ fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL,alias.order=F,cofactors=N
   if(!is.null(channel_alias)){
     parallel::clusterExport(cl,'channel_alias',envir = environment())
   }
+  parallel::clusterExport(cl,'alias.pattern',envir = environment())
   parallel::clusterExport(cl,'alias.order',envir = environment())
   if(!is.null(cofactors)){
     parallel::clusterExport(cl,'cofactors',envir = environment())
@@ -277,6 +282,7 @@ fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL,alias.order=F,cofactors=N
   ##
   dt<-data.table::rbindlist(parallel::parLapply(cl,split(fcs.dt,by='f.path'),fcs.to.dt,
                                                 channel_alias = if(!is.null(channel_alias)) channel_alias,
+                                                alias.pattern=alias.pattern,
                                                 alias.order=alias.order,
                                                 cofactors = if(!is.null(cofactors)) cofactors))
   ##

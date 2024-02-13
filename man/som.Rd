@@ -18,7 +18,7 @@ som(dt, .scale = F, scale.func = NULL, seed.val = 1337, ...)
 \item{...}{further arguments passed to \code{FlowSOM::SOM(...)}}
 }
 \value{
-A list containing \code{FlowSOM::SOM}-specific parameters/results. Of primary importance is the list element \verb{[['codes]]}.
+A list containing \code{FlowSOM::SOM}-specific parameters/results. Of primary importance is the list element \verb{[['codes']]}.
 }
 \description{
 Essentially a wrapper for \code{FlowSOM::SOM} with a few \code{data.table}-specific operations.
