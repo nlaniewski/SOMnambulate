@@ -8,9 +8,10 @@
 #'
 #' @return a list of parameters per .fcs file; if \code{return.dt=T}, a data.table of parameters
 #' @examples
-#' fcs.files <- list.files(system.file("extdata",package="SOMnambulate"),full.names = T,pattern=".fcs")
+#' extdata<-system.file("extdata",package="SOMnambulate")
+#' fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
 #' get.fcs.parameters(fcs.files[1])
-#' get.fcs.parameters(fcs.files[1],return.dt=T)[]
+#' get.fcs.parameters(fcs.files[1],return.dt=TRUE)[]
 #'
 #' @export
 get.fcs.parameters<-function(fcs.file.paths,return.dt=F){
@@ -46,14 +47,15 @@ get.fcs.parameters<-function(fcs.file.paths,return.dt=F){
 #'
 #' @return a list of non-parameter ('$P') keywords per .fcs file; if \code{return.dt=T}, a data.table of keywords/values
 #' @examples
-#' fcs.files <- list.files(system.file("extdata",package="SOMnambulate"),full.names = T,pattern=".fcs")
+#' extdata<-system.file("extdata",package="SOMnambulate")
+#' fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
 #' get.fcs.keywords.metadata(fcs.files[1])
 #'
 #' #note column classes in the data.table; the TEXT section is encoded as character
-#' get.fcs.keywords.metadata(fcs.files[1],return.dt=T)[]
+#' get.fcs.keywords.metadata(fcs.files[1],return.dt=TRUE)[]
 #'
 #' #list; row-bound data.table; a few example conversions
-#' mdats <- get.fcs.keywords.metadata(fcs.files,return.dt=T)#a list of data.tables
+#' mdats <- get.fcs.keywords.metadata(fcs.files,return.dt=TRUE)#a list of data.tables
 #' mdat<-data.table::rbindlist(mdats)#a single, row-bound data.table
 #' mdat[,class(`$DATE`)]#"character" class
 #' mdat[,`$DATE`:= data.table::as.IDate(`$DATE`,format="%d-%b-%Y")]
@@ -98,11 +100,14 @@ get.fcs.keywords.metadata <- function(fcs.file.paths,return.dt=F,pattern=NULL,pa
 #' @return a `data.table` of full length .fcs file paths and related metadata (parsed from the TEXT header).
 #' @examples
 #' # example code
-#' fcs.files <- list.files(system.file("extdata",package="SOMnambulate"),full.names = T,pattern=".fcs")
+#' extdata<-system.file("extdata",package="SOMnambulate")
+#' fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
 #' fcs.files.dt<-get.fcs.file.dt(fcs.files)
 #' fcs.files.dt[]
 #' #enforce/establish naming convention for the construction of a sample.id and associated factors
-#' fcs.files.dt[,c('study.name','batch.seq','batch.date') := data.table::tstrsplit(basename(dirname(FILENAME)),"_",type.convert=list(as.factor=1:3))]
+#' new.cols<-c('study.name','batch.seq','batch.date')
+#' fcs.files.dt[,(new.cols) :=
+#' data.table::tstrsplit(basename(dirname(FILENAME)),"_",type.convert=list(as.factor=1:3))]
 #' fcs.files.dt[,stim.condition := factor(stringr::str_extract(FIL,"SEB|UNSTIM"))]
 #'
 #' @export

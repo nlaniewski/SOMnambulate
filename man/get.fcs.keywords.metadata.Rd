@@ -27,14 +27,15 @@ a list of non-parameter ('$P') keywords per .fcs file; if \code{return.dt=T}, a 
 Non-parameter ($P) keywords in the TEXT section of a .fcs file denote cytometer/sample-specific meta-data. This function allows parsing of that meta-data without the overhead of reading the actual .fcs file to get the values.  Depending on the nature of the .fcs file, there will be some mix of FCS-defined ('$') and non-standard keywords.
 }
 \examples{
-fcs.files <- list.files(system.file("extdata",package="SOMnambulate"),full.names = T,pattern=".fcs")
+extdata<-system.file("extdata",package="SOMnambulate")
+fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
 get.fcs.keywords.metadata(fcs.files[1])
 
 #note column classes in the data.table; the TEXT section is encoded as character
-get.fcs.keywords.metadata(fcs.files[1],return.dt=T)[]
+get.fcs.keywords.metadata(fcs.files[1],return.dt=TRUE)[]
 
 #list; row-bound data.table; a few example conversions
-mdats <- get.fcs.keywords.metadata(fcs.files,return.dt=T)#a list of data.tables
+mdats <- get.fcs.keywords.metadata(fcs.files,return.dt=TRUE)#a list of data.tables
 mdat<-data.table::rbindlist(mdats)#a single, row-bound data.table
 mdat[,class(`$DATE`)]#"character" class
 mdat[,`$DATE`:= data.table::as.IDate(`$DATE`,format="\%d-\%b-\%Y")]

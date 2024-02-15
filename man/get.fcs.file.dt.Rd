@@ -19,11 +19,14 @@ Essentially a wrapper around \link{get.fcs.keywords.metadata} with some convenie
 }
 \examples{
 # example code
-fcs.files <- list.files(system.file("extdata",package="SOMnambulate"),full.names = T,pattern=".fcs")
+extdata<-system.file("extdata",package="SOMnambulate")
+fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
 fcs.files.dt<-get.fcs.file.dt(fcs.files)
 fcs.files.dt[]
 #enforce/establish naming convention for the construction of a sample.id and associated factors
-fcs.files.dt[,c('study.name','batch.seq','batch.date') := data.table::tstrsplit(basename(dirname(FILENAME)),"_")]
-fcs.files.dt[,stim.condition := stringr::str_extract(FIL,"SEB|UNSTIM")]
+new.cols<-c('study.name','batch.seq','batch.date')
+fcs.files.dt[,(new.cols) :=
+data.table::tstrsplit(basename(dirname(FILENAME)),"_",type.convert=list(as.factor=1:3))]
+fcs.files.dt[,stim.condition := factor(stringr::str_extract(FIL,"SEB|UNSTIM"))]
 
 }
