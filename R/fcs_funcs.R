@@ -1,12 +1,18 @@
 #' @title Get parameters ('$P') from .fcs file headers
+#' @description
+#' $P keywords in the TEXT section of a .fcs file denote cytometer-specific parameter names/values. There is useful information that can be parsed from these parameters -- particularly the $PN and $PS parameter-value pairs. This function allows parsing of these parameters without the overhead of reading the actual .fcs file to get the values.
+#'
 #'
 #' @param fcs.file.paths Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.
 #' @param return.dt Logical. By default, \code{FALSE}; if \code{TRUE}, will return a data.table of parameters per .fcs file
 #'
 #' @return a list of parameters per .fcs file; if \code{return.dt=T}, a data.table of parameters
+#' @examples
+#' fcs.files <- list.files(system.file("extdata",package="SOMnambulate"),full.names = T,pattern=".fcs")
+#' get.fcs.parameters(fcs.files[1])
+#' get.fcs.parameters(fcs.files[1],return.dt=T)[]
+#'
 #' @export
-#'
-#'
 get.fcs.parameters<-function(fcs.file.paths,return.dt=F){
   fcs.parameters.list<-sapply(flowCore::read.FCSheader(fcs.file.paths),function(h){
     p.max<-as.numeric(h['$PAR'])
@@ -29,6 +35,9 @@ get.fcs.parameters<-function(fcs.file.paths,return.dt=F){
   }
 }
 #' @title Get keyword metadata (!'$P') from .fcs files
+#' @description
+#' Non-parameter ($P) keywords in the TEXT section of a .fcs file denote cytometer/sample-specific meta-data. This function allows parsing of that meta-data without the overhead of reading the actual .fcs file to get the values.  Depending on the nature of the .fcs file, there will be some mix of FCS-defined ('$') and non-standard keywords.
+#'
 #'
 #' @param fcs.file.paths Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.
 #' @param return.dt Logical. By default, \code{FALSE}; if \code{TRUE}, will return a data.table of keyword/values per .fcs file
@@ -36,9 +45,21 @@ get.fcs.parameters<-function(fcs.file.paths,return.dt=F){
 #' @param pattern.unique Logical. By default, \code{TRUE}; returns unique keyword data.tables.
 #'
 #' @return a list of non-parameter ('$P') keywords per .fcs file; if \code{return.dt=T}, a data.table of keywords/values
+#' @examples
+#' fcs.files <- list.files(system.file("extdata",package="SOMnambulate"),full.names = T,pattern=".fcs")
+#' get.fcs.keywords.metadata(fcs.files[1])
+#'
+#' #note column classes in the data.table; the TEXT section is encoded as character
+#' get.fcs.keywords.metadata(fcs.files[1],return.dt=T)[]
+#'
+#' #list; row-bound data.table; a few example conversions
+#' mdats <- get.fcs.keywords.metadata(fcs.files,return.dt=T)#a list of data.tables
+#' mdat<-data.table::rbindlist(mdats)#a single, row-bound data.table
+#' mdat[,class(`$DATE`)]#"character" class
+#' mdat[,`$DATE`:= data.table::as.IDate(`$DATE`,format="%d-%b-%Y")]
+#' mdat[,class(`$DATE`)]#"Date" class
+#'
 #' @export
-#'
-#'
 get.fcs.keywords.metadata <- function(fcs.file.paths,return.dt=F,pattern=NULL,pattern.unique=T){
   fcs.keywords.list <- sapply(flowCore::read.FCSheader(fcs.file.paths),function(h){
     #drop-terms: '$P[0-9]+' (parameters); 'P[0-9]+DISPLAY' (Cytek specific?); Spill(over)
@@ -67,14 +88,24 @@ get.fcs.keywords.metadata <- function(fcs.file.paths,return.dt=F,pattern=NULL,pa
   }
 }
 #' @title Get a `data.table` of .fcs file paths and related metadata.
+#' @description
+#' Essentially a wrapper around \link{get.fcs.keywords.metadata} with some convenience formatting and class conversions. This structured `data.table` can be considered the starting point of an analysis workflow. Naming conventions can be enforced by modifying any sample/subject-specific columns; it's not uncommon for typos to occur during the course of a large study and they can be corrected after the keyword metadata has been parsed into this `data.table`.
+#'
 #'
 #' @param fcs.file.paths Character string; path(s) usually returned from `list.files(...,full.names=T,pattern=".fcs")`.
 #' @param factor.cols Character string; column names to be converted to factor.
 #'
-#' @return a `data.table` of full length .fcs file paths and related metadata (parsed from the text header).
+#' @return a `data.table` of full length .fcs file paths and related metadata (parsed from the TEXT header).
+#' @examples
+#' # example code
+#' fcs.files <- list.files(system.file("extdata",package="SOMnambulate"),full.names = T,pattern=".fcs")
+#' fcs.files.dt<-get.fcs.file.dt(fcs.files)
+#' fcs.files.dt[]
+#' #enforce/establish naming convention for the construction of a sample.id and associated factors
+#' fcs.files.dt[,c('study.name','batch.seq','batch.date') := data.table::tstrsplit(basename(dirname(FILENAME)),"_",type.convert=list(as.factor=1:3))]
+#' fcs.files.dt[,stim.condition := factor(stringr::str_extract(FIL,"SEB|UNSTIM"))]
+#'
 #' @export
-#'
-#'
 get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
   f.path<-source.name<-file.size.MB<-NULL
   dt<-data.table::data.table(f.path=fcs.file.paths)
@@ -85,7 +116,7 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
   dt<-cbind(dt,data.table::rbindlist(dts,fill=T))
   #synatically valid names; drop keyword identifier '$'
   names(dt)<-sub("\\$","",names(dt))
-  #drop conserved keywords that are non-informative to the user
+  #drop conserved/standard keywords that are non-informative to the user
   drop.terms<-c(
     paste0(c('BEGIN','END'),c('ANALYSIS')),
     paste0(c('BEGIN','END'),c('DATA')),
@@ -97,13 +128,23 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
     'TIMESTEP',
     'APPLY COMPENSATION',
     'USERSETTINGNAME',
-    'CHARSET'
+    'CHARSET',
+    'TargetGemStoneMethod',#mass cytometry-specific; Helios (CYTOF-7.0.5189)
+    'FluidigmBarcoded',#mass cytometry-specific; Helios (CYTOF-7.0.5189)
+    'FluidigmMassTagsChecked'#mass cytometry-specific; Helios (CYTOF-7.0.5189)
   )
   dt<-dt[,!drop.terms[drop.terms %in% names(dt)],with=F]
   #do a few conversions
   for(j in c('DATE')){data.table::set(dt,j=j,value=data.table::as.IDate(dt[[j]],format="%d-%b-%Y"))}
   for(j in c('BTIM','ETIM')){data.table::set(dt,j=j,value=data.table::as.ITime(dt[[j]]))}
   for(j in grep("TOT|DELAY|ASF|VOL$",names(dt),value = T)){data.table::set(dt,j=j,value=as.numeric(dt[[j]]))}
+  #conserved keywords -- convert these to factor
+  keywords.conserved <- c('CYT','CYTSN','FCSversion')
+  for(j in keywords.conserved){data.table::set(dt,j=j,value=factor(dt[[j]]))}
+  #non-standard, mass cytometry specific -- DVSSCIENCES-FLUIDIGM-CYTOF-7.0.5189; logical
+  keywords.fluidigm <- c('FluidigmNormalized')
+  for(j in keywords.fluidigm){data.table::set(dt,j=j,value=as.logical(dt[[j]]))}
+  #defined through argument
   if(!is.null(factor.cols)){
     for(j in factor.cols){if(j %in% names(dt)) data.table::set(dt,j=j,value=factor(dt[[j]]))}
   }

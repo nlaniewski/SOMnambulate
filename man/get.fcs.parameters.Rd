@@ -15,5 +15,11 @@ get.fcs.parameters(fcs.file.paths, return.dt = F)
 a list of parameters per .fcs file; if \code{return.dt=T}, a data.table of parameters
 }
 \description{
-Get parameters ('$P') from .fcs file headers
+$P keywords in the TEXT section of a .fcs file denote cytometer-specific parameter names/values. There is useful information that can be parsed from these parameters -- particularly the $PN and $PS parameter-value pairs. This function allows parsing of these parameters without the overhead of reading the actual .fcs file to get the values.
+}
+\examples{
+fcs.files <- list.files(system.file("extdata",package="SOMnambulate"),full.names = T,pattern=".fcs")
+get.fcs.parameters(fcs.files[1])
+get.fcs.parameters(fcs.files[1],return.dt=T)[]
+
 }
