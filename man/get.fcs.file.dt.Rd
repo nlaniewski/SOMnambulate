@@ -18,15 +18,19 @@ a \code{data.table} of full length .fcs file paths and related metadata (parsed 
 Essentially a wrapper around \link{get.fcs.keywords.metadata} with some convenience formatting and class conversions. This structured \code{data.table} can be considered the starting point of an analysis workflow. Naming conventions can be enforced by modifying any sample/subject-specific columns; it's not uncommon for typos to occur during the course of a large study and they can be corrected after the keyword metadata has been parsed into this \code{data.table}.
 }
 \examples{
-# example code
 extdata<-system.file("extdata",package="SOMnambulate")
 fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
 fcs.files.dt<-get.fcs.file.dt(fcs.files)
 fcs.files.dt[]
+
 #enforce/establish naming convention for the construction of a sample.id and associated factors
 new.cols<-c('study.name','batch.seq','batch.date')
 fcs.files.dt[,(new.cols) :=
 data.table::tstrsplit(basename(dirname(FILENAME)),"_",type.convert=list(as.factor=1:3))]
 fcs.files.dt[,stim.condition := factor(stringr::str_extract(FIL,"SEB|UNSTIM"))]
+fcs.files.dt[,aliquot.seq := factor(seq(.N)),by=.(batch.date,stim.condition)]
+fcs.files.dt[,batch := factor(paste(study.name,batch.seq,batch.date,sep="_"))]
+fcs.files.dt[,sample.id := paste(batch,stim.condition,aliquot.seq,sep="_")]
+fcs.files.dt[]
 
 }

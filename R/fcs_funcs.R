@@ -99,16 +99,20 @@ get.fcs.keywords.metadata <- function(fcs.file.paths,return.dt=F,pattern=NULL,pa
 #'
 #' @return a `data.table` of full length .fcs file paths and related metadata (parsed from the TEXT header).
 #' @examples
-#' # example code
 #' extdata<-system.file("extdata",package="SOMnambulate")
 #' fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
 #' fcs.files.dt<-get.fcs.file.dt(fcs.files)
 #' fcs.files.dt[]
+#'
 #' #enforce/establish naming convention for the construction of a sample.id and associated factors
 #' new.cols<-c('study.name','batch.seq','batch.date')
 #' fcs.files.dt[,(new.cols) :=
 #' data.table::tstrsplit(basename(dirname(FILENAME)),"_",type.convert=list(as.factor=1:3))]
 #' fcs.files.dt[,stim.condition := factor(stringr::str_extract(FIL,"SEB|UNSTIM"))]
+#' fcs.files.dt[,aliquot.seq := factor(seq(.N)),by=.(batch.date,stim.condition)]
+#' fcs.files.dt[,batch := factor(paste(study.name,batch.seq,batch.date,sep="_"))]
+#' fcs.files.dt[,sample.id := paste(batch,stim.condition,aliquot.seq,sep="_")]
+#' fcs.files.dt[]
 #'
 #' @export
 get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
@@ -156,15 +160,41 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
   ##
   return(dt)
 }
-#' @title Get a \code{channel_alias} data.frame from .fcs file headers
+#' @title Get a `channel_alias` data.table from .fcs file headers
 #' @description
-#' The resultant data.frame is to be used with the \code{channel_alias} argument of \code{flowCore::read.fcs(...)}
+#' The resultant `data.table` is to be used with the `channel_alias` argument of \link[flowCore]{read.FCS}. The alias will be used to set column names; make sure they are unique and 'readable'. For example, the included mass cytometry data files used in this example are originally named ($PS) as 'MassMetal_Marker'; a more 'readable' form would be 'Marker_MassMetal' or even just 'Marker' (see example).
 #'
-#' @param fcs.file.paths Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.
+#' @param fcs.file.paths Character string; path(s) usually returned from `list.files(...,full.names=T,pattern=".fcs")`.
 #' @param name.sub Named character vector for use in resolving name conflicts/discrepancies; the vector element(s) should equal a pattern and the name(s) a replacement string.
 #' @param order.alias Logical; if `TRUE`, the `channel_alias` 'alias' column will be sensibly ordered.
 #'
-#' @return returns a `data.frame` containing a 'channels' and 'alias' column; returns a list of `data.frame`s if not unique
+#' @return returns a `data.table` containing a 'channels' and 'alias' column; returns a list of `data.table`s if not unique (issues a warning).
+#' @examples
+#' extdata<-system.file("extdata",package="SOMnambulate")
+#' fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
+#'
+#' #a data.table containing 'channels' ($PN) and 'alias' ($PS)
+#' ca<-get.fcs.channel.alias(fcs.files)
+#' ca[]
+#'
+#' #extraneous channels can be dropped
+#' drop.metals<-c("Y","Pd","Sn","I","La","Lu","Os","Ir","Pt","Pb")
+#' drop.metals<-paste0(drop.metals,'$',collapse="|")
+#' drop.pattern<-paste(drop.metals,'background','noise',sep="|")
+#'
+#' ca[grep(drop.pattern,alias,ignore.case=TRUE)]#drop these
+#' ca[grep(drop.pattern,alias,ignore.case=TRUE,invert=TRUE)]#keep these
+#'
+#' ca<-ca[grep(drop.pattern,alias,ignore.case=TRUE,invert=TRUE)]
+#'
+#' #a few more 'name-fixes'
+#' ca[grep("beads",alias,ignore.case = TRUE),alias:=sub("Norm_beads","beads",alias)]
+#' ca[grep("viability",alias,ignore.case = TRUE),alias:="194Pt_viability"]#drop '_cisplatin'
+#' ca[]
+#' #flip metal and marker to make more 'readable'
+#' ca[stringr::str_detect(alias,"[A-Z]{1}[a-z]{1}_"),alias := sub('(\\w+)_(\\w+)', '\\2_\\1', alias)]
+#' ca[]
+#'
 #' @export
 #'
 #'

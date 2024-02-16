@@ -2,7 +2,7 @@
 % Please edit documentation in R/fcs_funcs.R
 \name{get.fcs.channel.alias}
 \alias{get.fcs.channel.alias}
-\title{Get a \code{channel_alias} data.frame from .fcs file headers}
+\title{Get a \code{channel_alias} data.table from .fcs file headers}
 \usage{
 get.fcs.channel.alias(fcs.file.paths, name.sub = NULL, order.alias = F)
 }
@@ -14,8 +14,35 @@ get.fcs.channel.alias(fcs.file.paths, name.sub = NULL, order.alias = F)
 \item{order.alias}{Logical; if \code{TRUE}, the \code{channel_alias} 'alias' column will be sensibly ordered.}
 }
 \value{
-returns a \code{data.frame} containing a 'channels' and 'alias' column; returns a list of \code{data.frame}s if not unique
+returns a \code{data.table} containing a 'channels' and 'alias' column; returns a list of \code{data.table}s if not unique (issues a warning).
 }
 \description{
-The resultant data.frame is to be used with the \code{channel_alias} argument of \code{flowCore::read.fcs(...)}
+The resultant \code{data.table} is to be used with the \code{channel_alias} argument of \link[flowCore]{read.FCS}. The alias will be used to set column names; make sure they are unique and 'readable'. For example, the included mass cytometry data files used in this example are originally named ($PS) as 'MassMetal_Marker'; a more 'readable' form would be 'Marker_MassMetal' or even just 'Marker' (see example).
+}
+\examples{
+extdata<-system.file("extdata",package="SOMnambulate")
+fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
+
+#a data.table containing 'channels' ($PN) and 'alias' ($PS)
+ca<-get.fcs.channel.alias(fcs.files)
+ca[]
+
+#extraneous channels can be dropped
+drop.metals<-c("Y","Pd","Sn","I","La","Lu","Os","Ir","Pt","Pb")
+drop.metals<-paste0(drop.metals,'$',collapse="|")
+drop.pattern<-paste(drop.metals,'background','noise',sep="|")
+
+ca[grep(drop.pattern,alias,ignore.case=TRUE)]#drop these
+ca[grep(drop.pattern,alias,ignore.case=TRUE,invert=TRUE)]#keep these
+
+ca<-ca[grep(drop.pattern,alias,ignore.case=TRUE,invert=TRUE)]
+
+#a few more 'name-fixes'
+ca[grep("beads",alias,ignore.case = TRUE),alias:=sub("Norm_beads","beads",alias)]
+ca[grep("viability",alias,ignore.case = TRUE),alias:="194Pt_viability"]#drop '_cisplatin'
+ca[]
+#flip metal and marker to make more 'readable'
+ca[stringr::str_detect(alias,"[A-Z]{1}[a-z]{1}_"),alias := sub('(\\\\w+)_(\\\\w+)', '\\\\2_\\\\1', alias)]
+ca[]
+
 }
