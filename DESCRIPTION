@@ -4,6 +4,7 @@ Version: 0.0.0.9000
 Authors@R: 
     person("Nathan", "Laniewski", , "nathan_laniewski@urmc.rochester.edu", role = c("aut", "cre"))
 Description: Generalized tools for .fcs preprocessing and visualization; High-dimensional analysis using a (flow)SOM-based workflow.
+Depends: R (>= 3.5.0)
 License: GPL (>= 3) + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -27,3 +28,4 @@ Imports:
     uwot,
     viridis
 biocViews:
+LazyData: true

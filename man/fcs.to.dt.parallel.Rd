@@ -17,7 +17,7 @@ fcs.to.dt.parallel(
 
 \item{channel_alias}{as returned from \link{get.fcs.channel.alias}}
 
-\item{use.alias.pattern}{Logical; default \code{FALSE}. If \code{TRUE} and \code{channel_alias} is defined, the 'alias' column will be used as a pattern to define the \link[FlowCore]{read.FCS} \code{column.pattern} argument.}
+\item{use.alias.pattern}{Logical; default \code{FALSE}. If \code{TRUE} and \code{channel_alias} is defined, the 'alias' column will be used as a pattern to define the \link[flowCore]{read.FCS} \code{column.pattern} argument.}
 
 \item{alias.order}{Logical. If \code{TRUE}, the \code{data.table} columns will be ordered to match that of the \code{channel_alias} 'alias' column.}
 
@@ -30,8 +30,10 @@ a \code{data.table} of raw, un-transformed numeric expression values (row-bound)
 Essentially a wrapper around \link[parallel]{makeCluster} and those associated functions.  There is 'computational' overhead in initiating the compute clusters but for many .fcs files, this parallelized version of \link{fcs.to.dt} should speed up the workflow.  There is risk of saturating all available RAM if the dataset is large enough.  It is recommended to monitor system resources (Task Manager/Activity Monitor).
 }
 \examples{
-#because of the small file-size of these example files, it's faster to read them individually with 'fcs.to.dt'
-#for larger/many files, the overhead of initiating the compute clusters is negligible compared to the speed savings
+#because of the small file-size of these example files,
+#it's faster to read them individually with 'fcs.to.dt'
+#for larger/many files, the overhead of initiating the compute clusters is negligible
+#compared to the speed savings
 \dontrun{
 #'fcs.files.dt' from 'get.fcs.file.dt' example
 data(fcs.files.dt)
@@ -39,7 +41,8 @@ data(fcs.files.dt)
 #'ca' from 'get.fcs.channel.alias' example
 data(ca)
 
-dt<-fcs.to.dt.parallel(fcs.file.dt=fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
+dt<-fcs.to.dt.parallel(
+fcs.file.dt=fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
 channel_alias=ca,use.alias.pattern=TRUE)
 }
 

@@ -46,7 +46,7 @@ ca[stringr::str_detect(alias,"[A-Z]{1}[a-z]{1}_"),alias := sub('(\\\\w+)_(\\\\w+
 ca[]
 
 #for the sake of this example, assume a .fcs was misnamed
-fcs.tmp<-flowCore::read.FCS(fcs.files[1],transformation=F,truncate.max.range=F)
+fcs.tmp<-flowCore::read.FCS(fcs.files[1],transformation=FALSE,truncate.max.range=FALSE)
 flowCore::markernames(fcs.tmp)[['Cd106Di']]<-"CD45"
 fcs.tmp.path<-tempfile(fileext = ".fcs")
 flowCore::write.FCS(fcs.tmp,fcs.tmp.path)

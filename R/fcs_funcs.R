@@ -197,7 +197,7 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
 #' ca[]
 #'
 #' #for the sake of this example, assume a .fcs was misnamed
-#' fcs.tmp<-flowCore::read.FCS(fcs.files[1],transformation=F,truncate.max.range=F)
+#' fcs.tmp<-flowCore::read.FCS(fcs.files[1],transformation=FALSE,truncate.max.range=FALSE)
 #' flowCore::markernames(fcs.tmp)[['Cd106Di']]<-"CD45"
 #' fcs.tmp.path<-tempfile(fileext = ".fcs")
 #' flowCore::write.FCS(fcs.tmp,fcs.tmp.path)
@@ -252,7 +252,7 @@ get.fcs.channel.alias<-function(fcs.file.paths,name.sub=NULL,order.alias=F){
 }
 #' @title Convert a \code{data.table} of mass cytometry .fcs data into a new .fcs file
 #' @description
-#' After reading in (usually large amounts of) .fcs data and converting to a \code{data.table}, the process can be reversed and a new .fcs file created; new keywords are written to the header section and parameters updated using \code{FlowCore} functions.
+#' After reading in (usually large amounts of) .fcs data and converting to a \code{data.table}, the process can be reversed and a new .fcs file created; new keywords are written to the header section and parameters updated using \code{flowCore} functions.
 #'
 #'
 #' @param dt.data A \code{data.table} of .fcs data, as returned from \code{data.table::as.data.table(flowCore::read.FCS(...))}.
@@ -303,42 +303,43 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
 #'
 #' @param fcs.file.dt a `data.table` as returned from \link{get.fcs.file.dt}; `fcs.file.dt` can be subset to include only columns-of-interest (a minimally-representative subset would include only 'f.path' and 'sample.id').
 #' @param channel_alias as returned from \link{get.fcs.channel.alias}
-#' @param use.alias.pattern Logical; default `FALSE`. If `TRUE` and `channel_alias` is defined, the 'alias' column will be used as a pattern to define the \link[FlowCore]{read.FCS} `column.pattern` argument.
+#' @param use.alias.pattern Logical; default `FALSE`. If `TRUE` and `channel_alias` is defined, the 'alias' column will be used as a pattern to define the \link[flowCore]{read.FCS} `column.pattern` argument.
 #' @param alias.order Logical. If `TRUE`, the `data.table` columns will be ordered to match that of the `channel_alias` 'alias' column.
 #' @param cofactors A named numeric vector; named columns will be \link[base]{asinh} transformed with the supplied cofactor (numeric).
 #'
 #' @return a `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be \link[base]{asinh} transformed.
 #' @examples
-#' #'fcs.files.dt' from 'get.fcs.file.dt' example
-#' data(fcs.files.dt)
+#' #from the 'get.fcs.file.dt' example:
+#' load(system.file("extdata", "fcs.files.dt_ECHO.Rdata", package = "SOMnambulate"))
 #'
-#' #'ca' from 'get.fcs.channel.alias' example
-#' data(ca)
+#' #from the 'get.fcs.channel.alias' example:
+#' load(system.file("extdata", "ca_ECHO.Rdata", package = "SOMnambulate"))
 #'
 #' #retains original 'detector' names;
 #' #all columns from 'fcs.file.dt'
-#' names(fcs.to.dt(fcs.files.dt[1],channel_alias=NULL))
+#' names(SOMnambulate:::fcs.to.dt(fcs.files.dt_ECHO[1],channel_alias=NULL))
 #'
 #' #replaces the original names with the 'alias' from 'channel.alias';
 #' #all columns from 'fcs.file.dt'
-#' names(fcs.to.dt(fcs.files.dt[1],channel_alias=ca))
+#' names(fcs.to.dt(fcs.files.dt_ECHO[1],channel_alias=ca_ECHO))
 #'
 #' #replaces the original names with the 'alias' from 'channel.alias'; drops via pattern
 #' #all columns from 'fcs.file.dt'
-#' names(fcs.to.dt(fcs.files.dt[1],channel_alias=ca,use.alias.pattern=TRUE))
+#' names(fcs.to.dt(fcs.files.dt_ECHO[1],channel_alias=ca_ECHO,use.alias.pattern=TRUE))
 #'
 #' #replaces the original names with the 'alias' from 'channel.alias'; drops via pattern
 #' #a subset of columns from 'fcs.file.dt'
-#' names(fcs.to.dt(fcs.files.dt[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
-#' channel_alias=ca,use.alias.pattern=TRUE))
+#' names(fcs.to.dt(fcs.files.dt_ECHO[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
+#' channel_alias=ca_ECHO,use.alias.pattern=TRUE))
 #'
-#' dt<-fcs.to.dt(fcs.files.dt[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
-#' channel_alias=ca,use.alias.pattern=TRUE)
+#' dt<-fcs.to.dt(fcs.files.dt_ECHO[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
+#' channel_alias=ca_ECHO,use.alias.pattern=TRUE)
 #' dt[]
 #'
 #' #as a list of individual .fcs files
-#' dts<-sapply(split(fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],by='f.path'),
-#' fcs.to.dt,channel_alias=ca,use.alias.pattern=TRUE,simplify=FALSE)
+#' dts<-sapply(
+#' split(fcs.files.dt_ECHO[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],by='f.path'),
+#' fcs.to.dt,channel_alias=ca_ECHO,use.alias.pattern=TRUE,simplify=FALSE)
 #' dts[1]
 #'
 #'
@@ -383,14 +384,16 @@ fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias
 #'
 #' @param fcs.file.dt a `data.table` as returned from \link{get.fcs.file.dt}; `fcs.file.dt` can be subset to include only columns-of-interest (a minimally-representative subset would include only 'f.path' and 'sample.id').
 #' @param channel_alias as returned from \link{get.fcs.channel.alias}
-#' @param use.alias.pattern Logical; default `FALSE`. If `TRUE` and `channel_alias` is defined, the 'alias' column will be used as a pattern to define the \link[FlowCore]{read.FCS} `column.pattern` argument.
+#' @param use.alias.pattern Logical; default `FALSE`. If `TRUE` and `channel_alias` is defined, the 'alias' column will be used as a pattern to define the \link[flowCore]{read.FCS} `column.pattern` argument.
 #' @param alias.order Logical. If `TRUE`, the `data.table` columns will be ordered to match that of the `channel_alias` 'alias' column.
 #' @param cofactors A named numeric vector; named columns will be \link[base]{asinh} transformed with the supplied cofactor (numeric).
 #'
 #' @return a `data.table` of raw, un-transformed numeric expression values (row-bound) with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be \link[base]{asinh} transformed.
 #' @examples
-#' #because of the small file-size of these example files, it's faster to read them individually with 'fcs.to.dt'
-#' #for larger/many files, the overhead of initiating the compute clusters is negligible compared to the speed savings
+#' #because of the small file-size of these example files,
+#' #it's faster to read them individually with 'fcs.to.dt'
+#' #for larger/many files, the overhead of initiating the compute clusters is negligible
+#' #compared to the speed savings
 #' \dontrun{
 #' #'fcs.files.dt' from 'get.fcs.file.dt' example
 #' data(fcs.files.dt)
@@ -398,7 +401,8 @@ fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias
 #' #'ca' from 'get.fcs.channel.alias' example
 #' data(ca)
 #'
-#' dt<-fcs.to.dt.parallel(fcs.file.dt=fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
+#' dt<-fcs.to.dt.parallel(
+#' fcs.file.dt=fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
 #' channel_alias=ca,use.alias.pattern=TRUE)
 #' }
 #'
@@ -510,7 +514,7 @@ parms.list.from.adf<-function(parms.adf,cyto.method='spectral'){
 }
 #' @title Convert a `data.table` into a new .fcs file
 #' @description
-#' After reading in (usually large amounts of) .fcs data and converting to a `data.table`, the process can be reversed and a new .fcs file created; new keywords are written to the header section and parameters updated using `FlowCore` functions.
+#' After reading in (usually large amounts of) .fcs data and converting to a `data.table`, the process can be reversed and a new .fcs file created; new keywords are written to the header section and parameters updated using `flowCore` functions.
 #'
 #'
 #' @param dt Object returned from `fcs.to.dt`.

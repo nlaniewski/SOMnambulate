@@ -36,5 +36,5 @@ dt.to.fcs(
 If \code{write} is set to \code{FALSE}, a \code{flowCore::flowFrame} will be returned; otherwise, a new .fcs file will be written.
 }
 \description{
-After reading in (usually large amounts of) .fcs data and converting to a \code{data.table}, the process can be reversed and a new .fcs file created; new keywords are written to the header section and parameters updated using \code{FlowCore} functions.
+After reading in (usually large amounts of) .fcs data and converting to a \code{data.table}, the process can be reversed and a new .fcs file created; new keywords are written to the header section and parameters updated using \code{flowCore} functions.
 }
