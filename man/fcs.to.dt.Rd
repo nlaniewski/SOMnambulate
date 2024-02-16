@@ -5,27 +5,62 @@
 \title{reads a .fcs file and converts it to \code{data.table}}
 \usage{
 fcs.to.dt(
-  fcs.dt,
+  fcs.file.dt,
   channel_alias = NULL,
-  alias.pattern = F,
-  alias.order = F,
+  use.alias.pattern = FALSE,
+  alias.order = FALSE,
   cofactors = NULL
 )
 }
 \arguments{
-\item{fcs.dt}{a \code{data.table} as returned from \code{get.fcs.file.dt}}
+\item{fcs.file.dt}{a \code{data.table} as returned from \link{get.fcs.file.dt}; \code{fcs.file.dt} can be subset to include only columns-of-interest (a minimally-representative subset would include only 'f.path' and 'sample.id').}
 
-\item{channel_alias}{as returned from \code{get.fcs.channel.alias}}
+\item{channel_alias}{as returned from \link{get.fcs.channel.alias}}
 
-\item{alias.pattern}{Logical; default \code{FALSE}. If \code{TRUE} and \code{channel_alias} is defined, the 'alias' column will be used as a pattern to define the \code{FlowCore::read.FCS(column.pattern = ...)} argument.}
+\item{use.alias.pattern}{Logical; default \code{FALSE}. If \code{TRUE} and \code{channel_alias} is defined, the 'alias' column will be used as a pattern to define the \link[FlowCore]{read.FCS} \code{column.pattern} argument.}
 
 \item{alias.order}{Logical. If \code{TRUE}, the \code{data.table} columns will be ordered to match that of the \code{channel_alias} 'alias' column.}
 
-\item{cofactors}{A named numeric vector; names must match those found in \code{fcs.dt}; named columns will be \code{asinh} transformed with the supplied cofactor (numeric).}
+\item{cofactors}{A named numeric vector; named columns will be \link[base]{asinh} transformed with the supplied cofactor (numeric).}
 }
 \value{
-a \code{data.table} of raw, un-transformed numeric expression values with character/factor identifier columns; if \code{cofactors} is defined, the raw expression values will be \code{asinh}-transformed.
+a \code{data.table} of raw, un-transformed numeric expression values with character/factor identifier columns; if \code{cofactors} is defined, the raw expression values will be \link[base]{asinh} transformed.
 }
 \description{
-reads a .fcs file and converts it to \code{data.table}
+After reading a .fcs file, the expression matrix is converted to a \code{data.table}; in addition, character and factor columns (meta-data) are appended to the numeric expression values. Once in \code{data.table} form, operations such as transformation and scaling can be done 'in place' and 'by' groupings streamline analyses. The example data size is fractionally small compared to even a single typical .fcs file; with sufficient RAM resources, a \code{data.table} of .fcs data amounting to tens of GBs (many high-parameter (spectral/mass) .fcs files, row-bound) can be held in memory.
+}
+\examples{
+#'fcs.files.dt' from 'get.fcs.file.dt' example
+data(fcs.files.dt)
+
+#'ca' from 'get.fcs.channel.alias' example
+data(ca)
+
+#retains original 'detector' names;
+#all columns from 'fcs.file.dt'
+names(fcs.to.dt(fcs.files.dt[1],channel_alias=NULL))
+
+#replaces the original names with the 'alias' from 'channel.alias';
+#all columns from 'fcs.file.dt'
+names(fcs.to.dt(fcs.files.dt[1],channel_alias=ca))
+
+#replaces the original names with the 'alias' from 'channel.alias'; drops via pattern
+#all columns from 'fcs.file.dt'
+names(fcs.to.dt(fcs.files.dt[1],channel_alias=ca,use.alias.pattern=TRUE))
+
+#replaces the original names with the 'alias' from 'channel.alias'; drops via pattern
+#a subset of columns from 'fcs.file.dt'
+names(fcs.to.dt(fcs.files.dt[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
+channel_alias=ca,use.alias.pattern=TRUE))
+
+dt<-fcs.to.dt(fcs.files.dt[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
+channel_alias=ca,use.alias.pattern=TRUE)
+dt[]
+
+#as a list of individual .fcs files
+dts<-sapply(split(fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],by='f.path'),
+fcs.to.dt,channel_alias=ca,use.alias.pattern=TRUE,simplify=FALSE)
+dts[1]
+
+
 }

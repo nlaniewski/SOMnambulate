@@ -14,6 +14,7 @@
 #' get.fcs.parameters(fcs.files[1],return.dt=TRUE)[]
 #'
 #' @export
+
 get.fcs.parameters<-function(fcs.file.paths,return.dt=F){
   fcs.parameters.list<-sapply(flowCore::read.FCSheader(fcs.file.paths),function(h){
     p.max<-as.numeric(h['$PAR'])
@@ -162,7 +163,7 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
 }
 #' @title Get a `channel_alias` data.table from .fcs file headers
 #' @description
-#' The resultant `data.table` is to be used with the `channel_alias` argument of \link[flowCore]{read.FCS}. The alias will be used to set column names; make sure they are unique and 'readable'. For example, the included mass cytometry data files used in this example are originally named ($PS) as 'MassMetal_Marker'; a more 'readable' form would be 'Marker_MassMetal' or even just 'Marker' (see example).
+#' The resultant `data.table` is to be used with the `channel_alias` argument of \link[flowCore]{read.FCS}. The alias will be used to set column names; make sure they are unique and 'readable'. For example, the included mass cytometry data files used in this example are originally named ($PS) as 'MassMetal_Marker'; a more 'readable' form would be 'Marker_MassMetal' or even just 'Marker' (see example). The intent here is to use unified names that follow an established convention. There is relatively low 'overhead' reading .fcs headers/TEXT, so having a unified 'channel.alias' (panel) before reading in often large amounts of .fcs data will streamline the workflow.
 #'
 #' @param fcs.file.paths Character string; path(s) usually returned from `list.files(...,full.names=T,pattern=".fcs")`.
 #' @param name.sub Named character vector for use in resolving name conflicts/discrepancies; the vector element(s) should equal a pattern and the name(s) a replacement string.
@@ -194,6 +195,18 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
 #' #flip metal and marker to make more 'readable'
 #' ca[stringr::str_detect(alias,"[A-Z]{1}[a-z]{1}_"),alias := sub('(\\w+)_(\\w+)', '\\2_\\1', alias)]
 #' ca[]
+#'
+#' #for the sake of this example, assume a .fcs was misnamed
+#' fcs.tmp<-flowCore::read.FCS(fcs.files[1],transformation=F,truncate.max.range=F)
+#' flowCore::markernames(fcs.tmp)[['Cd106Di']]<-"CD45"
+#' fcs.tmp.path<-tempfile(fileext = ".fcs")
+#' flowCore::write.FCS(fcs.tmp,fcs.tmp.path)
+#'
+#' #a warning will issue; two unique data.tables will be returned;
+#' get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path))
+#'
+#' #using name.sub argument to resolve the warning and return a single data.table
+#' get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path),name.sub=c("106Cd_CD45"="^CD45"))
 #'
 #' @export
 #'
@@ -284,23 +297,58 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
   }
 }
 #' @title reads a .fcs file and converts it to `data.table`
+#' @description
+#' After reading a .fcs file, the expression matrix is converted to a `data.table`; in addition, character and factor columns (meta-data) are appended to the numeric expression values. Once in `data.table` form, operations such as transformation and scaling can be done 'in place' and 'by' groupings streamline analyses. The example data size is fractionally small compared to even a single typical .fcs file; with sufficient RAM resources, a `data.table` of .fcs data amounting to tens of GBs (many high-parameter (spectral/mass) .fcs files, row-bound) can be held in memory.
 #'
-#' @param fcs.dt a `data.table` as returned from `get.fcs.file.dt`
-#' @param channel_alias as returned from `get.fcs.channel.alias`
-#' @param alias.pattern Logical; default `FALSE`. If `TRUE` and `channel_alias` is defined, the 'alias' column will be used as a pattern to define the `FlowCore::read.FCS(column.pattern = ...)` argument.
+#'
+#' @param fcs.file.dt a `data.table` as returned from \link{get.fcs.file.dt}; `fcs.file.dt` can be subset to include only columns-of-interest (a minimally-representative subset would include only 'f.path' and 'sample.id').
+#' @param channel_alias as returned from \link{get.fcs.channel.alias}
+#' @param use.alias.pattern Logical; default `FALSE`. If `TRUE` and `channel_alias` is defined, the 'alias' column will be used as a pattern to define the \link[FlowCore]{read.FCS} `column.pattern` argument.
 #' @param alias.order Logical. If `TRUE`, the `data.table` columns will be ordered to match that of the `channel_alias` 'alias' column.
-#' @param cofactors A named numeric vector; names must match those found in `fcs.dt`; named columns will be `asinh` transformed with the supplied cofactor (numeric).
+#' @param cofactors A named numeric vector; named columns will be \link[base]{asinh} transformed with the supplied cofactor (numeric).
 #'
-#' @return a `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be `asinh`-transformed.
+#' @return a `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be \link[base]{asinh} transformed.
+#' @examples
+#' #'fcs.files.dt' from 'get.fcs.file.dt' example
+#' data(fcs.files.dt)
+#'
+#' #'ca' from 'get.fcs.channel.alias' example
+#' data(ca)
+#'
+#' #retains original 'detector' names;
+#' #all columns from 'fcs.file.dt'
+#' names(fcs.to.dt(fcs.files.dt[1],channel_alias=NULL))
+#'
+#' #replaces the original names with the 'alias' from 'channel.alias';
+#' #all columns from 'fcs.file.dt'
+#' names(fcs.to.dt(fcs.files.dt[1],channel_alias=ca))
+#'
+#' #replaces the original names with the 'alias' from 'channel.alias'; drops via pattern
+#' #all columns from 'fcs.file.dt'
+#' names(fcs.to.dt(fcs.files.dt[1],channel_alias=ca,use.alias.pattern=TRUE))
+#'
+#' #replaces the original names with the 'alias' from 'channel.alias'; drops via pattern
+#' #a subset of columns from 'fcs.file.dt'
+#' names(fcs.to.dt(fcs.files.dt[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
+#' channel_alias=ca,use.alias.pattern=TRUE))
+#'
+#' dt<-fcs.to.dt(fcs.files.dt[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
+#' channel_alias=ca,use.alias.pattern=TRUE)
+#' dt[]
+#'
+#' #as a list of individual .fcs files
+#' dts<-sapply(split(fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],by='f.path'),
+#' fcs.to.dt,channel_alias=ca,use.alias.pattern=TRUE,simplify=FALSE)
+#' dts[1]
+#'
+#'
 #' @export
-#'
-#'
-fcs.to.dt<-function(fcs.dt,channel_alias=NULL,alias.pattern=F,alias.order=F,cofactors=NULL){
+fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias.order=FALSE,cofactors=NULL){
   #read .fcs file ('.path')
   #if defined, rename columns using 'channel_alias' as returned from 'get.fcs.channel.alias'
-  fcs.tmp<-flowCore::read.FCS(fcs.dt[['f.path']],transformation = F,truncate_max_range = F,
+  fcs.tmp<-flowCore::read.FCS(fcs.file.dt[['f.path']],transformation = F,truncate_max_range = F,
                               channel_alias = if(!is.null(channel_alias)) channel_alias,
-                              column.pattern = if(!is.null(channel_alias) & alias.pattern) paste0(channel_alias$alias,collapse = "|")
+                              column.pattern = if(!is.null(channel_alias) & use.alias.pattern) paste0(channel_alias$alias,collapse = "|")
   )
   #convert the expression matrix (raw, un-transformed data values) into a data.table
   dt<-data.table::setDT(as.data.frame(fcs.tmp@exprs))
@@ -308,7 +356,7 @@ fcs.to.dt<-function(fcs.dt,channel_alias=NULL,alias.pattern=F,alias.order=F,cofa
   if(!is.null(cofactors)){
     if(!all(names(cofactors) %in% names(dt))){
       not.found<-names(cofactors)[!names(cofactors) %in% names(dt)]
-      stop(paste("The following supplied cofactors are not named columns in 'fcs.dt':",
+      stop(paste("The following supplied cofactors are not named columns in 'fcs.file.dt':",
                  paste0(not.found,collapse = " ; "),
                  sep = "\n"
                  )
@@ -324,46 +372,58 @@ fcs.to.dt<-function(fcs.dt,channel_alias=NULL,alias.pattern=F,alias.order=F,cofa
     data.table::setcolorder(dt,channel_alias$alias)
   }
   #column-bind identifier columns
-  if(length((fcs.dt[,!'f.path']))>0){
-    dt<-cbind(dt,fcs.dt[,!'f.path'])
+  if(length((fcs.file.dt[,!'f.path']))>0){
+    dt<-cbind(dt,fcs.file.dt[,!'f.path'])
   }
   #
-  invisible(dt)
 }
-#' @title a parallelized version of `fcs.to.dt`; essentially a wrapper around `parallel` package functions
+#' @title a parallelized version of \link{fcs.to.dt}
+#' @description
+#' Essentially a wrapper around \link[parallel]{makeCluster} and those associated functions.  There is 'computational' overhead in initiating the compute clusters but for many .fcs files, this parallelized version of \link{fcs.to.dt} should speed up the workflow.  There is risk of saturating all available RAM if the dataset is large enough.  It is recommended to monitor system resources (Task Manager/Activity Monitor).
 #'
-#' @param fcs.dt a `data.table` as returned from `get.fcs.file.dt`
-#' @param channel_alias as returned from `get.fcs.channel.alias`
-#' @param alias.pattern Logical; default `FALSE`. If `TRUE` and `channel_alias` is defined, the 'alias' column will be used as a pattern to define the `FlowCore::read.FCS(column.pattern = ...)` argument.
+#' @param fcs.file.dt a `data.table` as returned from \link{get.fcs.file.dt}; `fcs.file.dt` can be subset to include only columns-of-interest (a minimally-representative subset would include only 'f.path' and 'sample.id').
+#' @param channel_alias as returned from \link{get.fcs.channel.alias}
+#' @param use.alias.pattern Logical; default `FALSE`. If `TRUE` and `channel_alias` is defined, the 'alias' column will be used as a pattern to define the \link[FlowCore]{read.FCS} `column.pattern` argument.
 #' @param alias.order Logical. If `TRUE`, the `data.table` columns will be ordered to match that of the `channel_alias` 'alias' column.
-#' @param cofactors A named numeric vector; names must match those found in `fcs.dt`; named columns will be `asinh` transformed with the supplied cofactor (numeric).
+#' @param cofactors A named numeric vector; named columns will be \link[base]{asinh} transformed with the supplied cofactor (numeric).
 #'
-#' @return a `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be `asinh`-transformed.
+#' @return a `data.table` of raw, un-transformed numeric expression values (row-bound) with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be \link[base]{asinh} transformed.
+#' @examples
+#' #because of the small file-size of these example files, it's faster to read them individually with 'fcs.to.dt'
+#' #for larger/many files, the overhead of initiating the compute clusters is negligible compared to the speed savings
+#' \dontrun{
+#' #'fcs.files.dt' from 'get.fcs.file.dt' example
+#' data(fcs.files.dt)
+#'
+#' #'ca' from 'get.fcs.channel.alias' example
+#' data(ca)
+#'
+#' dt<-fcs.to.dt.parallel(fcs.file.dt=fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
+#' channel_alias=ca,use.alias.pattern=TRUE)
+#' }
+#'
 #' @export
-#'
-#'
-fcs.to.dt.parallel<-function(fcs.dt,channel_alias=NULL,alias.pattern=F,alias.order=F,cofactors=NULL){
+fcs.to.dt.parallel<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias.order=FALSE,cofactors=NULL){
   n.cores<-parallel::detectCores()
-  n.paths<-fcs.dt[,.N]
+  n.paths<-fcs.file.dt[,.N]
   n<-ifelse(n.paths>n.cores,n.cores,n.paths)
   cl<-parallel::makeCluster(n)
   if(!is.null(channel_alias)){
     parallel::clusterExport(cl,'channel_alias',envir = environment())
   }
-  parallel::clusterExport(cl,'alias.pattern',envir = environment())
+  parallel::clusterExport(cl,'use.alias.pattern',envir = environment())
   parallel::clusterExport(cl,'alias.order',envir = environment())
   if(!is.null(cofactors)){
     parallel::clusterExport(cl,'cofactors',envir = environment())
   }
   ##
-  dt<-data.table::rbindlist(parallel::parLapply(cl,split(fcs.dt,by='f.path'),fcs.to.dt,
+  dt<-data.table::rbindlist(parallel::parLapply(cl,split(fcs.file.dt,by='f.path'),fcs.to.dt,
                                                 channel_alias = if(!is.null(channel_alias)) channel_alias,
-                                                alias.pattern=alias.pattern,
+                                                use.alias.pattern=use.alias.pattern,
                                                 alias.order=alias.order,
                                                 cofactors = if(!is.null(cofactors)) cofactors))
   ##
   on.exit({parallel::stopCluster(cl);invisible(gc())})
-  invisible(dt)
 }
 #' @title Generate a `data.table` of .fcs parameters
 #'

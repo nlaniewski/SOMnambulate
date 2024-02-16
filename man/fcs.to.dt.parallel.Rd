@@ -2,30 +2,45 @@
 % Please edit documentation in R/fcs_funcs.R
 \name{fcs.to.dt.parallel}
 \alias{fcs.to.dt.parallel}
-\title{a parallelized version of \code{fcs.to.dt}; essentially a wrapper around \code{parallel} package functions}
+\title{a parallelized version of \link{fcs.to.dt}}
 \usage{
 fcs.to.dt.parallel(
-  fcs.dt,
+  fcs.file.dt,
   channel_alias = NULL,
-  alias.pattern = F,
-  alias.order = F,
+  use.alias.pattern = FALSE,
+  alias.order = FALSE,
   cofactors = NULL
 )
 }
 \arguments{
-\item{fcs.dt}{a \code{data.table} as returned from \code{get.fcs.file.dt}}
+\item{fcs.file.dt}{a \code{data.table} as returned from \link{get.fcs.file.dt}; \code{fcs.file.dt} can be subset to include only columns-of-interest (a minimally-representative subset would include only 'f.path' and 'sample.id').}
 
-\item{channel_alias}{as returned from \code{get.fcs.channel.alias}}
+\item{channel_alias}{as returned from \link{get.fcs.channel.alias}}
 
-\item{alias.pattern}{Logical; default \code{FALSE}. If \code{TRUE} and \code{channel_alias} is defined, the 'alias' column will be used as a pattern to define the \code{FlowCore::read.FCS(column.pattern = ...)} argument.}
+\item{use.alias.pattern}{Logical; default \code{FALSE}. If \code{TRUE} and \code{channel_alias} is defined, the 'alias' column will be used as a pattern to define the \link[FlowCore]{read.FCS} \code{column.pattern} argument.}
 
 \item{alias.order}{Logical. If \code{TRUE}, the \code{data.table} columns will be ordered to match that of the \code{channel_alias} 'alias' column.}
 
-\item{cofactors}{A named numeric vector; names must match those found in \code{fcs.dt}; named columns will be \code{asinh} transformed with the supplied cofactor (numeric).}
+\item{cofactors}{A named numeric vector; named columns will be \link[base]{asinh} transformed with the supplied cofactor (numeric).}
 }
 \value{
-a \code{data.table} of raw, un-transformed numeric expression values with character/factor identifier columns; if \code{cofactors} is defined, the raw expression values will be \code{asinh}-transformed.
+a \code{data.table} of raw, un-transformed numeric expression values (row-bound) with character/factor identifier columns; if \code{cofactors} is defined, the raw expression values will be \link[base]{asinh} transformed.
 }
 \description{
-a parallelized version of \code{fcs.to.dt}; essentially a wrapper around \code{parallel} package functions
+Essentially a wrapper around \link[parallel]{makeCluster} and those associated functions.  There is 'computational' overhead in initiating the compute clusters but for many .fcs files, this parallelized version of \link{fcs.to.dt} should speed up the workflow.  There is risk of saturating all available RAM if the dataset is large enough.  It is recommended to monitor system resources (Task Manager/Activity Monitor).
+}
+\examples{
+#because of the small file-size of these example files, it's faster to read them individually with 'fcs.to.dt'
+#for larger/many files, the overhead of initiating the compute clusters is negligible compared to the speed savings
+\dontrun{
+#'fcs.files.dt' from 'get.fcs.file.dt' example
+data(fcs.files.dt)
+
+#'ca' from 'get.fcs.channel.alias' example
+data(ca)
+
+dt<-fcs.to.dt.parallel(fcs.file.dt=fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
+channel_alias=ca,use.alias.pattern=TRUE)
+}
+
 }

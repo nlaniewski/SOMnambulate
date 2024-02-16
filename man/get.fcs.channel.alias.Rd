@@ -17,7 +17,7 @@ get.fcs.channel.alias(fcs.file.paths, name.sub = NULL, order.alias = F)
 returns a \code{data.table} containing a 'channels' and 'alias' column; returns a list of \code{data.table}s if not unique (issues a warning).
 }
 \description{
-The resultant \code{data.table} is to be used with the \code{channel_alias} argument of \link[flowCore]{read.FCS}. The alias will be used to set column names; make sure they are unique and 'readable'. For example, the included mass cytometry data files used in this example are originally named ($PS) as 'MassMetal_Marker'; a more 'readable' form would be 'Marker_MassMetal' or even just 'Marker' (see example).
+The resultant \code{data.table} is to be used with the \code{channel_alias} argument of \link[flowCore]{read.FCS}. The alias will be used to set column names; make sure they are unique and 'readable'. For example, the included mass cytometry data files used in this example are originally named ($PS) as 'MassMetal_Marker'; a more 'readable' form would be 'Marker_MassMetal' or even just 'Marker' (see example). The intent here is to use unified names that follow an established convention. There is relatively low 'overhead' reading .fcs headers/TEXT, so having a unified 'channel.alias' (panel) before reading in often large amounts of .fcs data will streamline the workflow.
 }
 \examples{
 extdata<-system.file("extdata",package="SOMnambulate")
@@ -44,5 +44,17 @@ ca[]
 #flip metal and marker to make more 'readable'
 ca[stringr::str_detect(alias,"[A-Z]{1}[a-z]{1}_"),alias := sub('(\\\\w+)_(\\\\w+)', '\\\\2_\\\\1', alias)]
 ca[]
+
+#for the sake of this example, assume a .fcs was misnamed
+fcs.tmp<-flowCore::read.FCS(fcs.files[1],transformation=F,truncate.max.range=F)
+flowCore::markernames(fcs.tmp)[['Cd106Di']]<-"CD45"
+fcs.tmp.path<-tempfile(fileext = ".fcs")
+flowCore::write.FCS(fcs.tmp,fcs.tmp.path)
+
+#a warning will issue; two unique data.tables will be returned;
+get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path))
+
+#using name.sub argument to resolve the warning and return a single data.table
+get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path),name.sub=c("106Cd_CD45"="^CD45"))
 
 }
