@@ -14,7 +14,6 @@
 #' get.fcs.parameters(fcs.files[1],return.dt=TRUE)[]
 #'
 #' @export
-
 get.fcs.parameters<-function(fcs.file.paths,return.dt=F){
   fcs.parameters.list<-sapply(flowCore::read.FCSheader(fcs.file.paths),function(h){
     p.max<-as.numeric(h['$PAR'])
@@ -166,6 +165,7 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
 #' The resultant `data.table` is to be used with the `channel_alias` argument of \link[flowCore]{read.FCS}. The alias will be used to set column names; make sure they are unique and 'readable'. For example, the included mass cytometry data files used in this example are originally named ($PS) as 'MassMetal_Marker'; a more 'readable' form would be 'Marker_MassMetal' or even just 'Marker' (see example). The intent here is to use unified names that follow an established convention. There is relatively low 'overhead' reading .fcs headers/TEXT, so having a unified 'channel.alias' (panel) before reading in often large amounts of .fcs data will streamline the workflow.
 #'
 #' @param fcs.file.paths Character string; path(s) usually returned from `list.files(...,full.names=T,pattern=".fcs")`.
+#' @param drop.pattern 'pattern' argument for \link[base]{grep}: "character string containing a \link[base:regex]{regular expression}"; will drop pattern matches from the alias column of `channel_alias`.
 #' @param name.sub Named character vector for use in resolving name conflicts/discrepancies; the vector element(s) should equal a pattern and the name(s) a replacement string.
 #' @param order.alias Logical; if `TRUE`, the `channel_alias` 'alias' column will be sensibly ordered.
 #'
@@ -175,18 +175,17 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
 #' fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
 #'
 #' #a data.table containing 'channels' ($PN) and 'alias' ($PS)
-#' ca<-get.fcs.channel.alias(fcs.files)
-#' ca[]
+#' get.fcs.channel.alias(fcs.files)
 #'
 #' #extraneous channels can be dropped
-#' drop.metals<-c("Y","Pd","Sn","I","La","Lu","Os","Ir","Pt","Pb")
+#' drop.metals<-c("89Y",paste0(c(102,104:106,108,110),"Pd"),"120Sn","127I",
+#' paste0(c(138,139),"La"),"176Lu","190Os",paste0(c(191,193),"Ir"),
+#' paste0(c(195,198),"Pt"),"208Pb")
 #' drop.metals<-paste0(drop.metals,'$',collapse="|")
 #' drop.pattern<-paste(drop.metals,'background','noise',sep="|")
 #'
-#' ca[grep(drop.pattern,alias,ignore.case=TRUE)]#drop these
-#' ca[grep(drop.pattern,alias,ignore.case=TRUE,invert=TRUE)]#keep these
-#'
-#' ca<-ca[grep(drop.pattern,alias,ignore.case=TRUE,invert=TRUE)]
+#' ca<-get.fcs.channel.alias(fcs.files,drop.pattern=drop.pattern,order.alias=TRUE)
+#' ca[]
 #'
 #' #a few more 'name-fixes'
 #' ca[grep("beads",alias,ignore.case = TRUE),alias:=sub("Norm_beads","beads",alias)]
@@ -196,44 +195,40 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
 #' ca[stringr::str_detect(alias,"[A-Z]{1}[a-z]{1}_"),alias := sub('(\\w+)_(\\w+)', '\\2_\\1', alias)]
 #' ca[]
 #'
-#' #for the sake of this example, assume a .fcs was misnamed
+#' #for the sake of this example, assume a .fcs parameter was misnamed
 #' fcs.tmp<-flowCore::read.FCS(fcs.files[1],transformation=FALSE,truncate.max.range=FALSE)
-#' flowCore::markernames(fcs.tmp)[['Cd106Di']]<-"CD45"
+#' flowCore::markernames(fcs.tmp)[['Dy164Di']]<-'164Dy_IFNy'
 #' fcs.tmp.path<-tempfile(fileext = ".fcs")
 #' flowCore::write.FCS(fcs.tmp,fcs.tmp.path)
 #'
 #' #a warning will issue; two unique data.tables will be returned;
-#' get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path))
+#' get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path),
+#' drop.pattern=drop.pattern)
 #'
 #' #using name.sub argument to resolve the warning and return a single data.table
-#' get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path),name.sub=c("106Cd_CD45"="^CD45"))
+#' get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path),
+#' drop.pattern=drop.pattern, name.sub=c("164Dy_IFNg"="164Dy_IFNy"))
 #'
 #' @export
-#'
-#'
-get.fcs.channel.alias<-function(fcs.file.paths,name.sub=NULL,order.alias=F){
-  p.list<-get.fcs.parameters(fcs.file.paths,return.dt = T)
-  channel_alias.list<-sapply(p.list,function(dt){
-    dt[is.na(S), S := N]
-    if(dt[,data.table::uniqueN(S)]!=dt[,.N]){
+get.fcs.channel.alias<-function(fcs.file.paths,drop.pattern=NULL,name.sub=NULL,order.alias=F){
+  channel_alias.list<- unique(lapply(fcs.file.paths,function(f.path){
+    ca<-SOMnambulate::get.fcs.parameters(f.path,return.dt = T)[[1]]
+    ca[is.na(S), S := N]
+    if(ca[,data.table::uniqueN(S)]!=ca[,.N]){
       stop("Non-unique alias name")
     }else{
-      data.table::setnames(dt,c('N','S'),c('channels','alias'))
-      return(dt[,.(channels,alias)])
+      data.table::setnames(ca,c('N','S'),c('channels','alias'))
+      if(!is.null(drop.pattern)){
+        ca<-ca[grep(drop.pattern,alias,ignore.case=TRUE,invert=TRUE),.(channels,alias)]
+      }else{
+        ca<-ca[,.(channels,alias)]
+      }
     }
-  },simplify = F)
-  #for resolving name discrepancies; use a named vector for grep pattern (element) and replacement (name)
-  if(!is.null(name.sub)){
-    channel_alias.list<-lapply(channel_alias.list,function(ca){
+    if(!is.null(name.sub)){
       for(n in names(name.sub)){
         data.table::set(ca,i=grep(name.sub[[n]],ca$alias),j='alias',value=n)
       }
-      return(ca)
-    })
-  }
-  ##
-  if(length(unique(channel_alias.list))==1){
-    ca<-unique(channel_alias.list)[[1]]
+    }
     if(order.alias){
       if(any(grepl("event_length",ca$channels,ignore.case = T))){
         alias.order<-c('Time',sort(grep('event|center|offset|width|residual',ca$alias,value = T,ignore.case = T)))#mass cytometry
@@ -243,7 +238,11 @@ get.fcs.channel.alias<-function(fcs.file.paths,name.sub=NULL,order.alias=F){
       alias.order<-c(alias.order,ca[!alias %in% alias.order,stringr::str_sort(alias,numeric = T)])
       data.table::setorder(ca[, 'ord' := match(alias,alias.order)],'ord')[,'ord' := NULL]
     }
-    return(ca[])
+    return(ca)
+  }))
+  ##
+  if(length(channel_alias.list)==1){
+    return(channel_alias.list[[1]])
   }else{
     warning(paste(
       'channel and/or alias conflict; resolve name discrepancy:',
@@ -251,7 +250,7 @@ get.fcs.channel.alias<-function(fcs.file.paths,name.sub=NULL,order.alias=F){
         Reduce(union,lapply(channel_alias.list,'[[','alias')),
         Reduce(intersect,lapply(channel_alias.list,'[[','alias'))),collapse = " : ")
     ),call. = F)
-    return(unique(channel_alias.list))
+    return(channel_alias.list)
   }
 }
 #' @title Convert a \code{data.table} of mass cytometry .fcs data into a new .fcs file

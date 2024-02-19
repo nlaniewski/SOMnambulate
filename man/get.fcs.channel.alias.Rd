@@ -4,10 +4,17 @@
 \alias{get.fcs.channel.alias}
 \title{Get a \code{channel_alias} data.table from .fcs file headers}
 \usage{
-get.fcs.channel.alias(fcs.file.paths, name.sub = NULL, order.alias = F)
+get.fcs.channel.alias(
+  fcs.file.paths,
+  drop.pattern = NULL,
+  name.sub = NULL,
+  order.alias = F
+)
 }
 \arguments{
 \item{fcs.file.paths}{Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.}
+
+\item{drop.pattern}{'pattern' argument for \link[base]{grep}: "character string containing a \link[base:regex]{regular expression}"; will drop pattern matches from the alias column of \code{channel_alias}.}
 
 \item{name.sub}{Named character vector for use in resolving name conflicts/discrepancies; the vector element(s) should equal a pattern and the name(s) a replacement string.}
 
@@ -24,18 +31,17 @@ extdata<-system.file("extdata",package="SOMnambulate")
 fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
 
 #a data.table containing 'channels' ($PN) and 'alias' ($PS)
-ca<-get.fcs.channel.alias(fcs.files)
-ca[]
+get.fcs.channel.alias(fcs.files)
 
 #extraneous channels can be dropped
-drop.metals<-c("Y","Pd","Sn","I","La","Lu","Os","Ir","Pt","Pb")
+drop.metals<-c("89Y",paste0(c(102,104:106,108,110),"Pd"),"120Sn","127I",
+paste0(c(138,139),"La"),"176Lu","190Os",paste0(c(191,193),"Ir"),
+paste0(c(195,198),"Pt"),"208Pb")
 drop.metals<-paste0(drop.metals,'$',collapse="|")
 drop.pattern<-paste(drop.metals,'background','noise',sep="|")
 
-ca[grep(drop.pattern,alias,ignore.case=TRUE)]#drop these
-ca[grep(drop.pattern,alias,ignore.case=TRUE,invert=TRUE)]#keep these
-
-ca<-ca[grep(drop.pattern,alias,ignore.case=TRUE,invert=TRUE)]
+ca<-get.fcs.channel.alias(fcs.files,drop.pattern=drop.pattern,order.alias=TRUE)
+ca[]
 
 #a few more 'name-fixes'
 ca[grep("beads",alias,ignore.case = TRUE),alias:=sub("Norm_beads","beads",alias)]
@@ -45,16 +51,18 @@ ca[]
 ca[stringr::str_detect(alias,"[A-Z]{1}[a-z]{1}_"),alias := sub('(\\\\w+)_(\\\\w+)', '\\\\2_\\\\1', alias)]
 ca[]
 
-#for the sake of this example, assume a .fcs was misnamed
+#for the sake of this example, assume a .fcs parameter was misnamed
 fcs.tmp<-flowCore::read.FCS(fcs.files[1],transformation=FALSE,truncate.max.range=FALSE)
-flowCore::markernames(fcs.tmp)[['Cd106Di']]<-"CD45"
+flowCore::markernames(fcs.tmp)[['Dy164Di']]<-'164Dy_IFNy'
 fcs.tmp.path<-tempfile(fileext = ".fcs")
 flowCore::write.FCS(fcs.tmp,fcs.tmp.path)
 
 #a warning will issue; two unique data.tables will be returned;
-get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path))
+get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path),
+drop.pattern=drop.pattern)
 
 #using name.sub argument to resolve the warning and return a single data.table
-get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path),name.sub=c("106Cd_CD45"="^CD45"))
+get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path),
+drop.pattern=drop.pattern, name.sub=c("164Dy_IFNg"="164Dy_IFNy"))
 
 }
