@@ -27,23 +27,24 @@ fcs.to.dt.parallel(
 a \code{data.table} of raw, un-transformed numeric expression values (row-bound) with character/factor identifier columns; if \code{cofactors} is defined, the raw expression values will be \link[base]{asinh} transformed.
 }
 \description{
-Essentially a wrapper around \link[parallel]{makeCluster} and those associated functions.  There is 'computational' overhead in initiating the compute clusters but for many .fcs files, this parallelized version of \link{fcs.to.dt} should speed up the workflow.  There is risk of saturating all available RAM if the dataset is large enough.  It is recommended to monitor system resources (Task Manager/Activity Monitor).
+Essentially a wrapper around \link[parallel]{makeCluster} and those associated functions.  There is 'computational' overhead in initiating the compute clusters but for many .fcs files, this parallelized version of \link{fcs.to.dt} should speed up the workflow.  There is risk of saturating all available RAM if the data set is large enough;  it is recommended to monitor system resources (Task Manager/Activity Monitor).
 }
 \examples{
-#because of the small file-size of these example files,
-#it's faster to read them individually with 'fcs.to.dt'
+#because of the small file-size of these example .fcs files,
+#it's faster to read them individually with 'fcs.to.dt';
 #for larger/many files, the overhead of initiating the compute clusters is negligible
-#compared to the speed savings
-\dontrun{
-#'fcs.files.dt' from 'get.fcs.file.dt' example
-data(fcs.files.dt)
+#compared to the speed savings of parallel reading
 
-#'ca' from 'get.fcs.channel.alias' example
-data(ca)
+#from the 'get.fcs.file.dt' example:
+fcs.files.dt_ECHO
+
+#from the 'get.fcs.channel.alias' example:
+ca_ECHO
 
 dt<-fcs.to.dt.parallel(
-fcs.file.dt=fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
-channel_alias=ca,use.alias.pattern=TRUE)
-}
+fcs.file.dt=fcs.files.dt_ECHO[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
+channel_alias=ca_ECHO,use.alias.pattern=TRUE,alias.order=TRUE)
+dt[]
+
 
 }

@@ -31,10 +31,10 @@ After reading a .fcs file, the expression matrix is converted to a \code{data.ta
 }
 \examples{
 #from the 'get.fcs.file.dt' example:
-load(system.file("extdata", "fcs.files.dt_ECHO.Rdata", package = "SOMnambulate"))
+fcs.files.dt_ECHO
 
 #from the 'get.fcs.channel.alias' example:
-load(system.file("extdata", "ca_ECHO.Rdata", package = "SOMnambulate"))
+ca_ECHO
 
 #retains original 'detector' names;
 #all columns from 'fcs.file.dt'
@@ -49,18 +49,19 @@ names(fcs.to.dt(fcs.files.dt_ECHO[1],channel_alias=ca_ECHO))
 names(fcs.to.dt(fcs.files.dt_ECHO[1],channel_alias=ca_ECHO,use.alias.pattern=TRUE))
 
 #replaces the original names with the 'alias' from 'channel.alias'; drops via pattern
+#reorders columns using 'alias.order'
 #a subset of columns from 'fcs.file.dt'
 names(fcs.to.dt(fcs.files.dt_ECHO[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
-channel_alias=ca_ECHO,use.alias.pattern=TRUE))
+channel_alias=ca_ECHO,use.alias.pattern=TRUE,alias.order=TRUE))
 
 dt<-fcs.to.dt(fcs.files.dt_ECHO[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
-channel_alias=ca_ECHO,use.alias.pattern=TRUE)
+channel_alias=ca_ECHO,use.alias.pattern=TRUE,alias.order=TRUE)
 dt[]
 
 #as a list of individual .fcs files
 dts<-sapply(
 split(fcs.files.dt_ECHO[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],by='f.path'),
-fcs.to.dt,channel_alias=ca_ECHO,use.alias.pattern=TRUE,simplify=FALSE)
+fcs.to.dt,channel_alias=ca_ECHO,use.alias.pattern=TRUE,alias.order=TRUE,simplify=FALSE)
 dts[1]
 
 

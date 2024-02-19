@@ -12,7 +12,7 @@ fcs.files.dt[,aliquot.seq := factor(seq(.N)),by=.(batch.date,stim.condition)]
 fcs.files.dt[,batch := factor(paste(study.name,batch.seq,batch.date,sep="_"))]
 fcs.files.dt[,sample.id := paste(batch,stim.condition,aliquot.seq,sep="_")]
 
-fcs.files.dt_ECHO<-fcs.files.dt;rm(fcs.files.dt)
+fcs.files.dt_ECHO<-fcs.files.dt
 
 ##prepare 'ca_ECHO' for use in examples
 ca<-get.fcs.channel.alias(fcs.files)
@@ -27,7 +27,10 @@ ca[grep("beads",alias,ignore.case = TRUE),alias:=sub("Norm_beads","beads",alias)
 ca[grep("viability",alias,ignore.case = TRUE),alias:="194Pt_viability"]#drop '_cisplatin'
 
 ca[stringr::str_detect(alias,"[A-Z]{1}[a-z]{1}_"),alias := sub('(\\w+)_(\\w+)', '\\2_\\1', alias)]
+alias.order<-c('Time',sort(grep('event|center|offset|width|residual',ca$alias,value = T,ignore.case = T)))
+alias.order<-c(alias.order,ca[!alias %in% alias.order,stringr::str_sort(alias,numeric = T)])
+data.table::setorder(ca[, 'ord' := match(alias,alias.order)],'ord')[,'ord' := NULL]
 
-ca_ECHO<-ca;rm(ca)
+ca_ECHO<-ca
 
 usethis::use_data(fcs.files.dt_ECHO,ca_ECHO,overwrite = TRUE,internal = TRUE)

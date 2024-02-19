@@ -235,7 +235,11 @@ get.fcs.channel.alias<-function(fcs.file.paths,name.sub=NULL,order.alias=F){
   if(length(unique(channel_alias.list))==1){
     ca<-unique(channel_alias.list)[[1]]
     if(order.alias){
-      alias.order<-c('Time',sort(grep('FSC|SSC',ca$alias,value = T)))
+      if(any(grepl("event_length",ca$channels,ignore.case = T))){
+        alias.order<-c('Time',sort(grep('event|center|offset|width|residual',ca$alias,value = T,ignore.case = T)))#mass cytometry
+      }else if(any(grepl("FSC|SSC",ca$channels,ignore.case = T))){
+        alias.order<-c('Time',sort(grep('FSC|SSC',ca$alias,value = T,ignore.case = T)))#conventional/spectral cytometry
+      }
       alias.order<-c(alias.order,ca[!alias %in% alias.order,stringr::str_sort(alias,numeric = T)])
       data.table::setorder(ca[, 'ord' := match(alias,alias.order)],'ord')[,'ord' := NULL]
     }
@@ -310,10 +314,10 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
 #' @return a `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be \link[base]{asinh} transformed.
 #' @examples
 #' #from the 'get.fcs.file.dt' example:
-#' load(system.file("extdata", "fcs.files.dt_ECHO.Rdata", package = "SOMnambulate"))
+#' fcs.files.dt_ECHO
 #'
 #' #from the 'get.fcs.channel.alias' example:
-#' load(system.file("extdata", "ca_ECHO.Rdata", package = "SOMnambulate"))
+#' ca_ECHO
 #'
 #' #retains original 'detector' names;
 #' #all columns from 'fcs.file.dt'
@@ -328,18 +332,19 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
 #' names(fcs.to.dt(fcs.files.dt_ECHO[1],channel_alias=ca_ECHO,use.alias.pattern=TRUE))
 #'
 #' #replaces the original names with the 'alias' from 'channel.alias'; drops via pattern
+#' #reorders columns using 'alias.order'
 #' #a subset of columns from 'fcs.file.dt'
 #' names(fcs.to.dt(fcs.files.dt_ECHO[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
-#' channel_alias=ca_ECHO,use.alias.pattern=TRUE))
+#' channel_alias=ca_ECHO,use.alias.pattern=TRUE,alias.order=TRUE))
 #'
 #' dt<-fcs.to.dt(fcs.files.dt_ECHO[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
-#' channel_alias=ca_ECHO,use.alias.pattern=TRUE)
+#' channel_alias=ca_ECHO,use.alias.pattern=TRUE,alias.order=TRUE)
 #' dt[]
 #'
 #' #as a list of individual .fcs files
 #' dts<-sapply(
 #' split(fcs.files.dt_ECHO[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],by='f.path'),
-#' fcs.to.dt,channel_alias=ca_ECHO,use.alias.pattern=TRUE,simplify=FALSE)
+#' fcs.to.dt,channel_alias=ca_ECHO,use.alias.pattern=TRUE,alias.order=TRUE,simplify=FALSE)
 #' dts[1]
 #'
 #'
@@ -380,7 +385,7 @@ fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias
 }
 #' @title a parallelized version of \link{fcs.to.dt}
 #' @description
-#' Essentially a wrapper around \link[parallel]{makeCluster} and those associated functions.  There is 'computational' overhead in initiating the compute clusters but for many .fcs files, this parallelized version of \link{fcs.to.dt} should speed up the workflow.  There is risk of saturating all available RAM if the dataset is large enough.  It is recommended to monitor system resources (Task Manager/Activity Monitor).
+#' Essentially a wrapper around \link[parallel]{makeCluster} and those associated functions.  There is 'computational' overhead in initiating the compute clusters but for many .fcs files, this parallelized version of \link{fcs.to.dt} should speed up the workflow.  There is risk of saturating all available RAM if the data set is large enough;  it is recommended to monitor system resources (Task Manager/Activity Monitor).
 #'
 #' @param fcs.file.dt a `data.table` as returned from \link{get.fcs.file.dt}; `fcs.file.dt` can be subset to include only columns-of-interest (a minimally-representative subset would include only 'f.path' and 'sample.id').
 #' @param channel_alias as returned from \link{get.fcs.channel.alias}
@@ -390,44 +395,60 @@ fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias
 #'
 #' @return a `data.table` of raw, un-transformed numeric expression values (row-bound) with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be \link[base]{asinh} transformed.
 #' @examples
-#' #because of the small file-size of these example files,
-#' #it's faster to read them individually with 'fcs.to.dt'
+#' #because of the small file-size of these example .fcs files,
+#' #it's faster to read them individually with 'fcs.to.dt';
 #' #for larger/many files, the overhead of initiating the compute clusters is negligible
-#' #compared to the speed savings
-#' \dontrun{
-#' #'fcs.files.dt' from 'get.fcs.file.dt' example
-#' data(fcs.files.dt)
+#' #compared to the speed savings of parallel reading
 #'
-#' #'ca' from 'get.fcs.channel.alias' example
-#' data(ca)
+#' #from the 'get.fcs.file.dt' example:
+#' fcs.files.dt_ECHO
+#'
+#' #from the 'get.fcs.channel.alias' example:
+#' ca_ECHO
 #'
 #' dt<-fcs.to.dt.parallel(
-#' fcs.file.dt=fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
-#' channel_alias=ca,use.alias.pattern=TRUE)
-#' }
+#' fcs.file.dt=fcs.files.dt_ECHO[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
+#' channel_alias=ca_ECHO,use.alias.pattern=TRUE,alias.order=TRUE)
+#' dt[]
+#'
 #'
 #' @export
 fcs.to.dt.parallel<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias.order=FALSE,cofactors=NULL){
-  n.cores<-parallel::detectCores()
+  ##for posterity, leaving the commented code chunk; the function arguments at one point had be exported;
+  ##now working as intended in the uncommented code chunk, which used to not work...
+  # n.cores<-parallel::detectCores()-1
+  # n.paths<-fcs.file.dt[,.N]
+  # n<-ifelse(n.paths>n.cores,n.cores,n.paths)
+  # cl<-parallel::makeCluster(n)
+  # if(!is.null(channel_alias)){
+  #   parallel::clusterExport(cl,'channel_alias',envir = environment())
+  # }
+  # parallel::clusterExport(cl,'use.alias.pattern',envir = environment())
+  # parallel::clusterExport(cl,'alias.order',envir = environment())
+  # if(!is.null(cofactors)){
+  #   parallel::clusterExport(cl,'cofactors',envir = environment())
+  # }
+  # ##
+  # dt<-data.table::rbindlist(parallel::parLapply(cl,split(fcs.file.dt,by='f.path'),fcs.to.dt,
+  #                                               channel_alias = if(!is.null(channel_alias)) channel_alias,
+  #                                               use.alias.pattern=use.alias.pattern,
+  #                                               alias.order=alias.order,
+  #                                               cofactors = if(!is.null(cofactors)) cofactors))
+  # ##
+  # on.exit({parallel::stopCluster(cl);invisible(gc())})
+  ##...
+  n.cores<-parallel::detectCores()-1
   n.paths<-fcs.file.dt[,.N]
   n<-ifelse(n.paths>n.cores,n.cores,n.paths)
+  message(paste("Parallel reading of",n.paths,".fcs files using",n,"cores."))
   cl<-parallel::makeCluster(n)
-  if(!is.null(channel_alias)){
-    parallel::clusterExport(cl,'channel_alias',envir = environment())
-  }
-  parallel::clusterExport(cl,'use.alias.pattern',envir = environment())
-  parallel::clusterExport(cl,'alias.order',envir = environment())
-  if(!is.null(cofactors)){
-    parallel::clusterExport(cl,'cofactors',envir = environment())
-  }
-  ##
-  dt<-data.table::rbindlist(parallel::parLapply(cl,split(fcs.file.dt,by='f.path'),fcs.to.dt,
-                                                channel_alias = if(!is.null(channel_alias)) channel_alias,
-                                                use.alias.pattern=use.alias.pattern,
-                                                alias.order=alias.order,
-                                                cofactors = if(!is.null(cofactors)) cofactors))
-  ##
   on.exit({parallel::stopCluster(cl);invisible(gc())})
+  data.table::rbindlist(parallel::parLapply(cl,split(fcs.file.dt,by='f.path'),
+                                            fcs.to.dt,
+                                            channel_alias=channel_alias,
+                                            use.alias.pattern=use.alias.pattern,
+                                            alias.order=alias.order,
+                                            cofactors=cofactors))
 }
 #' @title Generate a `data.table` of .fcs parameters
 #'
