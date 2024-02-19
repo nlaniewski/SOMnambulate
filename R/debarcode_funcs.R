@@ -153,8 +153,6 @@ barcode.assignment.fsom.codes<-function(fsom,m=3){
 #'
 barcode.assignment<-function(dat,barcode.dims=NULL,m=3,delta=0.2,...){
   ##
-  barcode_node<-NULL
-  ##
   if(!data.table::is.data.table(dat)) stop("Need a data.table")
   if(!'barcode_node' %in% names(dat)) stop("Need a 'barcode_node' column")
   if(is.null(barcode.dims)) barcode.dims<-grep("CD45_",names(dat),value = T)
@@ -188,8 +186,6 @@ barcode.assignment<-function(dat,barcode.dims=NULL,m=3,delta=0.2,...){
 #'
 #'
 valleys.density.rug<-function(fsom,out.name,plot.codes=NULL){
-  ##
-  node<-valley<-value<-NULL
   ##
   valleys<-data.frame(variable=colnames(fsom$codes),
                       valley=apply(fsom$codes,2,get.valley),
@@ -320,8 +316,6 @@ valleys.density.rug.barcodes<-function(fsom,out.name,barcode.ids=NULL){
 #'
 barcode.yield.plot<-function(dat,out.name,barcode.ids=NULL){
   ##
-  barcode<-total<-type<-y<-NULL
-  ##
   if(!data.table::is.data.table(dat)&'barcode' %in% names(dat)){
     stop("Need a data.table with a 'barcode' column")
   }
@@ -365,8 +359,6 @@ barcode.yield.plot<-function(dat,out.name,barcode.ids=NULL){
 #'
 #'
 barcode.sample.plots<-function(dat,out.name,barcode.ids,bin.number=100){
-  ##
-  barcode<-barcode.id<-barcode_node<-yield<-NULL
   ##
   if (!"barcode" %in% names(dat)) {
     stop("Need a 'barcode' column")
@@ -428,8 +420,6 @@ barcode.sample.plots<-function(dat,out.name,barcode.ids,bin.number=100){
 #'
 #'
 barcode0.node.plots<-function(dat0,out.name,bin.number=100){
-  ##
-  barcode<-barcode_node<-yield<-NULL
   ##
   if(dat0[, unique(barcode)]!=0) stop("Expect only barcode 'zero' data; did you subset the dat? dat0=dat[barcode==0]")
   ##

@@ -30,6 +30,7 @@ a \code{data.table} of raw, un-transformed numeric expression values (row-bound)
 Essentially a wrapper around \link[parallel]{makeCluster} and those associated functions.  There is 'computational' overhead in initiating the compute clusters but for many .fcs files, this parallelized version of \link{fcs.to.dt} should speed up the workflow.  There is risk of saturating all available RAM if the data set is large enough;  it is recommended to monitor system resources (Task Manager/Activity Monitor).
 }
 \examples{
+\dontrun{
 #because of the small file-size of these example .fcs files,
 #it's faster to read them individually with 'fcs.to.dt';
 #for larger/many files, the overhead of initiating the compute clusters is negligible
@@ -45,6 +46,6 @@ dt<-fcs.to.dt.parallel(
 fcs.file.dt=fcs.files.dt_ECHO[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
 channel_alias=ca_ECHO,use.alias.pattern=TRUE,alias.order=TRUE)
 dt[]
-
+}
 
 }

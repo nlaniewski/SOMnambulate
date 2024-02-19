@@ -15,13 +15,13 @@ fcs.files.dt[,sample.id := paste(batch,stim.condition,aliquot.seq,sep="_")]
 fcs.files.dt_ECHO<-fcs.files.dt
 
 ##prepare 'ca_ECHO' for use in examples
-ca<-get.fcs.channel.alias(fcs.files)
-
-drop.metals<-c("Y","Pd","Sn","I","La","Lu","Os","Ir","Pt","Pb")
+drop.metals<-c("89Y",paste0(c(102,104:106,108,110),"Pd"),"120Sn","127I",
+paste0(c(138,139),"La"),"176Lu","190Os",paste0(c(191,193),"Ir"),
+paste0(c(195,198),"Pt"),"208Pb")
 drop.metals<-paste0(drop.metals,'$',collapse="|")
 drop.pattern<-paste(drop.metals,'background','noise',sep="|")
 
-ca<-ca[grep(drop.pattern,alias,ignore.case=TRUE,invert=TRUE)]
+ca<-get.fcs.channel.alias(fcs.files,drop.pattern = drop.pattern, order.alias = T)
 
 ca[grep("beads",alias,ignore.case = TRUE),alias:=sub("Norm_beads","beads",alias)]
 ca[grep("viability",alias,ignore.case = TRUE),alias:="194Pt_viability"]#drop '_cisplatin'

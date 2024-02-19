@@ -312,6 +312,7 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
 #'
 #' @return a `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be \link[base]{asinh} transformed.
 #' @examples
+#' \dontrun{
 #' #from the 'get.fcs.file.dt' example:
 #' fcs.files.dt_ECHO
 #'
@@ -345,7 +346,7 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
 #' split(fcs.files.dt_ECHO[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],by='f.path'),
 #' fcs.to.dt,channel_alias=ca_ECHO,use.alias.pattern=TRUE,alias.order=TRUE,simplify=FALSE)
 #' dts[1]
-#'
+#' }
 #'
 #' @export
 fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias.order=FALSE,cofactors=NULL){
@@ -394,6 +395,7 @@ fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias
 #'
 #' @return a `data.table` of raw, un-transformed numeric expression values (row-bound) with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be \link[base]{asinh} transformed.
 #' @examples
+#' \dontrun{
 #' #because of the small file-size of these example .fcs files,
 #' #it's faster to read them individually with 'fcs.to.dt';
 #' #for larger/many files, the overhead of initiating the compute clusters is negligible
@@ -409,7 +411,7 @@ fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias
 #' fcs.file.dt=fcs.files.dt_ECHO[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
 #' channel_alias=ca_ECHO,use.alias.pattern=TRUE,alias.order=TRUE)
 #' dt[]
-#'
+#' }
 #'
 #' @export
 fcs.to.dt.parallel<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias.order=FALSE,cofactors=NULL){
@@ -461,7 +463,7 @@ fcs.to.dt.parallel<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FA
 #'
 parms.adf.dt<-function(dt,type.convert=NULL,name.fix=NULL){
   #for R CMD check; data.table vars
-  name<-desc<-range<-minRange<-maxRange<-value<-NULL
+  #name<-desc<-range<-minRange<-maxRange<-value<-NULL
   #
   col.classes<-sapply(dt,class)
   if(is.null(type.convert)&any(unique(col.classes)!='numeric')){

@@ -30,6 +30,7 @@ a \code{data.table} of raw, un-transformed numeric expression values with charac
 After reading a .fcs file, the expression matrix is converted to a \code{data.table}; in addition, character and factor columns (meta-data) are appended to the numeric expression values. Once in \code{data.table} form, operations such as transformation and scaling can be done 'in place' and 'by' groupings streamline analyses. The example data size is fractionally small compared to even a single typical .fcs file; with sufficient RAM resources, a \code{data.table} of .fcs data amounting to tens of GBs (many high-parameter (spectral/mass) .fcs files, row-bound) can be held in memory.
 }
 \examples{
+\dontrun{
 #from the 'get.fcs.file.dt' example:
 fcs.files.dt_ECHO
 
@@ -63,6 +64,6 @@ dts<-sapply(
 split(fcs.files.dt_ECHO[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],by='f.path'),
 fcs.to.dt,channel_alias=ca_ECHO,use.alias.pattern=TRUE,alias.order=TRUE,simplify=FALSE)
 dts[1]
-
+}
 
 }
