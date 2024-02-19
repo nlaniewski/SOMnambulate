@@ -3,7 +3,7 @@ extdata<-system.file("extdata",package="SOMnambulate")
 fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
 
 ##prepare 'fcs.files.dt_ECHO' for use in examples
-fcs.files.dt<-get.fcs.file.dt(fcs.files)
+fcs.files.dt<-SOMnambulate::get.fcs.file.dt(fcs.files)
 new.cols<-c('study.name','batch.seq','batch.date')
 fcs.files.dt[,(new.cols) :=
 data.table::tstrsplit(basename(dirname(FILENAME)),"_",type.convert=list(as.factor=1:3))]
@@ -21,7 +21,7 @@ paste0(c(195,198),"Pt"),"208Pb")
 drop.metals<-paste0(drop.metals,'$',collapse="|")
 drop.pattern<-paste(drop.metals,'background','noise',sep="|")
 
-ca<-get.fcs.channel.alias(fcs.files,drop.pattern = drop.pattern, order.alias = T)
+ca<-SOMnambulate::get.fcs.channel.alias(fcs.files,drop.pattern = drop.pattern, order.alias = T)
 
 ca[grep("beads",alias,ignore.case = TRUE),alias:=sub("Norm_beads","beads",alias)]
 ca[grep("viability",alias,ignore.case = TRUE),alias:="194Pt_viability"]#drop '_cisplatin'
