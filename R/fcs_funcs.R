@@ -313,29 +313,26 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
 #' @return a `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be \link[base]{asinh} transformed.
 #' @examples
 #' #from the 'get.fcs.file.dt' example:
-#' fcs.files.dt<-SOMnambulate:::fcs.files.dt_ECHO
+#' fcs.files.dt<-SOMnambulate:::prepared.examples('fcs.files.dt')
 #'
 #' #from the 'get.fcs.channel.alias' example:
-#' ca<-SOMnambulate:::ca_ECHO
+#' ca<-SOMnambulate:::prepared.examples('channel.alias')
 #'
 #' #retains original 'detector' names;
-#' #all columns from 'fcs.file.dt'
+#' #and all columns from 'fcs.file.dt'
 #' names(fcs.to.dt(fcs.files.dt[1],channel_alias=NULL))
 #'
 #' #replaces the original names with the 'alias' from 'channel.alias';
-#' #all columns from 'fcs.file.dt'
+#' #keeps all columns from 'fcs.file.dt'
 #' names(fcs.to.dt(fcs.files.dt[1],channel_alias=ca))
 #'
 #' #replaces the original names with the 'alias' from 'channel.alias'; drops via pattern
-#' #all columns from 'fcs.file.dt'
+#' #keeps all columns from 'fcs.file.dt'
 #' names(fcs.to.dt(fcs.files.dt[1],channel_alias=ca,use.alias.pattern=TRUE))
 #'
 #' #replaces the original names with the 'alias' from 'channel.alias'; drops via pattern
 #' #reorders columns using 'alias.order'
 #' #a subset of columns from 'fcs.file.dt'
-#' names(fcs.to.dt(fcs.files.dt[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
-#' channel_alias=ca,use.alias.pattern=TRUE,alias.order=TRUE))
-#'
 #' dt<-fcs.to.dt(fcs.files.dt[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
 #' channel_alias=ca,use.alias.pattern=TRUE,alias.order=TRUE)
 #' dt[]
@@ -399,10 +396,10 @@ fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias
 #' #compared to the speed savings of parallel reading
 #'
 #' #from the 'get.fcs.file.dt' example:
-#' fcs.files.dt<-SOMnambulate:::fcs.files.dt_ECHO
+#' fcs.files.dt<-SOMnambulate:::prepared.examples('fcs.files.dt')
 #'
 #' #from the 'get.fcs.channel.alias' example:
-#' ca<-SOMnambulate:::ca_ECHO
+#' ca<-SOMnambulate:::prepared.examples('channel.alias')
 #'
 #' dt<-fcs.to.dt.parallel(
 #' fcs.file.dt=fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
@@ -411,7 +408,7 @@ fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias
 #'
 #' @export
 fcs.to.dt.parallel<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias.order=FALSE,cofactors=NULL){
-  ##for posterity, leaving the commented code chunk; the function arguments at one point had be exported;
+  ##for posterity, leaving the commented code chunk; the function arguments at one point had to be exported;
   ##now working as intended in the uncommented code chunk, which used to not work...
   # n.cores<-parallel::detectCores()-1
   # n.paths<-fcs.file.dt[,.N]

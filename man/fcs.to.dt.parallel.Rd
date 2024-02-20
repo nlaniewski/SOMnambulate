@@ -36,10 +36,10 @@ Essentially a wrapper around \link[parallel]{makeCluster} and those associated f
 #compared to the speed savings of parallel reading
 
 #from the 'get.fcs.file.dt' example:
-fcs.files.dt<-SOMnambulate:::fcs.files.dt_ECHO
+fcs.files.dt<-SOMnambulate:::prepared.examples('fcs.files.dt')
 
 #from the 'get.fcs.channel.alias' example:
-ca<-SOMnambulate:::ca_ECHO
+ca<-SOMnambulate:::prepared.examples('channel.alias')
 
 dt<-fcs.to.dt.parallel(
 fcs.file.dt=fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],

@@ -31,29 +31,26 @@ After reading a .fcs file, the expression matrix is converted to a \code{data.ta
 }
 \examples{
 #from the 'get.fcs.file.dt' example:
-fcs.files.dt<-SOMnambulate:::fcs.files.dt_ECHO
+fcs.files.dt<-SOMnambulate:::prepared.examples('fcs.files.dt')
 
 #from the 'get.fcs.channel.alias' example:
-ca<-SOMnambulate:::ca_ECHO
+ca<-SOMnambulate:::prepared.examples('channel.alias')
 
 #retains original 'detector' names;
-#all columns from 'fcs.file.dt'
+#and all columns from 'fcs.file.dt'
 names(fcs.to.dt(fcs.files.dt[1],channel_alias=NULL))
 
 #replaces the original names with the 'alias' from 'channel.alias';
-#all columns from 'fcs.file.dt'
+#keeps all columns from 'fcs.file.dt'
 names(fcs.to.dt(fcs.files.dt[1],channel_alias=ca))
 
 #replaces the original names with the 'alias' from 'channel.alias'; drops via pattern
-#all columns from 'fcs.file.dt'
+#keeps all columns from 'fcs.file.dt'
 names(fcs.to.dt(fcs.files.dt[1],channel_alias=ca,use.alias.pattern=TRUE))
 
 #replaces the original names with the 'alias' from 'channel.alias'; drops via pattern
 #reorders columns using 'alias.order'
 #a subset of columns from 'fcs.file.dt'
-names(fcs.to.dt(fcs.files.dt[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
-channel_alias=ca,use.alias.pattern=TRUE,alias.order=TRUE))
-
 dt<-fcs.to.dt(fcs.files.dt[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
 channel_alias=ca,use.alias.pattern=TRUE,alias.order=TRUE)
 dt[]

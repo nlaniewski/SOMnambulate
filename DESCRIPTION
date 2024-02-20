@@ -28,4 +28,3 @@ Imports:
     uwot,
     viridis
 biocViews:
-LazyData: true
