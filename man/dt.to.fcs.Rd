@@ -8,7 +8,7 @@ dt.to.fcs(
   dt,
   fcs.files.dt,
   parse.by = "sample.id",
-  type.convert = NULL,
+  to.numeric = NULL,
   name.fix = NULL,
   cyto.method = "spectral",
   write = T,
@@ -22,7 +22,7 @@ dt.to.fcs(
 
 \item{parse.by}{Character string; a named column in \code{dt} that contains unique identifiers; used to both index the \code{dt} and generate individual, unique .fcs file names.}
 
-\item{type.convert}{Argument as defined in \code{parms.adf.dt}}
+\item{to.numeric}{Argument as defined in \code{parms.adf.dt}}
 
 \item{name.fix}{Argument as defined in \code{parms.adf.dt}}
 

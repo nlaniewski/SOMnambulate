@@ -4,9 +4,9 @@
 #'
 #'
 #' @param fcs.file.paths Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.
-#' @param return.dt Logical. By default, \code{FALSE}; if \code{TRUE}, will return a data.table of parameters per .fcs file
+#' @param return.dt Logical. By default, \code{FALSE}; if \code{TRUE}, will return a \link[data.table]{data.table} of parameters per .fcs file
 #'
-#' @return a list of parameters per .fcs file; if \code{return.dt=T}, a data.table of parameters
+#' @return a list of parameters per .fcs file; if \code{return.dt=T}, a \link[data.table]{data.table} of parameters
 #' @examples
 #' extdata<-system.file("extdata",package="SOMnambulate")
 #' fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
@@ -37,72 +37,59 @@ get.fcs.parameters<-function(fcs.file.paths,return.dt=F){
 }
 #' @title Get keyword metadata (!'$P') from .fcs files
 #' @description
-#' Non-parameter ($P) keywords in the TEXT section of a .fcs file denote cytometer/sample-specific meta-data. This function allows parsing of that meta-data without the overhead of reading the actual .fcs file to get the values.  Depending on the nature of the .fcs file, there will be some mix of FCS-defined ('$') and non-standard keywords.
-#'
+#' Non-parameter ($P) keywords in the TEXT section of a .fcs file denote cytometer/sample-specific meta-data. This function allows parsing of that meta-data without the overhead of reading the full (text and expression matrix) .fcs file to get the keyword values.  Depending on the nature of the .fcs file, there will be some mix of FCS-defined ('$') and non-standard keywords (software/user-defined).
 #'
 #' @param fcs.file.paths Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.
-#' @param return.dt Logical. By default, \code{FALSE}; if \code{TRUE}, will return a data.table of keyword/values per .fcs file
-#' @param pattern Pattern used to split keyword character strings; specifically for use with barcoded/pooled .fcs files that contain 'collapsed' metadata.
-#' @param pattern.unique Logical. By default, \code{TRUE}; returns unique keyword data.tables.
+#' @param return.dt Logical; default \code{TRUE}; if \code{FALSE}, will return a list of non-parameter (!'$P') keywords per .fcs file.
 #'
-#' @return a list of non-parameter ('$P') keywords per .fcs file; if \code{return.dt=T}, a data.table of keywords/values
+#' @return A (row-bound) \link[data.table]{data.table} of keywords/values.
 #' @examples
 #' extdata<-system.file("extdata",package="SOMnambulate")
 #' fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
-#' get.fcs.keywords.metadata(fcs.files[1])
+#'
+#' #a list of keywords/values (per .fcs file)
+#' get.fcs.keywords.metadata(fcs.files[1],return.dt=FALSE)#a single file
+#'
+#' #a (row-bound) data.table of keywords/values
+#' mdat<- get.fcs.keywords.metadata(fcs.files)
 #'
 #' #note column classes in the data.table; the TEXT section is encoded as character
-#' get.fcs.keywords.metadata(fcs.files[1],return.dt=TRUE)[]
+#' mdat[]
+#' str(mdat)
 #'
-#' #list; row-bound data.table; a few example conversions
-#' mdats <- get.fcs.keywords.metadata(fcs.files,return.dt=TRUE)#a list of data.tables
-#' mdat<-data.table::rbindlist(mdats)#a single, row-bound data.table
 #' mdat[,class(`$DATE`)]#"character" class
-#' mdat[,`$DATE`:= data.table::as.IDate(`$DATE`,format="%d-%b-%Y")]
+#' mdat[,class(get('$DATE'))]#to avoid having to use back ticks
+#'
+#' mdat[,'$DATE' := data.table::as.IDate(get('$DATE'),format="%d-%b-%Y")]
 #' mdat[,class(`$DATE`)]#"Date" class
+#' mdat[,class(get('$DATE'))]#to avoid having to use back ticks
 #'
 #' @export
-get.fcs.keywords.metadata <- function(fcs.file.paths,return.dt=F,pattern=NULL,pattern.unique=T){
-  fcs.keywords.list <- sapply(flowCore::read.FCSheader(fcs.file.paths),function(h){
+get.fcs.keywords.metadata <- function(fcs.file.paths,return.dt=T){
+  fcs.keywords <- sapply(flowCore::read.FCSheader(fcs.file.paths),function(h){
     #drop-terms: '$P[0-9]+' (parameters); 'P[0-9]+DISPLAY' (Cytek specific?); Spill(over)
-    h<-h[-grep('\\$PAR|\\$P[0-9]+|P[0-9]+DISPLAY|spill',names(h),ignore.case = T)]
-    return(as.list(h))
+    h<-as.list(h[-grep('\\$PAR|\\$P[0-9]+|P[0-9]+DISPLAY|spill',names(h),ignore.case = T)])
   },simplify = F)
-  if(return.dt&is.null(pattern)){
-    fcs.keywords.dt <- sapply(fcs.keywords.list, function(kw) data.table::setDT(kw),simplify = F)
-  }else if(return.dt&!is.null(pattern)){
-    fcs.keywords.dt.split <- lapply(fcs.keywords.list,function(kws){
-      lapply(sort(unique(stringr::str_count(kws,pattern))),function(s){
-        data.table::as.data.table(sapply(kws[which(stringr::str_count(kws,pattern)==s)],strsplit,pattern))
-      })
-    })
-    if(pattern.unique){
-      fcs.keywords.dt.split<-sapply(seq(max(sapply(fcs.keywords.dt.split,length))),function(n){
-        fcs.keywords.dt.split<-sapply(fcs.keywords.dt.split,'[',n)
-        if(length(unique(fcs.keywords.dt.split))==1) fcs.keywords.dt.split<-fcs.keywords.dt.split[[1]]
-        return(fcs.keywords.dt.split)
-      })
-    }else{
-      return(fcs.keywords.dt.split)
-    }
+  if(return.dt){
+    return(data.table::rbindlist(fcs.keywords,fill=T))
   }else{
-    return(fcs.keywords.list)
+    return(fcs.keywords)
   }
 }
-#' @title Get a `data.table` of .fcs file paths and related metadata.
+#' @title Get a \link[data.table]{data.table} of .fcs file paths and related metadata.
 #' @description
-#' Essentially a wrapper around \link{get.fcs.keywords.metadata} with some convenience formatting and class conversions. This structured `data.table` can be considered the starting point of an analysis workflow. Naming conventions can be enforced by modifying any sample/subject-specific columns; it's not uncommon for typos to occur during the course of a large study and they can be corrected after the keyword metadata has been parsed into this `data.table`.
+#' Essentially a wrapper around \link{get.fcs.keywords.metadata} with some convenience formatting and class conversions. This structured \link[data.table]{data.table} can be considered the starting point of an analysis workflow. Naming conventions can be enforced by modifying any sample/subject-specific columns; it's not uncommon for typos to occur during the course of a large study and they can be corrected after the keyword metadata has been parsed.
 #'
 #'
 #' @param fcs.file.paths Character string; path(s) usually returned from `list.files(...,full.names=T,pattern=".fcs")`.
 #' @param factor.cols Character string; column names to be converted to factor.
 #'
-#' @return a `data.table` of full length .fcs file paths and related metadata (parsed from the TEXT header).
+#' @return a \link[data.table]{data.table} of full length .fcs file paths and related metadata (parsed from the TEXT header).
 #' @examples
 #' extdata<-system.file("extdata",package="SOMnambulate")
 #' fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
+#'
 #' fcs.files.dt<-get.fcs.file.dt(fcs.files)
-#' fcs.files.dt[]
 #'
 #' #enforce/establish naming convention for the construction of a sample.id and associated factors
 #' new.cols<-c('study.name','batch.seq','batch.date')
@@ -121,20 +108,18 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
   dt[,source.name:=basename(f.path)]
   dt[,file.size.MB:=signif(file.size(f.path)/1024^2,3)]
   ##
-  dts<-get.fcs.keywords.metadata(fcs.file.paths,return.dt = T)
-  dt<-cbind(dt,data.table::rbindlist(dts,fill=T))
-  #synatically valid names; drop keyword identifier '$'
-  names(dt)<-sub("\\$","",names(dt))
+  dt.kw<-get.fcs.keywords.metadata(fcs.file.paths)
+  dt<-cbind(dt,dt.kw)
   #drop conserved/standard keywords that are non-informative to the user
   drop.terms<-c(
-    paste0(c('BEGIN','END'),c('ANALYSIS')),
-    paste0(c('BEGIN','END'),c('DATA')),
-    paste0(c('BEGINS','ENDS'),c('TEXT')),
-    "MODE",
-    'BYTEORD',
-    'DATATYPE',
-    'NEXTDATA',
-    'TIMESTEP',
+    paste0(c('$BEGIN','$END'),c('ANALYSIS')),
+    paste0(c('$BEGIN','$END'),c('DATA')),
+    paste0(c('$BEGINS','$ENDS'),c('TEXT')),
+    '$MODE',
+    '$BYTEORD',
+    '$DATATYPE',
+    '$NEXTDATA',
+    '$TIMESTEP',
     'APPLY COMPENSATION',
     'USERSETTINGNAME',
     'CHARSET',
@@ -144,9 +129,14 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
   )
   dt<-dt[,!drop.terms[drop.terms %in% names(dt)],with=F]
   #do a few conversions
-  for(j in c('DATE')){data.table::set(dt,j=j,value=data.table::as.IDate(dt[[j]],format="%d-%b-%Y"))}
-  for(j in c('BTIM','ETIM')){data.table::set(dt,j=j,value=data.table::as.ITime(dt[[j]]))}
-  for(j in grep("TOT|DELAY|ASF|VOL$",names(dt),value = T)){data.table::set(dt,j=j,value=as.numeric(dt[[j]]))}
+  if('$DATE' %in% names(dt)) dt[,'$DATE' := data.table::as.IDate(get('$DATE'),format="%d-%b-%Y")]
+  if('$TOT' %in% names(dt)) dt[,'$TOT' := as.numeric(get('$TOT'))]
+  if('$BTIM' %in% names(dt)) dt[,'$BTIM' := data.table::as.ITime(get('$BTIM'))]
+  if('$ETIM' %in% names(dt)) dt[,'$ETIM' := data.table::as.ITime(get('$ETIM'))]
+  #
+  for(j in grep("DELAY|ASF|VOL$",names(dt),value = T)){data.table::set(dt,j=j,value=as.numeric(dt[[j]]))}#can't remember where this came from; cytek?
+  #synatically valid names; drop keyword identifier '$'
+  names(dt)<-sub("\\$","",names(dt))
   #conserved keywords -- convert these to factor
   keywords.conserved <- c('CYT','CYTSN','FCSversion')
   for(j in keywords.conserved){data.table::set(dt,j=j,value=factor(dt[[j]]))}
@@ -162,14 +152,15 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
 }
 #' @title Get a `channel_alias` data.table from .fcs file headers
 #' @description
-#' The resultant `data.table` is to be used with the `channel_alias` argument of \link[flowCore]{read.FCS}. The alias will be used to set column names; make sure they are unique and 'readable'. For example, the included mass cytometry data files used in this example are originally named ($PS) as 'MassMetal_Marker'; a more 'readable' form would be 'Marker_MassMetal' or even just 'Marker' (see example). The intent here is to use unified names that follow an established convention. There is relatively low 'overhead' reading .fcs headers/TEXT, so having a unified 'channel.alias' (panel) before reading in often large amounts of .fcs data will streamline the workflow.
+#' The resultant \link[data.table]{data.table} is to be used with the `channel_alias` argument of \link[flowCore]{read.FCS}. The alias will be used to set column names; make sure they are unique and 'readable'. For example, the included mass cytometry data files used in this example are originally named ($PS) as 'MassMetal_Marker'; a more 'readable' form would be 'Marker_MassMetal' or even just 'Marker' (see example). The intent here is to use unified names that follow an established convention. There is relatively low 'overhead' reading .fcs headers/TEXT, so having a unified 'channel.alias' (panel) before reading in often large amounts of .fcs data will streamline the workflow.
 #'
 #' @param fcs.file.paths Character string; path(s) usually returned from `list.files(...,full.names=T,pattern=".fcs")`.
-#' @param drop.pattern 'pattern' argument for \link[base]{grep}: "character string containing a \link[base:regex]{regular expression}"; will drop pattern matches from the alias column of `channel_alias`.
+#' @param drop.pattern.channels 'pattern' argument for \link[base]{grep}: "character string containing a \link[base:regex]{regular expression}"; will drop pattern matches from the 'channels' column of `channel_alias`.
+#' @param drop.pattern.alias 'pattern' argument for \link[base]{grep}: "character string containing a \link[base:regex]{regular expression}"; will drop pattern matches from the 'alias' column of `channel_alias`.
 #' @param name.sub Named character vector for use in resolving name conflicts/discrepancies; the vector element(s) should equal a pattern and the name(s) a replacement string.
 #' @param order.alias Logical; if `TRUE`, the `channel_alias` 'alias' column will be sensibly ordered.
 #'
-#' @return returns a `data.table` containing a 'channels' and 'alias' column; returns a list of `data.table`s if not unique (issues a warning).
+#' @return returns a \link[data.table]{data.table} containing a 'channels' and 'alias' column; returns a list of `data.table`s if not unique (prints a message).
 #' @examples
 #' extdata<-system.file("extdata",package="SOMnambulate")
 #' fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
@@ -184,7 +175,7 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
 #' drop.metals<-paste0(drop.metals,'$',collapse="|")
 #' drop.pattern<-paste(drop.metals,'background','noise',sep="|")
 #'
-#' ca<-get.fcs.channel.alias(fcs.files,drop.pattern=drop.pattern,order.alias=TRUE)
+#' ca<-get.fcs.channel.alias(fcs.files,drop.pattern.alias=drop.pattern,order.alias=TRUE)
 #' ca[]
 #'
 #' #a few more 'name-fixes'
@@ -201,16 +192,16 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
 #' fcs.tmp.path<-tempfile(fileext = ".fcs")
 #' flowCore::write.FCS(fcs.tmp,fcs.tmp.path)
 #'
-#' #a warning will issue; two unique data.tables will be returned;
+#' #a message will issue; two unique data.tables will be returned;
 #' get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path),
-#' drop.pattern=drop.pattern)
+#' drop.pattern.alias=drop.pattern)
 #'
-#' #using name.sub argument to resolve the warning and return a single data.table
+#' #using name.sub argument to resolve the message and return a single data.table
 #' get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path),
-#' drop.pattern=drop.pattern, name.sub=c("164Dy_IFNg"="164Dy_IFNy"))
+#' drop.pattern.alias=drop.pattern, name.sub=c("164Dy_IFNg"="164Dy_IFNy"))
 #'
 #' @export
-get.fcs.channel.alias<-function(fcs.file.paths,drop.pattern=NULL,name.sub=NULL,order.alias=F){
+get.fcs.channel.alias<-function(fcs.file.paths,drop.pattern.channels=NULL,drop.pattern.alias=NULL,name.sub=NULL,order.alias=F){
   channel_alias.list<- unique(lapply(fcs.file.paths,function(f.path){
     ca<-SOMnambulate::get.fcs.parameters(f.path,return.dt = T)[[1]]
     ca[is.na(S), S := N]
@@ -218,15 +209,17 @@ get.fcs.channel.alias<-function(fcs.file.paths,drop.pattern=NULL,name.sub=NULL,o
       stop("Non-unique alias name")
     }else{
       data.table::setnames(ca,c('N','S'),c('channels','alias'))
-      if(!is.null(drop.pattern)){
-        ca<-ca[grep(drop.pattern,alias,ignore.case=TRUE,invert=TRUE),.(channels,alias)]
-      }else{
-        ca<-ca[,.(channels,alias)]
+      ca<-ca[,.(channels,alias)]
+      if(!is.null(drop.pattern.channels)){
+        ca<-ca[grep(drop.pattern.channels,channels,ignore.case=TRUE,invert=TRUE)]
+      }
+      if(!is.null(drop.pattern.alias)){
+        ca<-ca[grep(drop.pattern.alias,alias,ignore.case=TRUE,invert=TRUE)]
       }
     }
     if(!is.null(name.sub)){
       for(n in names(name.sub)){
-        data.table::set(ca,i=grep(name.sub[[n]],ca$alias),j='alias',value=n)
+        data.table::set(ca,i=grep(name.sub[[n]],ca$alias,ignore.case = T),j='alias',value=n)
       }
     }
     if(order.alias){
@@ -244,12 +237,13 @@ get.fcs.channel.alias<-function(fcs.file.paths,drop.pattern=NULL,name.sub=NULL,o
   if(length(channel_alias.list)==1){
     return(channel_alias.list[[1]])
   }else{
-    warning(paste(
-      'channel and/or alias conflict; resolve name discrepancy:',
+    message(paste(
+      'channel and/or alias conflict; resolve name discrepancy in order to return a single, unified data.table:',
       paste0(setdiff(
         Reduce(union,lapply(channel_alias.list,'[[','alias')),
-        Reduce(intersect,lapply(channel_alias.list,'[[','alias'))),collapse = " : ")
-    ),call. = F)
+        Reduce(intersect,lapply(channel_alias.list,'[[','alias'))),collapse = " ; "),
+      sep = "\n"
+    ))
     return(channel_alias.list)
   }
 }
@@ -309,6 +303,7 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
 #' @param use.alias.pattern Logical; default `FALSE`. If `TRUE` and `channel_alias` is defined, the 'alias' column will be used as a pattern to define the \link[flowCore]{read.FCS} `column.pattern` argument.
 #' @param alias.order Logical. If `TRUE`, the `data.table` columns will be ordered to match that of the `channel_alias` 'alias' column.
 #' @param cofactors A named numeric vector; named columns will be \link[base]{asinh} transformed with the supplied cofactor (numeric).
+#' @param sample.val Numeric (1L); used to define \link[base:sample]{size}. Rows will be randomly (seed-controlled) selected based on the value of `sample.val`.
 #'
 #' @return a `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be \link[base]{asinh} transformed.
 #' @examples
@@ -343,8 +338,14 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
 #' fcs.to.dt,channel_alias=ca,use.alias.pattern=TRUE,alias.order=TRUE,simplify=FALSE)
 #' dts[1]
 #'
+#' #sample rows
+#' dt.sub<-fcs.to.dt(fcs.files.dt[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
+#' channel_alias=ca,use.alias.pattern=TRUE,alias.order=TRUE,sample.val=1000)
+#' dt[,.N]
+#' dt.sub[,.N]
+#'
 #' @export
-fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias.order=FALSE,cofactors=NULL){
+fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias.order=FALSE,cofactors=NULL,sample.val=NULL){
   #read .fcs file ('.path')
   #if defined, rename columns using 'channel_alias' as returned from 'get.fcs.channel.alias'
   fcs.tmp<-flowCore::read.FCS(fcs.file.dt[['f.path']],transformation = F,truncate_max_range = F,
@@ -352,7 +353,16 @@ fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias
                               column.pattern = if(!is.null(channel_alias) & use.alias.pattern) paste0(channel_alias$alias,collapse = "|")
   )
   #convert the expression matrix (raw, un-transformed data values) into a data.table
-  dt<-data.table::setDT(as.data.frame(fcs.tmp@exprs))
+  dt<-data.table::setDT(
+    as.data.frame(
+      if(!is.null(sample.val)){
+        set.seed(1337)
+        fcs.tmp@exprs[sample.int(nrow(fcs.tmp),sample.val,replace = TRUE),]
+      }else{
+        fcs.tmp@exprs
+      }
+    )
+  )
   #if defined, transform named columns with supplied cofactors
   if(!is.null(cofactors)){
     if(!all(names(cofactors) %in% names(dt))){
@@ -377,6 +387,8 @@ fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias
     dt<-cbind(dt,fcs.file.dt[,!'f.path'])
   }
   #
+  invisible(dt)
+  #
 }
 #' @title a parallelized version of \link{fcs.to.dt}
 #' @description
@@ -387,6 +399,8 @@ fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias
 #' @param use.alias.pattern Logical; default `FALSE`. If `TRUE` and `channel_alias` is defined, the 'alias' column will be used as a pattern to define the \link[flowCore]{read.FCS} `column.pattern` argument.
 #' @param alias.order Logical. If `TRUE`, the `data.table` columns will be ordered to match that of the `channel_alias` 'alias' column.
 #' @param cofactors A named numeric vector; named columns will be \link[base]{asinh} transformed with the supplied cofactor (numeric).
+#' @param sample.val Numeric (1L); used to define \link[base:sample]{size}. Rows will be randomly (seed-controlled) selected based on the value of `sample.val`.
+#' @param ncores Numeric; used to override the number of parallel compute clusters.
 #'
 #' @return a `data.table` of raw, un-transformed numeric expression values (row-bound) with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be \link[base]{asinh} transformed.
 #' @examples
@@ -403,11 +417,12 @@ fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias
 #'
 #' dt<-fcs.to.dt.parallel(
 #' fcs.file.dt=fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
-#' channel_alias=ca,use.alias.pattern=TRUE,alias.order=TRUE)
+#' channel_alias=ca,use.alias.pattern=TRUE,alias.order=TRUE,sample.val=1000,ncores=2)
 #' dt[]
+#' dt[,.N,by=sample.id]
 #'
 #' @export
-fcs.to.dt.parallel<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias.order=FALSE,cofactors=NULL){
+fcs.to.dt.parallel<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias.order=FALSE,cofactors=NULL,sample.val=NULL,ncores=NULL){
   ##for posterity, leaving the commented code chunk; the function arguments at one point had to be exported;
   ##now working as intended in the uncommented code chunk, which used to not work...
   # n.cores<-parallel::detectCores()-1
@@ -434,6 +449,7 @@ fcs.to.dt.parallel<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FA
   n.cores<-parallel::detectCores()-1
   n.paths<-fcs.file.dt[,.N]
   n<-ifelse(n.paths>n.cores,n.cores,n.paths)
+  if(!is.null(ncores)) n<-ncores
   message(paste("Parallel reading of",n.paths,".fcs files using",n,"cores."))
   cl<-parallel::makeCluster(n)
   on.exit({parallel::stopCluster(cl);invisible(gc())})
@@ -442,55 +458,66 @@ fcs.to.dt.parallel<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FA
                                             channel_alias=channel_alias,
                                             use.alias.pattern=use.alias.pattern,
                                             alias.order=alias.order,
+                                            sample.val=sample.val,
                                             cofactors=cofactors))
 }
 #' @title Generate a `data.table` of .fcs parameters
+#' @description
+#' As a utility function, this returns a `data.table` of .fcs parameters for use in building a new .fcs file by fulfilling the \link[Biobase]{AnnotatedDataFrame} slot; **par**a**m**eter**s**.**a**nnotated**d**ata**f**rame.**d**a**t**atable.
 #'
-#' @param dt `data.table` returned from `fcs.to.dt`; some mix of .fcs expression values and character/factor values.
-#' @param type.convert Character vector; will attempt to convert each string element (named column in `dt`) to numeric
+#'
+#' @param dt `data.table` returned from `fcs.to.dt`; some mix of .fcs expression values and character/factor values
+#' @param to.numeric Character vector; will attempt to convert each string element (named column in `dt`) to numeric
 #' @param name.fix a `data.table` with two columns: 'name' and 'name.fix'; if 'name' matches, the value will be replaced with 'name.fix'.
 #'
-#' @return a `data.table` of .fcs parameters; used to define `flowCore::flowFrame(...,parameters = Biobase::AnnotatedDataFrame(...))`.
+#' @return a `data.table` of .fcs parameters; used to define a (new) \link[flowCore]{flowFrame}'s parameter slot using \link[Biobase]{AnnotatedDataFrame}.
+#' @examples
+#' #from the 'get.fcs.file.dt' example:
+#' #from the 'get.fcs.channel.alias' example:
+#' #from the 'fcs.to.dt' example:
 #'
+#' dt<-SOMnambulate:::prepared.examples('dt')
 #'
+#' SOMnambulate:::parms.adf.dt(dt,to.numeric='aliquot.seq')[]
 #'
-parms.adf.dt<-function(dt,type.convert=NULL,name.fix=NULL){
-  #for R CMD check; data.table vars
-  #name<-desc<-range<-minRange<-maxRange<-value<-NULL
+parms.adf.dt<-function(dt,to.numeric=NULL,name.fix=NULL){
   #
   col.classes<-sapply(dt,class)
-  if(is.null(type.convert)&any(unique(col.classes)!='numeric')){
+  if(is.null(to.numeric)&any(unique(col.classes)!='numeric')){
     message(
-      paste("Using numeric columns only; use the 'type.convert' argument if the following are to be included:",
+      paste("Using numeric columns only; use the 'to.numeric' argument if the following are to be included:",
             paste("Non-numeric cols:",paste0(names(col.classes[col.classes!="numeric"]),collapse=" ; ")),
             sep = "\n")
     )
-  }else if(!is.null(type.convert)){
-    type.test<-suppressWarnings(dt[,.SD,.SDcols = type.convert][,lapply(.SD,function(x){any(is.na(as.numeric(x)))})])
+  }else if(!is.null(to.numeric)){
+    type.test<-suppressWarnings(dt[,.SD,.SDcols = to.numeric][,lapply(.SD,function(x){any(is.na(as.numeric(x)))})])
     if(any(type.test)){
-      stop("Column(s) as defined by 'type.convert' could not be converted to numeric; NAs introduced by coercion")
+      stop("Column(s) as defined by 'to.numeric' could not be converted to numeric; NAs introduced by coercion")
     }else{
-      col.classes[names(col.classes) %in% type.convert]<-'numeric'
+      col.classes[names(col.classes) %in% to.numeric]<-'numeric'
     }
   }
   numeric.cols<-names(col.classes)[col.classes=="numeric"]
   #
-  parms.adf<-data.table::melt(dt[,.SD,.SDcols = numeric.cols][,lapply(.SD,as.numeric)],
-                              measure.vars=numeric.cols,variable.name='name')[
-                                ,stats::setNames(as.list(range(value)),nm=c('minRange','maxRange')),by=name]
-  parms.adf[,minRange := floor(minRange)];parms.adf[,maxRange := ceiling(maxRange)]
+  parms.adf<-data.table::data.table(
+    name=numeric.cols,
+    desc=NA,
+    data.table::setnames(data.table::transpose(
+      dt[, lapply(.SD,function(x){range(as.numeric(x))}), .SDcols = numeric.cols]),
+      c('minRange','maxRange'))
+  )
   parms.adf[,range:=(maxRange)-(minRange)]
+  parms.adf[,minRange := floor(minRange)]
+  parms.adf[,maxRange := ceiling(maxRange)]
+  data.table::setcolorder(parms.adf,c('name','desc','range','minRange','maxRange'))
+  #
   if(!is.null(name.fix)){
     parms.adf<-merge(parms.adf,name.fix,all.x = T,sort=F)
     parms.adf[is.na(name.fix),name.fix:=name]
     parms.adf[,name:=name.fix];parms.adf[,name.fix:=NULL]
   }
   #
-  parms.adf[,desc:=NA]
-  #
-  data.table::setcolorder(parms.adf,c('name','desc','range','minRange','maxRange'))
-  #
-  return(parms.adf[])
+  invisible(parms.adf)
 }
 #' @title Generate a list of .fcs meta-data
 #'
@@ -535,7 +562,7 @@ parms.list.from.adf<-function(parms.adf,cyto.method='spectral'){
 #' @param dt Object returned from `fcs.to.dt`.
 #' @param fcs.files.dt Object returned from `get.fcs.file.dt`.
 #' @param parse.by Character string; a named column in `dt` that contains unique identifiers; used to both index the `dt` and generate individual, unique .fcs file names.
-#' @param type.convert Argument as defined in `parms.adf.dt`
+#' @param to.numeric Argument as defined in `parms.adf.dt`
 #' @param name.fix Argument as defined in `parms.adf.dt`
 #' @param cyto.method Argument as defined in `parms.list.from.adf`
 #' @param write Logical; default `TRUE`. A new .fcs file will be written to `out.dir`, using the 'batch' column from `dt` as a sub-directory.
@@ -545,7 +572,7 @@ parms.list.from.adf<-function(parms.adf,cyto.method='spectral'){
 #' @export
 #'
 #'
-dt.to.fcs<-function(dt,fcs.files.dt,parse.by='sample.id',type.convert=NULL,name.fix=NULL,cyto.method="spectral",write=T,out.dir="./data_modified"){
+dt.to.fcs<-function(dt,fcs.files.dt,parse.by='sample.id',to.numeric=NULL,name.fix=NULL,cyto.method="spectral",write=T,out.dir="./data_modified"){
   #for R CMD check; data.table vars
   sample.id<-f.path<-batch<-NULL
   #
@@ -565,7 +592,7 @@ dt.to.fcs<-function(dt,fcs.files.dt,parse.by='sample.id',type.convert=NULL,name.
   parse.ids<-dt[,unique(get(parse.by))]
   #
   for(i in parse.ids){
-    parms.adf<-parms.adf.dt(dt[sample.id %in% i],type.convert = type.convert,name.fix = name.fix)
+    parms.adf<-parms.adf.dt(dt[sample.id %in% i],to.numeric = to.numeric,name.fix = name.fix)
     parms.list<-parms.list.from.adf(parms.adf,cyto.method = cyto.method)
     keywords<-as.list(flowCore::read.FCSheader(fcs.files.dt[sample.id %in% i,f.path])[[1]])
     if(any(grepl("\\$P[0-9]+V",names(keywords)))){
@@ -600,7 +627,7 @@ dt.to.fcs<-function(dt,fcs.files.dt,parse.by='sample.id',type.convert=NULL,name.
     rownames(parms.adf)<-paste0("$P",rownames(parms.adf))
     #
     exprs<-as.matrix(
-      dt[sample.id %in% i,.SD,.SDcols = c(dt[,names(.SD),.SDcols = is.numeric],grep(type.convert,names(dt),value = T))][
+      dt[sample.id %in% i,.SD,.SDcols = c(dt[,names(.SD),.SDcols = is.numeric],grep(to.numeric,names(dt),value = T))][
         ,lapply(.SD,as.numeric)]
     )
     colnames(exprs)<-parms.adf$name

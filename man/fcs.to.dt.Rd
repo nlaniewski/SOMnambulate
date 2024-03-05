@@ -9,7 +9,8 @@ fcs.to.dt(
   channel_alias = NULL,
   use.alias.pattern = FALSE,
   alias.order = FALSE,
-  cofactors = NULL
+  cofactors = NULL,
+  sample.val = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ fcs.to.dt(
 \item{alias.order}{Logical. If \code{TRUE}, the \code{data.table} columns will be ordered to match that of the \code{channel_alias} 'alias' column.}
 
 \item{cofactors}{A named numeric vector; named columns will be \link[base]{asinh} transformed with the supplied cofactor (numeric).}
+
+\item{sample.val}{Numeric (1L); used to define \link[base:sample]{size}. Rows will be randomly (seed-controlled) selected based on the value of \code{sample.val}.}
 }
 \value{
 a \code{data.table} of raw, un-transformed numeric expression values with character/factor identifier columns; if \code{cofactors} is defined, the raw expression values will be \link[base]{asinh} transformed.
@@ -60,5 +63,11 @@ dts<-sapply(
 split(fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],by='f.path'),
 fcs.to.dt,channel_alias=ca,use.alias.pattern=TRUE,alias.order=TRUE,simplify=FALSE)
 dts[1]
+
+#sample rows
+dt.sub<-fcs.to.dt(fcs.files.dt[1,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
+channel_alias=ca,use.alias.pattern=TRUE,alias.order=TRUE,sample.val=1000)
+dt[,.N]
+dt.sub[,.N]
 
 }

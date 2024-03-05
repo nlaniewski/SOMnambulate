@@ -4,41 +4,38 @@
 \alias{get.fcs.keywords.metadata}
 \title{Get keyword metadata (!'$P') from .fcs files}
 \usage{
-get.fcs.keywords.metadata(
-  fcs.file.paths,
-  return.dt = F,
-  pattern = NULL,
-  pattern.unique = T
-)
+get.fcs.keywords.metadata(fcs.file.paths, return.dt = T)
 }
 \arguments{
 \item{fcs.file.paths}{Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.}
 
-\item{return.dt}{Logical. By default, \code{FALSE}; if \code{TRUE}, will return a data.table of keyword/values per .fcs file}
-
-\item{pattern}{Pattern used to split keyword character strings; specifically for use with barcoded/pooled .fcs files that contain 'collapsed' metadata.}
-
-\item{pattern.unique}{Logical. By default, \code{TRUE}; returns unique keyword data.tables.}
+\item{return.dt}{Logical; default \code{TRUE}; if \code{FALSE}, will return a list of non-parameter (!'$P') keywords per .fcs file.}
 }
 \value{
-a list of non-parameter ('$P') keywords per .fcs file; if \code{return.dt=T}, a data.table of keywords/values
+A (row-bound) \link[data.table]{data.table} of keywords/values.
 }
 \description{
-Non-parameter ($P) keywords in the TEXT section of a .fcs file denote cytometer/sample-specific meta-data. This function allows parsing of that meta-data without the overhead of reading the actual .fcs file to get the values.  Depending on the nature of the .fcs file, there will be some mix of FCS-defined ('$') and non-standard keywords.
+Non-parameter ($P) keywords in the TEXT section of a .fcs file denote cytometer/sample-specific meta-data. This function allows parsing of that meta-data without the overhead of reading the full (text and expression matrix) .fcs file to get the keyword values.  Depending on the nature of the .fcs file, there will be some mix of FCS-defined ('$') and non-standard keywords (software/user-defined).
 }
 \examples{
 extdata<-system.file("extdata",package="SOMnambulate")
 fcs.files <- list.files(extdata,full.names=TRUE,pattern=".fcs")
-get.fcs.keywords.metadata(fcs.files[1])
+
+#a list of keywords/values (per .fcs file)
+get.fcs.keywords.metadata(fcs.files[1],return.dt=FALSE)#a single file
+
+#a (row-bound) data.table of keywords/values
+mdat<- get.fcs.keywords.metadata(fcs.files)
 
 #note column classes in the data.table; the TEXT section is encoded as character
-get.fcs.keywords.metadata(fcs.files[1],return.dt=TRUE)[]
+mdat[]
+str(mdat)
 
-#list; row-bound data.table; a few example conversions
-mdats <- get.fcs.keywords.metadata(fcs.files,return.dt=TRUE)#a list of data.tables
-mdat<-data.table::rbindlist(mdats)#a single, row-bound data.table
 mdat[,class(`$DATE`)]#"character" class
-mdat[,`$DATE`:= data.table::as.IDate(`$DATE`,format="\%d-\%b-\%Y")]
+mdat[,class(get('$DATE'))]#to avoid having to use back ticks
+
+mdat[,'$DATE' := data.table::as.IDate(get('$DATE'),format="\%d-\%b-\%Y")]
 mdat[,class(`$DATE`)]#"Date" class
+mdat[,class(get('$DATE'))]#to avoid having to use back ticks
 
 }

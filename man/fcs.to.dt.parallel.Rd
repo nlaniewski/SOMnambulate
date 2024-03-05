@@ -9,7 +9,9 @@ fcs.to.dt.parallel(
   channel_alias = NULL,
   use.alias.pattern = FALSE,
   alias.order = FALSE,
-  cofactors = NULL
+  cofactors = NULL,
+  sample.val = NULL,
+  ncores = NULL
 )
 }
 \arguments{
@@ -22,6 +24,10 @@ fcs.to.dt.parallel(
 \item{alias.order}{Logical. If \code{TRUE}, the \code{data.table} columns will be ordered to match that of the \code{channel_alias} 'alias' column.}
 
 \item{cofactors}{A named numeric vector; named columns will be \link[base]{asinh} transformed with the supplied cofactor (numeric).}
+
+\item{sample.val}{Numeric (1L); used to define \link[base:sample]{size}. Rows will be randomly (seed-controlled) selected based on the value of \code{sample.val}.}
+
+\item{ncores}{Numeric; used to override the number of parallel compute clusters.}
 }
 \value{
 a \code{data.table} of raw, un-transformed numeric expression values (row-bound) with character/factor identifier columns; if \code{cofactors} is defined, the raw expression values will be \link[base]{asinh} transformed.
@@ -43,7 +49,8 @@ ca<-SOMnambulate:::prepared.examples('channel.alias')
 
 dt<-fcs.to.dt.parallel(
 fcs.file.dt=fcs.files.dt[,.(f.path,sample.id,batch,stim.condition,aliquot.seq)],
-channel_alias=ca,use.alias.pattern=TRUE,alias.order=TRUE)
+channel_alias=ca,use.alias.pattern=TRUE,alias.order=TRUE,sample.val=1000,ncores=2)
 dt[]
+dt[,.N,by=sample.id]
 
 }

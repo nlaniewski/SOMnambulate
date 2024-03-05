@@ -9,15 +9,44 @@ dt.density(dt, sd.cols = NULL, by.cols = NULL, trim.quantile = NULL)
 \arguments{
 \item{dt}{\code{data.table} containing numeric columns and at least one factored column.}
 
-\item{sd.cols}{Character vector; used to define \code{data.table}'s \code{.SDcols} argument; if left undefined, will calculate density distributions for all numeric columns.}
+\item{sd.cols}{Character vector; used to define \code{data.table}'s \link[data.table:data.table]{.SDcols} argument; if left undefined, will calculate density distributions for all numeric columns.}
 
-\item{by.cols}{Character vector; used to define \code{data.table}'s \code{by} argument; if left undefined, will group by all non-numeric columns.}
+\item{by.cols}{Character vector; used to define \code{data.table}'s \link[data.table:data.table]{by} argument; if left undefined, will group by all non-numeric columns.}
 
-\item{trim.quantile}{Numeric vector of length 2; used to define \code{stats::quantile}'s \code{probs} argument; trims 'extreme events' before calculating density distributions.}
+\item{trim.quantile}{Numeric vector of length 2; used to define lower/upper quantile \link[stats:quantile]{probabilities}; trims 'extreme events' before calculating density distributions.}
 }
 \value{
 A \code{data.table} with pre-calculated 'density.x' and 'density.y' columns; used for plotting.
 }
 \description{
-Density distributions are pre-calculated using \code{data.table} methods; usally passed to \code{ggplot2} for plotting.
+Density distributions are pre-calculated using \code{data.table} methods; usually passed to \link[ggplot2]{ggplot2} for plotting.
+}
+\examples{
+dt<-SOMnambulate:::prepared.examples('dt')
+
+#a few select columns (numeric) to asinh transform and plot
+cols.transform<-c('CD3_170Er','CD4_145Nd','CD8a_162Dy','TNFa_152Sm')
+for(j in cols.transform){data.table::set(dt,i=NULL,j=j,value=asinh(dt[[j]]/5))}
+
+#subset 'dt' to calculate density distributions by:
+#'batch', 'stim.condition', and 'aliquot.seq'
+dt.dens<-dt.density(
+dt[,.SD,.SDcols=c(cols.transform,'batch','stim.condition','aliquot.seq')],
+trim.quantile=c(0.001,0.999))
+dt.dens[]
+
+#make a plot list
+pl<-sapply(dt.dens[,levels(stim.condition)],function(i){
+ggplot2::ggplot(dt.dens[stim.condition==i],
+ggplot2::aes(density.x,density.y,color=aliquot.seq)) +
+ggplot2::geom_line() +
+ggplot2::facet_wrap(~variable,scales='free') +
+ggplot2::labs(
+title=dt.dens[,as.character(unique(batch))],
+subtitle=i)
+},simplify=FALSE)
+
+#plot results
+pl
+
 }

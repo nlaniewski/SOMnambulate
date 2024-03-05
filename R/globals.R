@@ -12,6 +12,7 @@ utils::globalVariables(
     ,'channels'
     ,'cluster'
     ,'desc'
+    ,'f.path'
     ,'maxRange'
     ,'minRange'
     ,'N'

@@ -4,10 +4,10 @@
 \alias{prepared.examples}
 \title{Prepared examples}
 \usage{
-prepared.examples(example.type = c("fcs.files.dt", "channel.alias"))
+prepared.examples(example.type = c("fcs.files.dt", "channel.alias", "dt"))
 }
 \arguments{
-\item{example.type}{character string; matches one of: c('fcs.files.dt','channel.alias')}
+\item{example.type}{character string; matches one of: c('fcs.files.dt','channel.alias','dt')}
 }
 \value{
 (hopefully) something useful for building examples and reducing redundancy
@@ -18,4 +18,5 @@ Prepared examples
 \examples{
 SOMnambulate:::prepared.examples(example.type='fcs.files.dt')[]
 SOMnambulate:::prepared.examples(example.type='channel.alias')[]
+SOMnambulate:::prepared.examples(example.type='dt')[]
 }

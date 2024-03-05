@@ -4,18 +4,28 @@
 \alias{parms.adf.dt}
 \title{Generate a \code{data.table} of .fcs parameters}
 \usage{
-parms.adf.dt(dt, type.convert = NULL, name.fix = NULL)
+parms.adf.dt(dt, to.numeric = NULL, name.fix = NULL)
 }
 \arguments{
-\item{dt}{\code{data.table} returned from \code{fcs.to.dt}; some mix of .fcs expression values and character/factor values.}
+\item{dt}{\code{data.table} returned from \code{fcs.to.dt}; some mix of .fcs expression values and character/factor values}
 
-\item{type.convert}{Character vector; will attempt to convert each string element (named column in \code{dt}) to numeric}
+\item{to.numeric}{Character vector; will attempt to convert each string element (named column in \code{dt}) to numeric}
 
 \item{name.fix}{a \code{data.table} with two columns: 'name' and 'name.fix'; if 'name' matches, the value will be replaced with 'name.fix'.}
 }
 \value{
-a \code{data.table} of .fcs parameters; used to define \code{flowCore::flowFrame(...,parameters = Biobase::AnnotatedDataFrame(...))}.
+a \code{data.table} of .fcs parameters; used to define a (new) \link[flowCore]{flowFrame}'s parameter slot using \link[Biobase]{AnnotatedDataFrame}.
 }
 \description{
-Generate a \code{data.table} of .fcs parameters
+As a utility function, this returns a \code{data.table} of .fcs parameters for use in building a new .fcs file by fulfilling the \link[Biobase]{AnnotatedDataFrame} slot; \strong{par}a\strong{m}eter\strong{s}.\strong{a}nnotated\strong{d}ata\strong{f}rame.\strong{d}a\strong{t}atable.
+}
+\examples{
+#from the 'get.fcs.file.dt' example:
+#from the 'get.fcs.channel.alias' example:
+#from the 'fcs.to.dt' example:
+
+dt<-SOMnambulate:::prepared.examples('dt')
+
+SOMnambulate:::parms.adf.dt(dt,to.numeric='aliquot.seq')[]
+
 }

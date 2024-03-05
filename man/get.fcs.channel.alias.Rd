@@ -6,7 +6,8 @@
 \usage{
 get.fcs.channel.alias(
   fcs.file.paths,
-  drop.pattern = NULL,
+  drop.pattern.channels = NULL,
+  drop.pattern.alias = NULL,
   name.sub = NULL,
   order.alias = F
 )
@@ -14,17 +15,19 @@ get.fcs.channel.alias(
 \arguments{
 \item{fcs.file.paths}{Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.}
 
-\item{drop.pattern}{'pattern' argument for \link[base]{grep}: "character string containing a \link[base:regex]{regular expression}"; will drop pattern matches from the alias column of \code{channel_alias}.}
+\item{drop.pattern.channels}{'pattern' argument for \link[base]{grep}: "character string containing a \link[base:regex]{regular expression}"; will drop pattern matches from the 'channels' column of \code{channel_alias}.}
+
+\item{drop.pattern.alias}{'pattern' argument for \link[base]{grep}: "character string containing a \link[base:regex]{regular expression}"; will drop pattern matches from the 'alias' column of \code{channel_alias}.}
 
 \item{name.sub}{Named character vector for use in resolving name conflicts/discrepancies; the vector element(s) should equal a pattern and the name(s) a replacement string.}
 
 \item{order.alias}{Logical; if \code{TRUE}, the \code{channel_alias} 'alias' column will be sensibly ordered.}
 }
 \value{
-returns a \code{data.table} containing a 'channels' and 'alias' column; returns a list of \code{data.table}s if not unique (issues a warning).
+returns a \link[data.table]{data.table} containing a 'channels' and 'alias' column; returns a list of \code{data.table}s if not unique (prints a message).
 }
 \description{
-The resultant \code{data.table} is to be used with the \code{channel_alias} argument of \link[flowCore]{read.FCS}. The alias will be used to set column names; make sure they are unique and 'readable'. For example, the included mass cytometry data files used in this example are originally named ($PS) as 'MassMetal_Marker'; a more 'readable' form would be 'Marker_MassMetal' or even just 'Marker' (see example). The intent here is to use unified names that follow an established convention. There is relatively low 'overhead' reading .fcs headers/TEXT, so having a unified 'channel.alias' (panel) before reading in often large amounts of .fcs data will streamline the workflow.
+The resultant \link[data.table]{data.table} is to be used with the \code{channel_alias} argument of \link[flowCore]{read.FCS}. The alias will be used to set column names; make sure they are unique and 'readable'. For example, the included mass cytometry data files used in this example are originally named ($PS) as 'MassMetal_Marker'; a more 'readable' form would be 'Marker_MassMetal' or even just 'Marker' (see example). The intent here is to use unified names that follow an established convention. There is relatively low 'overhead' reading .fcs headers/TEXT, so having a unified 'channel.alias' (panel) before reading in often large amounts of .fcs data will streamline the workflow.
 }
 \examples{
 extdata<-system.file("extdata",package="SOMnambulate")
@@ -40,7 +43,7 @@ paste0(c(195,198),"Pt"),"208Pb")
 drop.metals<-paste0(drop.metals,'$',collapse="|")
 drop.pattern<-paste(drop.metals,'background','noise',sep="|")
 
-ca<-get.fcs.channel.alias(fcs.files,drop.pattern=drop.pattern,order.alias=TRUE)
+ca<-get.fcs.channel.alias(fcs.files,drop.pattern.alias=drop.pattern,order.alias=TRUE)
 ca[]
 
 #a few more 'name-fixes'
@@ -57,12 +60,12 @@ flowCore::markernames(fcs.tmp)[['Dy164Di']]<-'164Dy_IFNy'
 fcs.tmp.path<-tempfile(fileext = ".fcs")
 flowCore::write.FCS(fcs.tmp,fcs.tmp.path)
 
-#a warning will issue; two unique data.tables will be returned;
+#a message will issue; two unique data.tables will be returned;
 get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path),
-drop.pattern=drop.pattern)
+drop.pattern.alias=drop.pattern)
 
-#using name.sub argument to resolve the warning and return a single data.table
+#using name.sub argument to resolve the message and return a single data.table
 get.fcs.channel.alias(fcs.file.paths=c(fcs.files[2],fcs.tmp.path),
-drop.pattern=drop.pattern, name.sub=c("164Dy_IFNg"="164Dy_IFNy"))
+drop.pattern.alias=drop.pattern, name.sub=c("164Dy_IFNg"="164Dy_IFNy"))
 
 }

@@ -1,3 +1,58 @@
+#' @title Get local maxima and minima from a density distribution
+#' @description
+#' Get local maxima (peaks) and minima (valleys) from a density distribution
+#'
+#'
+#' @param x Numeric vector.
+#' @param plot Logical; if `TRUE`, a plot will be drawn displaying a \link[stats]{density} distribution with vertical \link[graphics]{abline}s: "purple peaks" and "violet valleys".
+#' @param quantile.probs Numeric vector of length 2; used to define lower/upper quantile \link[stats:quantile]{probabilities}; trims 'extreme events' before calculating the density distribution.
+#'
+#' @return a list; contains numeric values: local maxima `[['lmaxima']]` and local minima `[['lminima']]`.
+#'
+#' @examples
+#' dt<-SOMnambulate:::prepared.examples('dt')
+#'
+#' dt[,CD45_106Cd := asinh(CD45_106Cd/10)]
+#' x<-dt[['CD45_106Cd']]
+#'
+#' #maxima and minima values returned for extreme tail
+#' SOMnambulate:::get.local.maxima.minima(x,plot=TRUE)
+#'
+#' #quantile 'trim'
+#' SOMnambulate:::get.local.maxima.minima(x,plot=TRUE,quantile.probs=c(0,0.999))
+get.local.maxima.minima<-function(x,plot=F,quantile.probs=NULL){
+  d <- stats::density(
+    if(!is.null(quantile.probs)){
+      q<-stats::quantile(x,quantile.probs)
+      x[x>q[1] & x<q[2]]
+    }else{
+      x
+    }
+  )
+  diff1<-sign(diff(d$y))
+  diff2<-diff(diff1)
+  #
+  lmaxima<-which(diff2==(-2))+1
+  lminima<-which(diff2==(2))+1
+  #
+  # if(!is.null(quantile.prob)){
+  #   q<-quantile(d$y,quantile.prob)
+  #   lmaxima<-lmaxima[which(d$y[lmaxima]>q)]
+  #   lminima<-lminima[which(d$y[lminima]>q)]
+  #
+  # }
+  #
+  lmaxima.val<-d$x[lmaxima]
+  lminima.val<-d$x[lminima]
+  #
+  if(plot){
+    plot(d,main="Density Distribution")
+    graphics::abline(v=lmaxima.val,col="purple",lwd=2)
+    graphics::abline(v=lminima.val,col="violet",lwd=2)
+  }
+  return(list(lmaxima=lmaxima.val,
+              lminima=lminima.val))
+}
 #' @title Generate a barcode key
 #'
 #' @param barcode.dims Character vector

@@ -9,10 +9,10 @@ get.fcs.parameters(fcs.file.paths, return.dt = F)
 \arguments{
 \item{fcs.file.paths}{Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.}
 
-\item{return.dt}{Logical. By default, \code{FALSE}; if \code{TRUE}, will return a data.table of parameters per .fcs file}
+\item{return.dt}{Logical. By default, \code{FALSE}; if \code{TRUE}, will return a \link[data.table]{data.table} of parameters per .fcs file}
 }
 \value{
-a list of parameters per .fcs file; if \code{return.dt=T}, a data.table of parameters
+a list of parameters per .fcs file; if \code{return.dt=T}, a \link[data.table]{data.table} of parameters
 }
 \description{
 $P keywords in the TEXT section of a .fcs file denote cytometer-specific parameter names/values. There is useful information that can be parsed from these parameters -- particularly the $PN and $PS parameter-value pairs. This function allows parsing of these parameters without the overhead of reading the actual .fcs file to get the values.
