@@ -12,15 +12,15 @@
 #' @examples
 #' dt<-SOMnambulate:::prepared.examples('dt')
 #'
-#' dt[,CD45_106Cd := asinh(CD45_106Cd/10)]
-#' x<-dt[['CD45_106Cd']]
+#' dt[,CD45_112Cd := asinh(CD45_112Cd/10)]
+#' x<-dt[['CD45_112Cd']]
 #'
 #' #maxima and minima values returned for extreme tail
 #' SOMnambulate:::get.local.maxima.minima(x,plot=TRUE)
 #'
 #' #quantile 'trim'
-#' SOMnambulate:::get.local.maxima.minima(x,plot=TRUE,quantile.probs=c(0,0.999))
-get.local.maxima.minima<-function(x,plot=F,quantile.probs=NULL){
+#' SOMnambulate:::get.local.maxima.minima(x,quantile.probs=c(0,0.999),plot=TRUE)
+get.local.maxima.minima<-function(x,quantile.probs=NULL,plot=F){
   d <- stats::density(
     if(!is.null(quantile.probs)){
       q<-stats::quantile(x,quantile.probs)
@@ -35,13 +35,6 @@ get.local.maxima.minima<-function(x,plot=F,quantile.probs=NULL){
   lmaxima<-which(diff2==(-2))+1
   lminima<-which(diff2==(2))+1
   #
-  # if(!is.null(quantile.prob)){
-  #   q<-quantile(d$y,quantile.prob)
-  #   lmaxima<-lmaxima[which(d$y[lmaxima]>q)]
-  #   lminima<-lminima[which(d$y[lminima]>q)]
-  #
-  # }
-  #
   lmaxima.val<-d$x[lmaxima]
   lminima.val<-d$x[lminima]
   #
@@ -52,6 +45,110 @@ get.local.maxima.minima<-function(x,plot=F,quantile.probs=NULL){
   }
   return(list(lmaxima=lmaxima.val,
               lminima=lminima.val))
+}
+#' @title Generate a barcode key
+#' @description
+#' Based on a 'x-choose-m' scheme, a full length barcode key -- all possible combinations -- is generated. For mass cytometry live-cell barcoding, the scheme is usually '6-choose-3' (20 unique combinations) or '7-choose-3' (35 unique combinations).
+#'
+#' @param barcode.dims Character vector.
+#' @param m Argument passed to \link[utils]{combn}.
+#'
+#' @return A barcode key (\link[data.table]{data.table}).
+#'
+#' @examples
+#' dt<-SOMnambulate:::prepared.examples("dt")
+#'
+#' barcode.dims<-grep("CD45_",names(dt),value=TRUE)
+#'
+#' SOMnambulate:::key.barcode(barcode.dims)[]
+key.barcode<-function(barcode.dims,m=3){
+  .length<-length(barcode.dims)
+  key<-t(utils::combn(length(barcode.dims),m))
+  .nrow<-nrow(key)
+  #
+  barcode.key<-matrix(0,nrow=.nrow,ncol=.length,dimnames=list(NULL,barcode.dims))
+  #
+  for(i in seq(.nrow)){
+    barcode.key[i,key[i,]]<-1
+  }
+  #
+  barcode.key<-data.table::data.table(barcode.key)
+  barcode.key[,barcode:=seq(.N)]
+  #
+  invisible(barcode.key)
+}
+#' @title Generate a 'keyed' `[['codes']]`
+#' @description
+#' Based on the 'x-choose-m' scheme used to barcode individual samples, this function will generate a unique barcode value for each SOM; the barcode value can then be assigned to the primary input data allowing for identification of sample-specific events/cells.
+#'
+#' @param fsom Object; the result of \link{som.codes.dt}.  The `[['codes']]` result will be used to generate a 'code-specific' barcode key.
+#' @param m Argument passed to \link{key.barcode}.
+#' @param quantile.probs Argument passed to \link{get.local.maxima.minima}; Numeric vector of length 2; used to define lower/upper quantile probabilities; trims 'extreme events' before calculating the density distribution.
+#'
+#' @return A merged \link[data.table]{data.table}; the 'keyed' `[['codes']]` are merged with the result of \link{key.barcode}. Of primary importance is the 'barcode' column which is used to assign barcode values to cellular events (primary data).
+#' @export
+#'
+#' @examples
+#'
+#' dt<-SOMnambulate:::prepared.examples("dt")
+#'
+#' barcode.dims<-grep("CD45_",names(dt),value=TRUE)
+#' for(j in barcode.dims){data.table::set(dt,i=NULL,j=j,value=asinh(dt[[j]]/10))}
+#' fsom<-som(dt[,barcode.dims,with=FALSE],map=FALSE)
+#' fsom<-som.codes.dt(fsom,append.name = 'barcode')
+#'
+#' barcodes<-key.codes(fsom)
+#' barcodes[]
+#'
+#' SOMnambulate::map.som.data(fsom,dt)
+#' dt[,barcode := barcodes$barcode[node_barcode]]
+#' dt[,.(node_barcode,barcode)]
+#' dt[,sort(unique(barcode))]
+#' dt[,.N,keyby=.(barcode,stim.condition)]
+#'
+key.codes<-function(fsom,m=3,quantile.probs=NULL){
+  .barcode.dims<-colnames(fsom$codes)
+  .nrow<-nrow(fsom$codes)
+  .length<-length(.barcode.dims)
+  barcode.dt<-data.table::data.table(matrix(0,nrow=.nrow,ncol=.length,dimnames = list(NULL,.barcode.dims)))
+  #
+  pv<-sapply(.barcode.dims,function(j){
+    pv<-get.local.maxima.minima(fsom$codes.dt[[j]],quantile.probs)
+    #assumption: near-zero/zero peak will always be the first element
+    pv$lmaxima <- pv$lmaxima[1]
+    #assumption: valley-of-interest (that which follows the near-zero/zero) will always be the first element
+    pv$lminima <- pv$lminima[1]
+    #
+    pv$half.low<-pv$lminima-(pv$lminima-pv$lmaxima)/2
+    return(pv)
+  },simplify = F)
+  #
+  for(j in .barcode.dims){
+    data.table::set(
+      barcode.dt,
+      i=fsom$codes.dt[,.I[get(j)>pv[[j]]$lminima]],
+      j=j,
+      value=1)
+  }
+  #
+  barcode.dt[,barcode.N := rowSums(.SD),.SDcols = .barcode.dims]
+  #reassignment
+  for(i in barcode.dt[,.I[barcode.N==2]]){
+    for(j in .barcode.dims){
+      data.table::set(
+        barcode.dt,
+        i=i,
+        j=j,
+        value=ifelse(fsom$codes.dt[i,get(j)]>pv[[j]]$half.low,1,0))
+    }
+  }
+  #
+  barcode.dt[,barcode.N := rowSums(.SD),.SDcols = .barcode.dims]
+  #
+  barcode.dt<-merge(barcode.dt,key.barcode(.barcode.dims,m),all.x=T,sort=F)
+  barcode.dt[is.na(barcode),barcode:=0]
+  #
+  invisible(barcode.dt)
 }
 #' @title Generate a barcode key
 #'

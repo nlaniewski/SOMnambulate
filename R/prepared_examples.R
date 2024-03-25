@@ -1,6 +1,6 @@
 #' @title Prepared examples
 #'
-#' @param example.type character string; matches one of: c('fcs.files.dt','channel.alias','dt')
+#' @param example.type character string; matches one of: c('fcs.files.dt','channel.alias','dt','fsom')
 #'
 #' @return (hopefully) something useful for building examples and reducing redundancy
 #'
@@ -9,7 +9,8 @@
 #' SOMnambulate:::prepared.examples(example.type='fcs.files.dt')[]
 #' SOMnambulate:::prepared.examples(example.type='channel.alias')[]
 #' SOMnambulate:::prepared.examples(example.type='dt')[]
-prepared.examples <- function(example.type=c('fcs.files.dt','channel.alias','dt')){
+#' str(SOMnambulate:::prepared.examples(example.type='fsom'))
+prepared.examples <- function(example.type=c('fcs.files.dt','channel.alias','dt','fsom')){
   #R CMD check; NULL data.table vars
   FILENAME<-stim.condition<-FIL<-aliquot.seq<-batch<-batch.date<-batch.seq<-study.name<-sample.id<-NULL
   #
@@ -73,8 +74,19 @@ prepared.examples <- function(example.type=c('fcs.files.dt','channel.alias','dt'
         fcs.to.dt,channel_alias=channel.alias_example(),use.alias.pattern=TRUE,alias.order=TRUE,simplify=FALSE)
     ))
   }
-  #
+  ##prepare 'fsom' as in 'som' (examples)
+  som_example<-function(){
+    dt<-suppressMessages(dt_example())
+    message("'fsom' as prepared by 'som()'")
+    pbmc.markers<-c("CD3","CD4","CD8a","CD14","CD19","CD56","TCRgd")
+    pbmc.dims<-grep(paste0(pbmc.markers,"_",collapse="|"),names(dt),value = T)
+    for(j in pbmc.dims){data.table::set(dt,i=NULL,j=j,value=asinh(dt[[j]]/10))}
+    fsom<-som(dt[,pbmc.dims,with=FALSE],.scale=T,map=FALSE)
+    return(fsom)
+  }
+#
   if(example.type=='fcs.files.dt') return(fcs.files.dt_example())
   if(example.type=='channel.alias') return(channel.alias_example())
   if(example.type=='dt') return(dt_example())
+  if(example.type=='fsom') return(som_example())
 }

@@ -7,7 +7,7 @@
 som(dt, .scale = F, scale.func = NULL, seed.val = 1337, ...)
 }
 \arguments{
-\item{dt}{A \code{data.table} as returned from \code{fcs.to.dt}; the \code{dt} should be subset to only include numeric columns-of-interest for training the SOM; coerced to matrix.}
+\item{dt}{A \link[data.table]{data.table} as returned from \link{fcs.to.dt}; the \code{dt} should be subset to only include numeric columns-of-interest for training the SOM; coerced to matrix.}
 
 \item{.scale}{Logical: default \code{FALSE}; if \code{TRUE}, \code{dt} will be scaled using an internally-defined function.}
 
@@ -15,11 +15,22 @@ som(dt, .scale = F, scale.func = NULL, seed.val = 1337, ...)
 
 \item{seed.val}{An elite random seed value used to control otherwise random starts.}
 
-\item{...}{further arguments passed to \code{FlowSOM::SOM(...)}}
+\item{...}{further arguments passed to \link[FlowSOM:SOM]{FlowSOM::SOM}}
 }
 \value{
-A list containing \code{FlowSOM::SOM}-specific parameters/results. Of primary importance is the list element \verb{[['codes']]}.
+A list containing \link[FlowSOM:SOM]{FlowSOM::SOM}-specific parameters/results. Of primary importance is the list element \verb{[['codes']]}.
 }
 \description{
-Essentially a wrapper for \code{FlowSOM::SOM} with a few \code{data.table}-specific operations.
+Essentially a wrapper for \link[FlowSOM:SOM]{FlowSOM::SOM} with a few \link[data.table]{data.table}-specific operations.
+}
+\examples{
+dt<-SOMnambulate:::prepared.examples(example.type='dt')
+
+pbmc.markers<-c("CD3","CD4","CD8a","CD14","CD19","CD56","TCRgd")
+pbmc.dims<-grep(paste0(pbmc.markers,"_",collapse="|"),names(dt),value = TRUE)
+for(j in pbmc.dims){data.table::set(dt,i=NULL,j=j,value=asinh(dt[[j]]/10))}
+
+fsom<-som(dt[,pbmc.dims,with=FALSE],.scale=TRUE,map=FALSE)
+str(fsom)
+
 }

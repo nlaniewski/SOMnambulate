@@ -70,30 +70,37 @@ fsom.merge.codes<-function (fsom, codes.to.merge)
 #' @title Build a self-organized map (SOM)
 #'
 #' @description
-#' Essentially a wrapper for `FlowSOM::SOM` with a few `data.table`-specific operations.
+#' Essentially a wrapper for \link[FlowSOM:SOM]{FlowSOM::SOM} with a few \link[data.table]{data.table}-specific operations.
 #'
-#'
-#' @param dt A `data.table` as returned from `fcs.to.dt`; the `dt` should be subset to only include numeric columns-of-interest for training the SOM; coerced to matrix.
+#' @param dt A \link[data.table]{data.table} as returned from \link{fcs.to.dt}; the `dt` should be subset to only include numeric columns-of-interest for training the SOM; coerced to matrix.
 #' @param .scale Logical: default `FALSE`; if `TRUE`, `dt` will be scaled using an internally-defined function.
 #' @param scale.func Default `NULL`; if defined and `.scale=TRUE`, will use the supplied function to override the default internally-defined function.
 #' @param seed.val An elite random seed value used to control otherwise random starts.
-#' @param ... further arguments passed to `FlowSOM::SOM(...)`
+#' @param ... further arguments passed to \link[FlowSOM:SOM]{FlowSOM::SOM}
 #'
-#' @return A list containing `FlowSOM::SOM`-specific parameters/results. Of primary importance is the list element `[['codes']]`.
+#' @return A list containing \link[FlowSOM:SOM]{FlowSOM::SOM}-specific parameters/results. Of primary importance is the list element `[['codes']]`.
 #' @export
 #'
+#' @examples
+#' dt<-SOMnambulate:::prepared.examples(example.type='dt')
+#'
+#' pbmc.markers<-c("CD3","CD4","CD8a","CD14","CD19","CD56","TCRgd")
+#' pbmc.dims<-grep(paste0(pbmc.markers,"_",collapse="|"),names(dt),value = TRUE)
+#' for(j in pbmc.dims){data.table::set(dt,i=NULL,j=j,value=asinh(dt[[j]]/10))}
+#'
+#' fsom<-som(dt[,pbmc.dims,with=FALSE],.scale=TRUE,map=FALSE)
+#' str(fsom)
 #'
 som<-function(dt,.scale=F,scale.func=NULL,seed.val=1337,...){
   if(is.null(scale.func)){
     scale.func<-function(x){(x - mean(x))/stats::sd(x)}
   }
-  time.start<-Sys.time()
+  ts<-Sys.time()
   set.seed(seed.val)
+  message("Building a self-organizing map using FlowSOM::SOM...")
   fsom<-FlowSOM::SOM(as.matrix(if(.scale){dt[,lapply(.SD,scale.func)]}else{dt}),...,silent=T)
-  time.end<-Sys.time()
-  elapsed<-as.numeric((time.end)-(time.start))
-  if(elapsed<60){tm<-'Seconds'}else{tm<-'Minutes';elapsed<-elapsed/60}
-  message(paste(tm,"elapsed:",round(elapsed,3)))
+  te<-Sys.time()
+  message(paste("Minutes elapsed:",round(difftime(te, ts, units = "mins"),2)))
   if(.scale){
     fsom$scale<-TRUE
     fsom$scale.func<-scale.func
@@ -102,17 +109,27 @@ som<-function(dt,.scale=F,scale.func=NULL,seed.val=1337,...){
   }
   return(fsom)
 }
-#' @title Generate a `data.table` of clustered `FlowSOM` codes/SOMs.
+#' @title Generate a \link[data.table]{data.table} of clustered \link[FlowSOM:SOM]{FlowSOM::SOM} codes/SOMs.
+#' @description
+#' Using the direct result of \link{som}, the `[['codes']]` are clustered and a column-bound `data.table` is generated.  As it is computationally expensive to UMAP-embed often millions of data points, an alternative is to embed the codes themselves for added interpretation of clustering results.
 #'
-#' @param fsom A `FlowSOM::SOM` result as returned from \link{som}.
+#' @param fsom A \link[FlowSOM:SOM]{FlowSOM::SOM} result as returned from \link{som}.
 #' @param append.name Character string; will be used to append the otherwise generically named 'node' and 'cluster' columns.
 #' @param k Numeric; if defined, will generate `k` clusters using \link[FlowSOM]{metaClustering_consensus}.
 #' @param umap.codes Logical: default `FALSE`; if `TRUE`, the codes/SOMs will be embedded using \link[uwot]{umap}.
 #' @param seed.val An elite random seed value used to control otherwise random starts.
 #'
-#' @return A `data.table` of clustered (factor) codes that represents the direct result of \link[FlowSOM]{SOM}.
+#' @return An updated `fsom`; the new list element `[['codes.dt']]` will contain a \link[data.table]{data.table} of clustered (factor) codes using the direct result of \link[FlowSOM]{SOM}.
 #' @export
 #'
+#' @examples
+#' fsom<-SOMnambulate:::prepared.examples(example.type='fsom')
+#' fsom<-som.codes.dt(fsom,append.name = 'pbmc',k=10,umap.codes = TRUE)
+#'
+#' head(fsom$codes.dt[])
+#'
+#' ggplot2::ggplot(fsom$codes.dt,ggplot2::aes(umap.1,umap.2)) +
+#' ggplot2::geom_point(ggplot2::aes(color=cluster_pbmc))
 #'
 som.codes.dt<-function(fsom,append.name=NULL,k=NULL,umap.codes=F,seed.val=1337){
   #for R CMD check; data.table vars
@@ -137,21 +154,39 @@ som.codes.dt<-function(fsom,append.name=NULL,k=NULL,umap.codes=F,seed.val=1337){
     new<-paste(old,append.name,sep="_")
     data.table::setnames(dt.codes,old,new)
   }
-  return(dt.codes)
+  fsom$codes.dt<-dt.codes
+  return(fsom)
 }
 #' @title Map individual data points to nearest node.
 #' @description
-#' This function is entirely dependent on the compiled C code found in (hidden function) `FlowSOM:::MapDataToCodes`; as an incredibly useful function, it is used here to map (often tens of millions) data points to their nearest node based on the trained SOM.  The result of `FlowSOM:::MapDataToCodes` is a two column matrix but in this function it is added to `dt` by 'reference' so that no copy is made.
+#' This function is entirely dependent on the compiled C code found in (hidden function) `FlowSOM:::MapDataToCodes`; it is used here to map (often tens of millions) data points to their nearest node based on a trained SOM.  The result of `FlowSOM:::MapDataToCodes` is a two column matrix but in this function it is added (column-bound) to `dt` by 'reference' so that no copy (in memory) is made.
 #'
-#'
-#' @param fsom An object as returned from \link{som}
+#' @param fsom An object as returned from \link{som} or \link{som.codes.dt}
 #' @param dt An object as returned from \link{fcs.to.dt}
 #'
-#' @return This function modifies `dt` by reference using `data.table`'s `:=` and `set` functions; two derived columns of 'mapped' data -- named generically as 'node' and 'node_dist' -- are added to `dt`. If `fsom` has been list-appended with the return of \link{som.codes.dt}, then an additional column -- 'cluster' -- will be added by reference.
-#' @note Assignment operators \link[base]{<-} should not be used with this function as it modifies `dt` by reference; the intent is to avoid copying an often large `dt` object.
+#' @return This function modifies `dt` by reference using \link[data.table]{data.table}'s \link[data.table]{:=} and \link[data.table]{set} functions; two derived columns of 'mapped' data -- named generically as 'node' and 'node_dist' -- are added to `dt`. If `fsom` has been list-appended with the return of \link{som.codes.dt}, then an additional column -- 'cluster' -- will be added by reference.
+#' @note Assignment operators \link[base]{<-} should not be used with this function as doing so will make a copy of the often large (in-memory) `dt`; instead, `dt` is modified/updated by reference.
 #' @references Van Gassen, Sofie, Britt Callebaut, Mary J Van Helden, Bart N Lambrecht, Piet Demeester, Tom Dhaene, and Yvan Saeys. 2015. “FlowSOM: Using Self-Organizing Maps for Visualization and Interpretation of Cytometry Data.” Cytometry Part A 87 (7): 636–45. https://onlinelibrary.wiley.com/doi/full/10.1002/cyto.a.22625.
 #' @export
 #'
+#' @examples
+#' dt<-SOMnambulate:::prepared.examples(example.type='dt')
+#'
+#' pbmc.markers<-c("CD3","CD4","CD8a","CD14","CD19","CD56","TCRgd")
+#' pbmc.dims<-grep(paste0(pbmc.markers,"_",collapse="|"),names(dt),value = TRUE)
+#' for(j in pbmc.dims){data.table::set(dt,i=NULL,j=j,value=asinh(dt[[j]]/10))}
+#'
+#' fsom<-SOMnambulate:::prepared.examples(example.type='fsom')
+#' fsom<-som.codes.dt(fsom,append.name = 'pbmc',k=10,umap.codes = TRUE)
+#'
+#' #'dt' as returned from 'fcs.to.dt()'; expression values and metadata
+#' head(dt[])
+#'
+#' #do not assign to environment; the function updates 'dt' by reference
+#' map.som.data(fsom,dt)
+#'
+#' #three new columns added -- by reference -- to 'dt'
+#' head(dt[])
 #'
 map.som.data<-function(fsom,dt){
   #retrieve hidden function from FlowSOM package
@@ -184,7 +219,7 @@ map.som.data<-function(fsom,dt){
     )
   )]
   #
-  if(!is.null(fsom$codes.dt)){
+  if(!is.null(fsom$codes.dt)&length(cluster.col)==1){
     message(paste("Adding column",paste0("'",cluster.col,"'"),"(factor) -- by reference -- to 'dt"))
     data.table::set(dt,j=cluster.col,value = fsom$codes.dt[[cluster.col]][dt[[node.col]]])
   }

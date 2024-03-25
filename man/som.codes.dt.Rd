@@ -2,7 +2,7 @@
 % Please edit documentation in R/fsom_funcs.R
 \name{som.codes.dt}
 \alias{som.codes.dt}
-\title{Generate a \code{data.table} of clustered \code{FlowSOM} codes/SOMs.}
+\title{Generate a \link[data.table]{data.table} of clustered \link[FlowSOM:SOM]{FlowSOM::SOM} codes/SOMs.}
 \usage{
 som.codes.dt(
   fsom,
@@ -13,7 +13,7 @@ som.codes.dt(
 )
 }
 \arguments{
-\item{fsom}{A \code{FlowSOM::SOM} result as returned from \link{som}.}
+\item{fsom}{A \link[FlowSOM:SOM]{FlowSOM::SOM} result as returned from \link{som}.}
 
 \item{append.name}{Character string; will be used to append the otherwise generically named 'node' and 'cluster' columns.}
 
@@ -24,8 +24,18 @@ som.codes.dt(
 \item{seed.val}{An elite random seed value used to control otherwise random starts.}
 }
 \value{
-A \code{data.table} of clustered (factor) codes that represents the direct result of \link[FlowSOM]{SOM}.
+An updated \code{fsom}; the new list element \verb{[['codes.dt']]} will contain a \link[data.table]{data.table} of clustered (factor) codes using the direct result of \link[FlowSOM]{SOM}.
 }
 \description{
-Generate a \code{data.table} of clustered \code{FlowSOM} codes/SOMs.
+Using the direct result of \link{som}, the \verb{[['codes']]} are clustered and a column-bound \code{data.table} is generated.  As it is computationally expensive to UMAP-embed often millions of data points, an alternative is to embed the codes themselves for added interpretation of clustering results.
+}
+\examples{
+fsom<-SOMnambulate:::prepared.examples(example.type='fsom')
+fsom<-som.codes.dt(fsom,append.name = 'pbmc',k=10,umap.codes = TRUE)
+
+head(fsom$codes.dt[])
+
+ggplot2::ggplot(fsom$codes.dt,ggplot2::aes(umap.1,umap.2)) +
+ggplot2::geom_point(ggplot2::aes(color=cluster_pbmc))
+
 }

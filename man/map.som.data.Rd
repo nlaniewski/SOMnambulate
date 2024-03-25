@@ -7,18 +7,38 @@
 map.som.data(fsom, dt)
 }
 \arguments{
-\item{fsom}{An object as returned from \link{som}}
+\item{fsom}{An object as returned from \link{som} or \link{som.codes.dt}}
 
 \item{dt}{An object as returned from \link{fcs.to.dt}}
 }
 \value{
-This function modifies \code{dt} by reference using \code{data.table}'s \verb{:=} and \code{set} functions; two derived columns of 'mapped' data -- named generically as 'node' and 'node_dist' -- are added to \code{dt}. If \code{fsom} has been list-appended with the return of \link{som.codes.dt}, then an additional column -- 'cluster' -- will be added by reference.
+This function modifies \code{dt} by reference using \link[data.table]{data.table}'s \link[data.table]{:=} and \link[data.table]{set} functions; two derived columns of 'mapped' data -- named generically as 'node' and 'node_dist' -- are added to \code{dt}. If \code{fsom} has been list-appended with the return of \link{som.codes.dt}, then an additional column -- 'cluster' -- will be added by reference.
 }
 \description{
-This function is entirely dependent on the compiled C code found in (hidden function) \code{FlowSOM:::MapDataToCodes}; as an incredibly useful function, it is used here to map (often tens of millions) data points to their nearest node based on the trained SOM.  The result of \code{FlowSOM:::MapDataToCodes} is a two column matrix but in this function it is added to \code{dt} by 'reference' so that no copy is made.
+This function is entirely dependent on the compiled C code found in (hidden function) \code{FlowSOM:::MapDataToCodes}; it is used here to map (often tens of millions) data points to their nearest node based on a trained SOM.  The result of \code{FlowSOM:::MapDataToCodes} is a two column matrix but in this function it is added (column-bound) to \code{dt} by 'reference' so that no copy (in memory) is made.
 }
 \note{
-Assignment operators \link[base]{<-} should not be used with this function as it modifies \code{dt} by reference; the intent is to avoid copying an often large \code{dt} object.
+Assignment operators \link[base]{<-} should not be used with this function as doing so will make a copy of the often large (in-memory) \code{dt}; instead, \code{dt} is modified/updated by reference.
+}
+\examples{
+dt<-SOMnambulate:::prepared.examples(example.type='dt')
+
+pbmc.markers<-c("CD3","CD4","CD8a","CD14","CD19","CD56","TCRgd")
+pbmc.dims<-grep(paste0(pbmc.markers,"_",collapse="|"),names(dt),value = TRUE)
+for(j in pbmc.dims){data.table::set(dt,i=NULL,j=j,value=asinh(dt[[j]]/10))}
+
+fsom<-SOMnambulate:::prepared.examples(example.type='fsom')
+fsom<-som.codes.dt(fsom,append.name = 'pbmc',k=10,umap.codes = TRUE)
+
+#'dt' as returned from 'fcs.to.dt()'; expression values and metadata
+head(dt[])
+
+#do not assign to environment; the function updates 'dt' by reference
+map.som.data(fsom,dt)
+
+#three new columns added -- by reference -- to 'dt'
+head(dt[])
+
 }
 \references{
 Van Gassen, Sofie, Britt Callebaut, Mary J Van Helden, Bart N Lambrecht, Piet Demeester, Tom Dhaene, and Yvan Saeys. 2015. “FlowSOM: Using Self-Organizing Maps for Visualization and Interpretation of Cytometry Data.” Cytometry Part A 87 (7): 636–45. https://onlinelibrary.wiley.com/doi/full/10.1002/cyto.a.22625.

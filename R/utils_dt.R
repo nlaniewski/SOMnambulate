@@ -66,6 +66,76 @@ get.dt.col.classes<-function(dt){
   return(col.classes)
 }
 
+#' @title Get .N counts and frequencies (of 100%) by grouping variable(s)
+#' @description
+#' Get \link[data.table]{.N} counts and frequencies (of 100%) \link[data.table:data.table]{by} grouping variable(s). Following \link{map.som.data}, the `node` and `cluster` columns in `dt` can be grouped by (usually) `sample.id` to calculate counts/frequencies of; for use in plots/downstream analyses.
+#'
+#' @param dt.subset A subset `dt` as returned from \link{map.som.data}; use \link[data.table]{data.table} syntax: `dt[i=NULL,.N,by=...]`
+#'
+#' @return a 'keyed' `data.table` with `N` and `N.freq` values, grouped `by` columns included in `dt.subset`
+#' @export
+#'
+#' @examples
+#' dt<-SOMnambulate:::prepared.examples(example.type='dt')
+#'
+#' pbmc.markers<-c("CD3","CD4","CD8a","CD14","CD19","CD56","TCRgd")
+#' pbmc.dims<-grep(paste0(pbmc.markers,"_",collapse="|"),names(dt),value = TRUE)
+#' for(j in pbmc.dims){data.table::set(dt,i=NULL,j=j,value=asinh(dt[[j]]/10))}
+#'
+#' fsom<-SOMnambulate:::prepared.examples(example.type='fsom')
+#' fsom<-som.codes.dt(fsom,append.name = 'pbmc',k=10,umap.codes = TRUE)
+#'
+#' #do not assign to environment; the function updates 'dt' by reference
+#' map.som.data(fsom,dt)
+#'
+#' #cluster counts
+#' dt.N.counts(dt[,.N,keyby=.(cluster_pbmc)])[]
+#' dt.N.counts(dt[,.N,keyby=.(sample.id,cluster_pbmc)])[]
+#'
+#' #node counts
+#' dt.N.counts(dt[,.N,keyby=.(node_pbmc)])[]
+#' dt.N.counts(dt[,.N,keyby=.(sample.id,node_pbmc)])[]
+#'
+#' #calculate 'global' node 'sizes'
+#' node.counts<-dt.N.counts(dt[,.N,keyby=.(sample.id,stim.condition,node_pbmc)])
+#' node.sizes<-node.counts[,list(node.size.median=stats::median(N.freq)),keyby=.(node_pbmc)]
+#'
+#' #merge and use for plots
+#' ggplot2::ggplot(data=merge(fsom$codes.dt,node.sizes)) +
+#' ggplot2::aes(umap.1,umap.2,size=node.size.median) +
+#' ggplot2::theme_void() +
+#' ggplot2::theme(panel.grid = ggplot2::element_blank()) +
+#' ggplot2::geom_point(ggplot2::aes(color=cluster_pbmc),alpha=.5) +
+#' ggplot2::scale_size_area(max_size = 15,guide="none") +
+#' ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(alpha = 1, size = 3)))
+#'
+#' #melt, merge and use for plots
+#' codes.melt<-data.table::melt(
+#' data=fsom$codes.dt,
+#' id.vars=grep('node|cluster|umap',names(fsom$codes.dt)))
+#'
+#' codes.melt[,value.scaled:=
+#' codes.melt[,(value-min(value))/(max(value)-min(value)),
+#' by=variable][[2]]]
+#'
+#' ggplot2::ggplot(data=merge(codes.melt,node.sizes)) +
+#' ggplot2::aes(umap.1,umap.2,color=value.scaled,size=node.size.median) +
+#' ggplot2::geom_point(alpha=.75) +
+#' ggplot2::scale_size_area(max_size = 10,guide="none") +
+#' viridis::scale_color_viridis(option='plasma') +
+#' ggplot2::theme_dark() +
+#' ggplot2::theme(panel.grid = ggplot2::element_blank()) +
+#' ggplot2::facet_wrap(~variable)
+#'
+dt.N.counts<-function(dt.subset){
+  .by<-names(dt.subset)[!names(dt.subset) %in% "N"]
+  if(length(.by)>1){.by<-.by[1]}else{.by<-NULL}
+  dt.subset[,total:=sum(N),by=.by
+  ][,N.freq:=(N/total)*100
+  ][,total:=NULL
+  ]
+}
+
 subsample_dt_sample.id<-function(dat,subsample.val){
   dat[dat[,list(I=if(.N>subsample.val){.I[sample(.N,subsample.val)]}else{.I}),by=get('sample.id')][['I']]]
 }
