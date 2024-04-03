@@ -142,7 +142,9 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
   for(j in keywords.conserved){data.table::set(dt,j=j,value=factor(dt[[j]]))}
   #non-standard, mass cytometry specific -- DVSSCIENCES-FLUIDIGM-CYTOF-7.0.5189; logical
   keywords.fluidigm <- c('FluidigmNormalized')
-  for(j in keywords.fluidigm){data.table::set(dt,j=j,value=as.logical(dt[[j]]))}
+  if(keywords.fluidigm %in% names(dt)){
+    for(j in keywords.fluidigm){data.table::set(dt,j=j,value=as.logical(dt[[j]]))}
+  }
   #defined through argument
   if(!is.null(factor.cols)){
     for(j in factor.cols){if(j %in% names(dt)) data.table::set(dt,j=j,value=factor(dt[[j]]))}

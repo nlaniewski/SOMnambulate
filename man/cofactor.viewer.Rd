@@ -4,18 +4,38 @@
 \alias{cofactor.viewer}
 \title{Interactive asinh transformation of cytometry data for determining optimal cofactor values}
 \usage{
-cofactor.viewer(dt, cofactors.file.path = NULL, filename.suffix = NULL)
+cofactor.viewer(
+  dt,
+  cytometry.type = c("spectral", "conventional", "mass"),
+  cofactors.file.path = NULL,
+  filename.suffix = NULL
+)
 }
 \arguments{
-\item{dt}{\code{data.table} containing raw, un-transformed cytometry data; as returned from \code{fcs.to.dt}}
+\item{dt}{\link[data.table]{data.table} containing raw, un-transformed cytometry data; as returned from \link{fcs.to.dt}.}
 
-\item{cofactors.file.path}{if provided, will save (.RDS) the cofactor values to the specified \code{file.path}}
+\item{cytometry.type}{One of either 'spectral', 'conventional', or 'mass'; depending on type, a default cofactor will be set.}
 
-\item{filename.suffix}{Character string; if provided, will be appended to the end of the file name}
+\item{cofactors.file.path}{if provided, will save (.RDS) the cofactor values to the specified \code{file.path}.}
+
+\item{filename.suffix}{Character string; if provided, will be appended to the end of the file name.}
 }
 \value{
 \code{shinyapp}; if \code{cofactors.file.path} is provided, a \code{data.table} of cofactor values will be saved for use in transforming raw data values.
 }
 \description{
 Interactive asinh transformation of cytometry data for determining optimal cofactor values
+}
+\examples{
+\dontrun{
+dt<-SOMnambulate:::prepared.examples(example.type='dt')
+
+#set and save cofactors
+cofactor.viewer(dt[,.(CD3_170Er,CD4_145Nd,CD8a_162Dy,TCRgd_155Gd,sample.id)],
+cytometry.type = 'mass',cofactors.file.path=tempdir(),filename.suffix="ECHO")
+
+#load saved cofactors
+readRDS(list.files(tempdir(),full.names=TRUE,pattern='cofactors'))
+}
+
 }

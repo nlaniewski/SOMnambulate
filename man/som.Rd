@@ -4,14 +4,12 @@
 \alias{som}
 \title{Build a self-organized map (SOM)}
 \usage{
-som(dt, .scale = F, scale.func = NULL, seed.val = 1337, ...)
+som(dt, .scale = F, seed.val = 1337, ...)
 }
 \arguments{
 \item{dt}{A \link[data.table]{data.table} as returned from \link{fcs.to.dt}; the \code{dt} should be subset to only include numeric columns-of-interest for training the SOM; coerced to matrix.}
 
 \item{.scale}{Logical: default \code{FALSE}; if \code{TRUE}, \code{dt} will be scaled using an internally-defined function.}
-
-\item{scale.func}{Default \code{NULL}; if defined and \code{.scale=TRUE}, will use the supplied function to override the default internally-defined function.}
 
 \item{seed.val}{An elite random seed value used to control otherwise random starts.}
 

@@ -74,7 +74,6 @@ fsom.merge.codes<-function (fsom, codes.to.merge)
 #'
 #' @param dt A \link[data.table]{data.table} as returned from \link{fcs.to.dt}; the `dt` should be subset to only include numeric columns-of-interest for training the SOM; coerced to matrix.
 #' @param .scale Logical: default `FALSE`; if `TRUE`, `dt` will be scaled using an internally-defined function.
-#' @param scale.func Default `NULL`; if defined and `.scale=TRUE`, will use the supplied function to override the default internally-defined function.
 #' @param seed.val An elite random seed value used to control otherwise random starts.
 #' @param ... further arguments passed to \link[FlowSOM:SOM]{FlowSOM::SOM}
 #'
@@ -91,8 +90,8 @@ fsom.merge.codes<-function (fsom, codes.to.merge)
 #' fsom<-som(dt[,pbmc.dims,with=FALSE],.scale=TRUE,map=FALSE)
 #' str(fsom)
 #'
-som<-function(dt,.scale=F,scale.func=NULL,seed.val=1337,...){
-  if(is.null(scale.func)){
+som<-function(dt,.scale=F,seed.val=1337,...){
+  if(.scale){
     scale.func<-function(x){(x - mean(x))/stats::sd(x)}
   }
   ts<-Sys.time()
@@ -103,7 +102,6 @@ som<-function(dt,.scale=F,scale.func=NULL,seed.val=1337,...){
   message(paste("Minutes elapsed:",round(difftime(te, ts, units = "mins"),2)))
   if(.scale){
     fsom$scale<-TRUE
-    fsom$scale.func<-scale.func
   }else{
     fsom$scale<-FALSE
   }
@@ -206,12 +204,15 @@ map.som.data<-function(fsom,dt){
     paste("adding columns",paste0("'",node.cols,"'",collapse = " and "),"-- by reference -- to 'dt'."),
     sep = "\n"
   ))
+  if(fsom$scale){
+    scale.func<-function(x){(x - mean(x))/stats::sd(x)}
+  }
   dt[,(node.cols) := as.list(
     as.data.frame(
       map.data(
         fsom$codes,
         as.matrix(if(fsom$scale){
-          dt[,lapply(.SD,fsom$scale.func),.SDcols = colnames(fsom$codes)]
+          dt[,lapply(.SD,scale.func),.SDcols = colnames(fsom$codes)]
         }else{
           dt[,colnames(fsom$codes),with=F]
         })
