@@ -9,7 +9,9 @@ som.codes.dt(
   append.name = NULL,
   k = NULL,
   umap.codes = F,
-  seed.val = 1337
+  seed.val = 1337,
+  pItem = 1,
+  reps = 100
 )
 }
 \arguments{
@@ -17,11 +19,15 @@ som.codes.dt(
 
 \item{append.name}{Character string; will be used to append the otherwise generically named 'node' and 'cluster' columns.}
 
-\item{k}{Numeric; if defined, will generate \code{k} clusters using \link[FlowSOM]{metaClustering_consensus}.}
+\item{k}{Numeric; if defined, will generate \code{k} clusters using \link[ConsensusClusterPlus]{ConsensusClusterPlus}.}
 
 \item{umap.codes}{Logical: default \code{FALSE}; if \code{TRUE}, the codes/SOMs will be embedded using \link[uwot]{umap}.}
 
 \item{seed.val}{An elite random seed value used to control otherwise random starts.}
+
+\item{pItem}{Argument passed to \link[ConsensusClusterPlus]{ConsensusClusterPlus}; directly influences final clustering result.}
+
+\item{reps}{Argument passed to \link[ConsensusClusterPlus]{ConsensusClusterPlus}; directly influences final clustering result.}
 }
 \value{
 An updated \code{fsom}; the new list element \verb{[['codes.dt']]} will contain a \link[data.table]{data.table} of clustered (factor) codes using the direct result of \link[FlowSOM]{SOM}.

@@ -10,7 +10,8 @@ fcs.to.dt(
   use.alias.pattern = FALSE,
   alias.order = FALSE,
   cofactors = NULL,
-  sample.val = NULL
+  sample.val = NULL,
+  seed.val = 1337
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ fcs.to.dt(
 \item{cofactors}{A named numeric vector; named columns will be \link[base]{asinh} transformed with the supplied cofactor (numeric).}
 
 \item{sample.val}{Numeric (1L); used to define \link[base:sample]{size}. Rows will be randomly (seed-controlled) selected based on the value of \code{sample.val}.}
+
+\item{seed.val}{A (default elite) random seed value used to control row-sampling.}
 }
 \value{
 a \code{data.table} of raw, un-transformed numeric expression values with character/factor identifier columns; if \code{cofactors} is defined, the raw expression values will be \link[base]{asinh} transformed.

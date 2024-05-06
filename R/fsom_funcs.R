@@ -44,29 +44,6 @@ fsom.codes.to.clusters<-function(fsom,k=20,seed=1337,cluster.col=NULL){
   fsom$cluster<-NULL
   return(append(fsom,cluster.ls))
 }
-##
-#' @title Merge FlowSOM codes into a new cluster
-#'
-#' @param fsom FlowSOM object, as returned from \code{FlowSOM::SOM} and previously clustered using \code{fsom.codes.to.clusters}.
-#' @param codes.to.merge Numeric vector; individual codes to be manually merged into a new cluster.
-#'
-#' @return FlowSOM object with an updated cluster factor (\code{fsom$cluster$fac})
-#' @export
-#'
-#'
-fsom.merge.codes<-function (fsom, codes.to.merge)
-{
-  if (is.null(fsom$cluster$fac)) {
-    stop("Need factored clusters; returned from 'fsom.codes.to.clusters(...)")
-  }
-  m <- fsom$cluster$fac
-  levels(m) <- c(levels(m), length(levels(m)) + 1)
-  m[codes.to.merge] <- length(levels(m))
-  m <- factor(m)
-  levels(m) <- c(1:length(levels(m)))
-  fsom$cluster$fac<-m
-  return(fsom)
-}
 #' @title Build a self-organized map (SOM)
 #'
 #' @description
@@ -75,7 +52,7 @@ fsom.merge.codes<-function (fsom, codes.to.merge)
 #' @param dt A \link[data.table]{data.table} as returned from \link{fcs.to.dt}; the `dt` should be subset to only include numeric columns-of-interest for training the SOM; coerced to matrix.
 #' @param .scale Logical: default `FALSE`; if `TRUE`, `dt` will be scaled using an internally-defined function.
 #' @param seed.val An elite random seed value used to control otherwise random starts.
-#' @param ... further arguments passed to \link[FlowSOM:SOM]{FlowSOM::SOM}
+#' @param ... Further arguments passed to \link[FlowSOM:SOM]{FlowSOM::SOM}
 #'
 #' @return A list containing \link[FlowSOM:SOM]{FlowSOM::SOM}-specific parameters/results. Of primary importance is the list element `[['codes']]`.
 #' @export
@@ -113,9 +90,11 @@ som<-function(dt,.scale=F,seed.val=1337,...){
 #'
 #' @param fsom A \link[FlowSOM:SOM]{FlowSOM::SOM} result as returned from \link{som}.
 #' @param append.name Character string; will be used to append the otherwise generically named 'node' and 'cluster' columns.
-#' @param k Numeric; if defined, will generate `k` clusters using \link[FlowSOM]{metaClustering_consensus}.
+#' @param k Numeric; if defined, will generate `k` clusters using \link[ConsensusClusterPlus]{ConsensusClusterPlus}.
 #' @param umap.codes Logical: default `FALSE`; if `TRUE`, the codes/SOMs will be embedded using \link[uwot]{umap}.
 #' @param seed.val An elite random seed value used to control otherwise random starts.
+#' @param pItem Argument passed to \link[ConsensusClusterPlus]{ConsensusClusterPlus}; directly influences final clustering result.
+#' @param reps Argument passed to \link[ConsensusClusterPlus]{ConsensusClusterPlus}; directly influences final clustering result.
 #'
 #' @return An updated `fsom`; the new list element `[['codes.dt']]` will contain a \link[data.table]{data.table} of clustered (factor) codes using the direct result of \link[FlowSOM]{SOM}.
 #' @export
@@ -129,7 +108,7 @@ som<-function(dt,.scale=F,seed.val=1337,...){
 #' ggplot2::ggplot(fsom$codes.dt,ggplot2::aes(umap.1,umap.2)) +
 #' ggplot2::geom_point(ggplot2::aes(color=cluster_pbmc))
 #'
-som.codes.dt<-function(fsom,append.name=NULL,k=NULL,umap.codes=F,seed.val=1337){
+som.codes.dt<-function(fsom,append.name=NULL,k=NULL,umap.codes=F,seed.val=1337,pItem=1,reps=100){
   #for R CMD check; data.table vars
   node<-NULL
   #
@@ -139,8 +118,22 @@ som.codes.dt<-function(fsom,append.name=NULL,k=NULL,umap.codes=F,seed.val=1337){
   dt.codes<-data.table::data.table(fsom$codes)
   dt.codes[,node:=seq(.N)]
   if(!is.null(k)){
-    message(paste("Generating", k, "clusters using FlowSOM::metaClustering_consensus(...)"))
-    dt.codes[,cluster:=factor(FlowSOM::metaClustering_consensus(fsom$codes,k=k,seed=seed.val))]
+    message(paste("Generating", k, "clusters using ConsensusClusterPlus::ConsensusClusterPlus(...)"))
+    dt.codes[,cluster:=factor(
+      suppressMessages(
+        ConsensusClusterPlus::ConsensusClusterPlus(
+          d = t(fsom$codes),
+          maxK = k,
+          pItem = pItem,
+          reps = reps,
+          title=tempdir(),
+          plot = "pdf",
+          distance = "euclidean",
+          seed=seed.val,
+          verbose = FALSE
+        ))[[k]]$consensusClass
+      )]
+    #dt.codes[,cluster:=factor(FlowSOM::metaClustering_consensus(fsom$codes,k=k,seed=seed.val))]
   }
   if(umap.codes){
     message("UMAP embedding of 'fsom$codes' using uwot::umap(...)")
@@ -226,4 +219,68 @@ map.som.data<-function(fsom,dt){
   }
   #
   invisible(dt[])
+}
+#' @title Merge two or more \link{som.codes.dt} clusters
+#' @description
+#' Due to over-clustering, some resultant clusters may need to be merged. The decision to merge clusters is based on multiple factors (including but not limited to): heatmap expression values of shared features (dendrogram), primary data (scatterplots), and population-level associations (cluster counts).
+#'
+#' @param fsom An object as returned from \link{som.codes.dt}.
+#' @param clusters.to.merge A list; each list element (numeric vector) must be a two or more clusters to merge.
+#' @param merge.as.nodes Logical: default `FALSE`; if `TRUE`, the supplied `clusters.to.merge` will merge nodes instead of clusters; consider this a special-use case.
+#'
+#' @return A modified fsom object; the cluster column in `fsom$codes.dt` will be updated -- by reference -- with the merged results. This function modifies `fsom$codes.dt` by reference using \link[data.table]{data.table}'s \link[data.table]{:=} and \link[data.table]{set} functions.
+#' @note Assignment operators \link[base]{<-} should not be used with this function; instead, `fsom$codes.dt` is modified/updated by reference.
+#' @export
+#'
+#' @examples
+#' fsom<-SOMnambulate:::prepared.examples(example.type='fsom')
+#' fsom<-som.codes.dt(fsom,append.name = 'pbmc',k=10,umap.codes = FALSE)
+#'
+#' #current clusters (factor)
+#' fsom$codes.dt[['cluster_pbmc']]
+#'
+#' #for the sake of this example, assume the following clusters need to be merged:
+#' clusters.to.merge<-list(c(1,2),c(9,10))
+#' merge_som.clusters(fsom,clusters.to.merge)
+#'
+#' #after merging, updated clusters (factor)
+#' fsom$codes.dt[['cluster_pbmc']]
+#'
+#' #special-use case; merging individual nodes
+#' merge_som.clusters(fsom,list(c(1,2,3)),merge.as.nodes=TRUE)
+#' fsom$codes.dt[['cluster_pbmc']]
+#'
+merge_som.clusters<-function(fsom,clusters.to.merge,merge.as.nodes=F){
+  if(is.null(fsom$codes.dt)){
+    stop("Need fsom as returned from som.codes.dt()")
+  }else{
+    cluster.col<-grep("cluster",names(fsom$codes.dt),value = T)
+  }
+  if(!is.list(clusters.to.merge)){
+    stop(paste(
+      "clusters.to.merge needs to be a list;",
+      "each list element (numeric vector of cluster numbers) will be merged into a new cluster",
+      sep = "\n")
+    )
+  }
+  ##use cluster values in clusters.to.merge to generate an index of which nodes to re-factor
+  if(!merge.as.nodes){
+    nodes.to.merge<-lapply(clusters.to.merge,function(i){
+      fsom$codes.dt[,.I[get(cluster.col) %in% i]]
+    })
+  }else{
+    nodes.to.merge<-clusters.to.merge
+  }
+  ##use nodes.to.merge indices to re-factor and re-level existing clusters
+  for(nodes in nodes.to.merge){
+    m <- fsom$codes.dt[[cluster.col]]
+    levels(m) <- c(levels(m), length(levels(m)) + 1)
+    m[nodes] <- length(levels(m))
+    m <- factor(m)
+    levels(m) <- c(1:length(levels(m)))
+    ##
+    data.table::set(fsom$codes.dt,j=cluster.col,value = m)
+  }
+  ##
+  message(paste("Merging clusters and updating",paste0("'",cluster.col,"'"), "-- by reference -- to fsom$codes.dt"))
 }

@@ -135,7 +135,7 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
   if('$ETIM' %in% names(dt)) dt[,'$ETIM' := data.table::as.ITime(get('$ETIM'))]
   #
   for(j in grep("DELAY|ASF|VOL$",names(dt),value = T)){data.table::set(dt,j=j,value=as.numeric(dt[[j]]))}#can't remember where this came from; cytek?
-  #synatically valid names; drop keyword identifier '$'
+  #syntactically valid names; drop keyword identifier '$'
   names(dt)<-sub("\\$","",names(dt))
   #conserved keywords -- convert these to factor
   keywords.conserved <- c('CYT','CYTSN','FCSversion')
@@ -206,6 +206,7 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
 get.fcs.channel.alias<-function(fcs.file.paths,drop.pattern.channels=NULL,drop.pattern.alias=NULL,name.sub=NULL,order.alias=F){
   channel_alias.list<- unique(lapply(fcs.file.paths,function(f.path){
     ca<-SOMnambulate::get.fcs.parameters(f.path,return.dt = T)[[1]]
+    if(!"S" %in% names(ca)){ca[,S := as.character(NA)]}
     ca[is.na(S), S := N]
     if(ca[,data.table::uniqueN(S)]!=ca[,.N]){
       stop("Non-unique alias name")
@@ -306,6 +307,7 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
 #' @param alias.order Logical. If `TRUE`, the `data.table` columns will be ordered to match that of the `channel_alias` 'alias' column.
 #' @param cofactors A named numeric vector; named columns will be \link[base]{asinh} transformed with the supplied cofactor (numeric).
 #' @param sample.val Numeric (1L); used to define \link[base:sample]{size}. Rows will be randomly (seed-controlled) selected based on the value of `sample.val`.
+#' @param seed.val A (default elite) random seed value used to control row-sampling.
 #'
 #' @return a `data.table` of raw, un-transformed numeric expression values with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be \link[base]{asinh} transformed.
 #' @examples
@@ -347,19 +349,27 @@ fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.a
 #' dt.sub[,.N]
 #'
 #' @export
-fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias.order=FALSE,cofactors=NULL,sample.val=NULL){
+fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias.order=FALSE,cofactors=NULL,sample.val=NULL,seed.val=1337){
   #read .fcs file ('.path')
   #if defined, rename columns using 'channel_alias' as returned from 'get.fcs.channel.alias'
   fcs.tmp<-flowCore::read.FCS(fcs.file.dt[['f.path']],transformation = F,truncate_max_range = F,
                               channel_alias = if(!is.null(channel_alias)) channel_alias,
                               column.pattern = if(!is.null(channel_alias) & use.alias.pattern) paste0(channel_alias$alias,collapse = "|")
   )
+  #
+  if(is.null(sample.val)){
+    sample.rows<-FALSE
+  }else if(!is.null(sample.val)&nrow(fcs.tmp)>sample.val){
+    sample.rows<-TRUE
+  }else{
+    sample.rows <- FALSE
+  }
   #convert the expression matrix (raw, un-transformed data values) into a data.table
   dt<-data.table::setDT(
     as.data.frame(
-      if(!is.null(sample.val)){
-        set.seed(1337)
-        fcs.tmp@exprs[sample.int(nrow(fcs.tmp),sample.val,replace = TRUE),]
+      if(sample.rows){
+          set.seed(seed.val)
+          fcs.tmp@exprs[sample.int(nrow(fcs.tmp),sample.val,replace = FALSE),]
       }else{
         fcs.tmp@exprs
       }
@@ -402,7 +412,9 @@ fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias
 #' @param alias.order Logical. If `TRUE`, the `data.table` columns will be ordered to match that of the `channel_alias` 'alias' column.
 #' @param cofactors A named numeric vector; named columns will be \link[base]{asinh} transformed with the supplied cofactor (numeric).
 #' @param sample.val Numeric (1L); used to define \link[base:sample]{size}. Rows will be randomly (seed-controlled) selected based on the value of `sample.val`.
+#' @param seed.val A (default elite) random seed value used to control row-sampling.
 #' @param ncores Numeric; used to override the number of parallel compute clusters.
+#' @param ... Further arguments passed to \link[data.table]{rbindlist}; primarily used to define `fill=TRUE` when the data.tables are not harmonized.
 #'
 #' @return a `data.table` of raw, un-transformed numeric expression values (row-bound) with character/factor identifier columns; if `cofactors` is defined, the raw expression values will be \link[base]{asinh} transformed.
 #' @examples
@@ -424,7 +436,7 @@ fcs.to.dt<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias
 #' dt[,.N,by=sample.id]
 #'
 #' @export
-fcs.to.dt.parallel<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias.order=FALSE,cofactors=NULL,sample.val=NULL,ncores=NULL){
+fcs.to.dt.parallel<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FALSE,alias.order=FALSE,cofactors=NULL,sample.val=NULL,seed.val=1337,ncores=NULL,...){
   ##for posterity, leaving the commented code chunk; the function arguments at one point had to be exported;
   ##now working as intended in the uncommented code chunk, which used to not work...
   # n.cores<-parallel::detectCores()-1
@@ -461,7 +473,10 @@ fcs.to.dt.parallel<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FA
                                             use.alias.pattern=use.alias.pattern,
                                             alias.order=alias.order,
                                             sample.val=sample.val,
-                                            cofactors=cofactors))
+                                            seed.val=seed.val,
+                                            cofactors=cofactors),
+                        ...
+  )
 }
 #' @title Generate a `data.table` of .fcs parameters
 #' @description

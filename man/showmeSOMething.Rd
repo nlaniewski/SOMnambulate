@@ -27,5 +27,5 @@ showmeSOMething(
 \code{shinyapp}
 }
 \description{
-This interactive \code{shiny}\\code{shinydashboard} allows a visual exploration of FlowSOM clustering results. \code{plotly} clickable cluster heatmap dimensions and factored datapoints are the primary features.
+This interactive \code{shiny};\code{shinydashboard} allows a visual exploration of FlowSOM clustering results. \code{plotly} clickable cluster heatmap dimensions and factored datapoints are the primary features.
 }

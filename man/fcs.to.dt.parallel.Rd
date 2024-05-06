@@ -11,7 +11,9 @@ fcs.to.dt.parallel(
   alias.order = FALSE,
   cofactors = NULL,
   sample.val = NULL,
-  ncores = NULL
+  seed.val = 1337,
+  ncores = NULL,
+  ...
 )
 }
 \arguments{
@@ -27,7 +29,11 @@ fcs.to.dt.parallel(
 
 \item{sample.val}{Numeric (1L); used to define \link[base:sample]{size}. Rows will be randomly (seed-controlled) selected based on the value of \code{sample.val}.}
 
+\item{seed.val}{A (default elite) random seed value used to control row-sampling.}
+
 \item{ncores}{Numeric; used to override the number of parallel compute clusters.}
+
+\item{...}{Further arguments passed to \link[data.table]{rbindlist}; primarily used to define \code{fill=TRUE} when the data.tables are not harmonized.}
 }
 \value{
 a \code{data.table} of raw, un-transformed numeric expression values (row-bound) with character/factor identifier columns; if \code{cofactors} is defined, the raw expression values will be \link[base]{asinh} transformed.

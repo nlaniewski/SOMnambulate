@@ -13,7 +13,7 @@ som(dt, .scale = F, seed.val = 1337, ...)
 
 \item{seed.val}{An elite random seed value used to control otherwise random starts.}
 
-\item{...}{further arguments passed to \link[FlowSOM:SOM]{FlowSOM::SOM}}
+\item{...}{Further arguments passed to \link[FlowSOM:SOM]{FlowSOM::SOM}}
 }
 \value{
 A list containing \link[FlowSOM:SOM]{FlowSOM::SOM}-specific parameters/results. Of primary importance is the list element \verb{[['codes']]}.

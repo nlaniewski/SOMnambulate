@@ -1,6 +1,6 @@
 #' @title Interactive exploration of high-dimensional clustering (FlowSOM) results
 #' @description
-#' This interactive \code{shiny}\\code{shinydashboard} allows a visual exploration of FlowSOM clustering results. \code{plotly} clickable cluster heatmap dimensions and factored datapoints are the primary features.
+#' This interactive \code{shiny};\code{shinydashboard} allows a visual exploration of FlowSOM clustering results. \code{plotly} clickable cluster heatmap dimensions and factored datapoints are the primary features.
 #'
 #'
 #' @param dat \code{data.table} containing a factored \code{FlowSOM} cluster column
