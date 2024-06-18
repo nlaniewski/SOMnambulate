@@ -20,6 +20,8 @@ Imports:
     gridExtra,
     methods,
     parallel,
+    patchwork,
+    pheatmap,
     plotly,
     RColorBrewer,
     rstudioapi,

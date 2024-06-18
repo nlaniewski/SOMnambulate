@@ -35,6 +35,9 @@ get.fcs.parameters<-function(fcs.file.paths,return.dt=F){
     return(fcs.parameters.list)
   }
 }
+#' @rdname get.fcs.parameters
+#' @export
+getSOMparameters <- get.fcs.parameters
 #' @title Get keyword metadata (!'$P') from .fcs files
 #' @description
 #' Non-parameter ($P) keywords in the TEXT section of a .fcs file denote cytometer/sample-specific meta-data. This function allows parsing of that meta-data without the overhead of reading the full (text and expression matrix) .fcs file to get the keyword values.  Depending on the nature of the .fcs file, there will be some mix of FCS-defined ('$') and non-standard keywords (software/user-defined).
@@ -76,6 +79,9 @@ get.fcs.keywords.metadata <- function(fcs.file.paths,return.dt=T){
     return(fcs.keywords)
   }
 }
+#' @rdname get.fcs.keywords.metadata
+#' @export
+getSOMkeywords <- get.fcs.keywords.metadata
 #' @title Get a \link[data.table]{data.table} of .fcs file paths and related metadata.
 #' @description
 #' Essentially a wrapper around \link{get.fcs.keywords.metadata} with some convenience formatting and class conversions. This structured \link[data.table]{data.table} can be considered the starting point of an analysis workflow. Naming conventions can be enforced by modifying any sample/subject-specific columns; it's not uncommon for typos to occur during the course of a large study and they can be corrected after the keyword metadata has been parsed.
@@ -152,6 +158,9 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
   ##
   return(dt)
 }
+#' @rdname get.fcs.file.dt
+#' @export
+getSOMfiles <- get.fcs.file.dt
 #' @title Get a `channel_alias` data.table from .fcs file headers
 #' @description
 #' The resultant \link[data.table]{data.table} is to be used with the `channel_alias` argument of \link[flowCore]{read.FCS}. The alias will be used to set column names; make sure they are unique and 'readable'. For example, the included mass cytometry data files used in this example are originally named ($PS) as 'MassMetal_Marker'; a more 'readable' form would be 'Marker_MassMetal' or even just 'Marker' (see example). The intent here is to use unified names that follow an established convention. There is relatively low 'overhead' reading .fcs headers/TEXT, so having a unified 'channel.alias' (panel) before reading in often large amounts of .fcs data will streamline the workflow.
@@ -248,52 +257,6 @@ get.fcs.channel.alias<-function(fcs.file.paths,drop.pattern.channels=NULL,drop.p
       sep = "\n"
     ))
     return(channel_alias.list)
-  }
-}
-#' @title Convert a \code{data.table} of mass cytometry .fcs data into a new .fcs file
-#' @description
-#' After reading in (usually large amounts of) .fcs data and converting to a \code{data.table}, the process can be reversed and a new .fcs file created; new keywords are written to the header section and parameters updated using \code{flowCore} functions.
-#'
-#'
-#' @param dt.data A \code{data.table} of .fcs data, as returned from \code{data.table::as.data.table(flowCore::read.FCS(...))}.
-#' @param reverse.asinh.cofactor If defined, will reverse the \code{asinh} transformation - using the same cofactor value - typically applied to mass cytometry .fcs data
-#' @param keywords.to.add A list of keywords to append to the header section of the .fcs file; if \code{NULL}, returns a 'basic' \code{flowCore::flowFrame}.
-#' @param fil If defined, will update the '$FIL' keyword; when writing the new .fcs file, '$FIL' is used to define the \code{flowCore::write.FCS(filename)} argument.
-#' @param out.path A \code{file.path}; will write the new .fcs to the defined directory; if \code{NULL}, returns an 'updated' \code{flowCore::flowFrame}.
-#'
-#' @return Depending on defined arguments, returns a \code{flowCore::flowFrame} with/without updated keywords or writes the .FCS to a defined directory.
-#' @export
-#'
-fcs.from.dt.masscyto<-function(dt.data,reverse.asinh.cofactor=NULL,keywords.to.add=NULL,fil=NULL,out.path=NULL){
-  maxRange<-NULL
-  if(!is.null(reverse.asinh.cofactor)){
-    if(!is.numeric(reverse.asinh.cofactor)) stop("Non-numeric value defined for 'reverse.asinh.cofactor'")
-    cols.metal <- grep("[0-9]{3}[A-Z]{1}[a-z]{1}",names(dt.data),value = T)
-    dt.data[ , (cols.metal) := lapply(.SD,function(x){sinh(x)*reverse.asinh.cofactor}), .SDcols = cols.metal]
-  }
-  parms.adf<-data.table::data.table(name = names(dt.data),desc = NA,dt.data[,.(minRange=0,maxRange=unlist(lapply(.SD,function(x) ceiling(max(x)))))])
-  parms.adf[,range:=(maxRange+1)]
-  ##
-  parms.list<-as.list(
-    stats::setNames(c(rep(c("32","0,0"),each=nrow(parms.adf)),parms.adf$range),
-                    nm=do.call(paste0, expand.grid(paste0('$P',seq(nrow(parms.adf))), c("B","E","R"))))
-  )
-  ##
-  if(!is.null(keywords.to.add)){
-    fcs.from.dt<-methods::new("flowFrame",exprs=as.matrix(dt.data),parameters=Biobase::AnnotatedDataFrame(parms.adf),description = parms.list)
-    flowCore::keyword(fcs.from.dt)<-c(flowCore::keyword(fcs.from.dt),keywords.to.add)
-    flowCore::keyword(fcs.from.dt)[['modified.by']]<-"R_fcs.from.dt.masscyto"
-    if(!is.null(fil)){
-      flowCore::keyword(fcs.from.dt)[['$FIL']] <- fil
-    }
-    if(is.null(out.path)){
-      return(fcs.from.dt)
-    }else{
-      if(!dir.exists(out.path)) dir.create(out.path,recursive = T)
-      flowCore::write.FCS(fcs.from.dt,file.path(out.path,flowCore::keyword(fcs.from.dt)[['$FIL']]))
-    }
-  }else{
-    return(methods::new("flowFrame",exprs=as.matrix(dt.data),parameters=Biobase::AnnotatedDataFrame(parms.adf),description = parms.list))
   }
 }
 #' @title reads a .fcs file and converts it to `data.table`

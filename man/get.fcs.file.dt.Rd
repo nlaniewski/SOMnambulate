@@ -2,9 +2,12 @@
 % Please edit documentation in R/fcs_funcs.R
 \name{get.fcs.file.dt}
 \alias{get.fcs.file.dt}
+\alias{getSOMfiles}
 \title{Get a \link[data.table]{data.table} of .fcs file paths and related metadata.}
 \usage{
 get.fcs.file.dt(fcs.file.paths, factor.cols = NULL)
+
+getSOMfiles(fcs.file.paths, factor.cols = NULL)
 }
 \arguments{
 \item{fcs.file.paths}{Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.}

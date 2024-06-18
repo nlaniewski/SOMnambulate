@@ -15,7 +15,7 @@
 #' dt[,CD45_112Cd := asinh(CD45_112Cd/10)]
 #' x<-dt[['CD45_112Cd']]
 #'
-#' #maxima and minima values returned for extreme tail
+#' #maxima and minima values returned for extreme tails
 #' SOMnambulate:::get.local.maxima.minima(x,plot=TRUE)
 #'
 #' #quantile 'trim'

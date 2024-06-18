@@ -2,9 +2,12 @@
 % Please edit documentation in R/fcs_funcs.R
 \name{get.fcs.parameters}
 \alias{get.fcs.parameters}
+\alias{getSOMparameters}
 \title{Get parameters ('$P') from .fcs file headers}
 \usage{
 get.fcs.parameters(fcs.file.paths, return.dt = F)
+
+getSOMparameters(fcs.file.paths, return.dt = F)
 }
 \arguments{
 \item{fcs.file.paths}{Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.}

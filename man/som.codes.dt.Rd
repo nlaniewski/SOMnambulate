@@ -8,7 +8,7 @@ som.codes.dt(
   fsom,
   append.name = NULL,
   k = NULL,
-  umap.codes = F,
+  umap.codes = FALSE,
   seed.val = 1337,
   pItem = 1,
   reps = 100

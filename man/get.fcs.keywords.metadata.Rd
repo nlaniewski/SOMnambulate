@@ -2,9 +2,12 @@
 % Please edit documentation in R/fcs_funcs.R
 \name{get.fcs.keywords.metadata}
 \alias{get.fcs.keywords.metadata}
+\alias{getSOMkeywords}
 \title{Get keyword metadata (!'$P') from .fcs files}
 \usage{
 get.fcs.keywords.metadata(fcs.file.paths, return.dt = T)
+
+getSOMkeywords(fcs.file.paths, return.dt = T)
 }
 \arguments{
 \item{fcs.file.paths}{Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.}

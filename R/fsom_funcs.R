@@ -67,7 +67,7 @@ fsom.codes.to.clusters<-function(fsom,k=20,seed=1337,cluster.col=NULL){
 #' fsom<-som(dt[,pbmc.dims,with=FALSE],.scale=TRUE,map=FALSE)
 #' str(fsom)
 #'
-som<-function(dt,.scale=F,seed.val=1337,...){
+som<-function(dt,.scale=FALSE,seed.val=1337,...){
   if(.scale){
     scale.func<-function(x){(x - mean(x))/stats::sd(x)}
   }
@@ -108,9 +108,7 @@ som<-function(dt,.scale=F,seed.val=1337,...){
 #' ggplot2::ggplot(fsom$codes.dt,ggplot2::aes(umap.1,umap.2)) +
 #' ggplot2::geom_point(ggplot2::aes(color=cluster_pbmc))
 #'
-som.codes.dt<-function(fsom,append.name=NULL,k=NULL,umap.codes=F,seed.val=1337,pItem=1,reps=100){
-  #for R CMD check; data.table vars
-  node<-NULL
+som.codes.dt<-function(fsom,append.name=NULL,k=NULL,umap.codes=FALSE,seed.val=1337,pItem=1,reps=100){
   #
   if(!"codes" %in% names(fsom)){
     stop("Need a 'FlowSOM' object as returned from 'FlowSOM::BuildSOM()'or 'SOMnambulate::som()'")

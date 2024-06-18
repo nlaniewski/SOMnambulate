@@ -4,7 +4,7 @@
 \alias{som}
 \title{Build a self-organized map (SOM)}
 \usage{
-som(dt, .scale = F, seed.val = 1337, ...)
+som(dt, .scale = FALSE, seed.val = 1337, ...)
 }
 \arguments{
 \item{dt}{A \link[data.table]{data.table} as returned from \link{fcs.to.dt}; the \code{dt} should be subset to only include numeric columns-of-interest for training the SOM; coerced to matrix.}

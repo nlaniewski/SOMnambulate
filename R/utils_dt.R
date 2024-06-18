@@ -114,9 +114,9 @@ get.dt.col.classes<-function(dt){
 #' data=fsom$codes.dt,
 #' id.vars=grep('node|cluster|umap',names(fsom$codes.dt)))
 #'
-#' codes.melt[,value.scaled:=
-#' codes.melt[,(value-min(value))/(max(value)-min(value)),
-#' by=variable][[2]]]
+#' codes.melt[,
+#'   value.scaled:= (value-min(value))/(max(value)-min(value)),
+#'   by=variable]
 #'
 #' ggplot2::ggplot(data=merge(codes.melt,node.sizes)) +
 #' ggplot2::aes(umap.1,umap.2,color=value.scaled,size=node.size.median) +
@@ -134,8 +134,4 @@ dt.N.counts<-function(dt.subset){
   ][,N.freq:=(N/total)*100
   ][,total:=NULL
   ]
-}
-
-subsample_dt_sample.id<-function(dat,subsample.val){
-  dat[dat[,list(I=if(.N>subsample.val){.I[sample(.N,subsample.val)]}else{.I}),by=get('sample.id')][['I']]]
 }

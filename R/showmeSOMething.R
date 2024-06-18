@@ -444,6 +444,9 @@ gg.func.bivariate.cluster.overlay <- function(dat,...,bins=100,fill.limits=c(0,5
     stop("Cluster column not found...")
   }
   # cluster.col<-cluster.col.check(names(dat))
+  subsample_dt_sample.id<-function(dat,subsample.val){
+    dat[dat[,list(I=if(.N>subsample.val){.I[sample(.N,subsample.val)]}else{.I}),by=get('sample.id')][['I']]]
+  }
   p<-ggplot2::ggplot(dat[sample(.N,overlay.total)],ggplot2::aes(...)) +
     ggplot2::geom_hex(fill = "gray", bins = bins) +
     ggplot2::geom_hex(data=subsample_dt_sample.id(dat[get(cluster.col)==cluster.number],per.sample.cluster.total),bins=bins) +
