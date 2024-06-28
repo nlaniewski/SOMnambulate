@@ -15,13 +15,13 @@ plotSOMclusters(
 \arguments{
 \item{dt}{An object as returned from \link{fcs.to.dt} and mapped using \link{map.som.data}.}
 
-\item{...}{\link[ggplot2]{aes} arguments; essentially x and y (unquoted)}
+\item{...}{\link[ggplot2]{aes} arguments (unquoted); essentially x and y. If a \code{z} aesthetic is provided, the plot will switch to \link[ggplot2]{stat_summary_hex}, using this defined third variable as a 'color-by'.}
 
 \item{bins}{\link[ggplot2]{geom_hex} argument; numeric vector giving number of bins in both vertical and horizontal directions.}
 
 \item{show.clusters}{Numeric vector; if defined, the faceted plot will show only those clusters.}
 
-\item{silhouette.n}{Numeric (length 1); the number of events to sample from \code{dt} to create the silhouette. Set to 2E4 by default.}
+\item{silhouette.n}{Numeric; the number of events to sample from \code{dt} to create the silhouette. Set to 2E4 by default.}
 }
 \value{
 a \link[ggplot2]{ggplot} object; faceted by clusters
@@ -40,4 +40,5 @@ plotSOMclusters(dt,CD4_145Nd,CD8a_162Dy,bins=50,show.clusters=c(4,14))
 plotSOMclusters(dt,CD4_145Nd,CD8a_162Dy,bins=50,show.clusters=c(4,14)) +
 ggplot2::theme_classic() + ggplot2::guides(fill='none')
 
+plotSOMclusters(dt,CD4_145Nd,CD8a_162Dy,z=CD4_145Nd,bins=50,show.clusters=c(4,14))
 }

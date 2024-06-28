@@ -12,7 +12,7 @@ plotSOMshiny(dt, fsom)
 \item{fsom}{An object as returned from \link{som.codes.dt}; fsom$codes.dt is required.}
 }
 \value{
-\code{shinyapp}
+\link[shiny]{shinyApp}
 }
 \description{
 Interactive exploration of high-dimensional clustering (FlowSOM) results

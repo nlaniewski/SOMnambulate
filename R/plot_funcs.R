@@ -1,3 +1,280 @@
+#' @title A bivariate ggplot of hex-binned data points
+#'
+#' @param dt An object as returned from \link{fcs.to.dt}
+#' @param ... \link[ggplot2]{aes} arguments (unquoted); essentially x and y. If a `z` aesthetic is provided, the plot will switch to \link[ggplot2]{stat_summary_hex}, using this defined third variable as a 'color-by'.
+#' @param bins \link[ggplot2]{geom_hex} argument; numeric vector giving number of bins in both vertical and horizontal directions.
+#' @param limits \link[ggplot2]{continuous_scale} argument.
+#'
+#' @return a \link[ggplot2]{ggplot} object
+#' @export
+#'
+#' @examples
+#' dt<-SOMnambulate:::prepared.examples("dt")
+#' metals <- grep("_[0-9]{3}[A-Z]{1}[a-z]{1}",names(dt),value=TRUE)
+#' for(j in metals){data.table::set(dt,i=NULL,j=j,value=asinh(dt[[j]]/10))}
+#'
+#' plotSOMprimary(dt,CD4_145Nd,CD8a_162Dy,bins=100)
+#'
+#' plotSOMprimary(dt,CD4_145Nd,CD8a_162Dy,z=CD3_170Er,bins=100)
+#' plotSOMprimary(dt,CD4_145Nd,CD8a_162Dy,z=CD3_170Er,bins=100,
+#'   limits=c(0,dt[,quantile(CD3_170Er,.9)])) +
+#'   ggplot2::theme_dark()
+plotSOMprimary <- function(dt,...,bins=200,limits=NULL){
+  ##
+  p<-ggplot2::ggplot(
+    data = dt,
+    mapping = ggplot2::aes(...)
+  )
+  if("z" %in% ...names()){
+    dot.names=lapply(substitute(list(...))[-1], deparse)
+    z<-dot.names[...names()=="z"]
+    p <- p +
+      ggplot2::stat_summary_hex(bins=bins) +
+      viridis::scale_fill_viridis(option="magma",
+                                  limits = limits,
+                                  oob = scales::squish) +
+      ggplot2::labs(fill=z)
+  }else{
+    p <- p +
+      ggplot2::geom_hex(bins=bins) +
+      viridis::scale_fill_viridis(option="plasma",
+                                  limits = limits,
+                                  oob = scales::squish)
+  }
+  ##
+  return(p)
+}
+#' @title A bivariate ggplot of hex-binned data points -- interactive (shiny)
+#'
+#' @param dt An object as returned from \link{fcs.to.dt}
+#'
+#' @return \link[shiny]{shinyApp}
+#' @export
+#'
+#' @examples
+#' if (interactive()) {
+#' dt<-SOMnambulate:::prepared.examples("dt")
+#' metals <- grep("_[0-9]{3}[A-Z]{1}[a-z]{1}",names(dt),value=TRUE)
+#' for(j in metals){data.table::set(dt,i=NULL,j=j,value=asinh(dt[[j]]/10))}
+#'
+#' plotSOMprimary_shiny(dt)
+#'}
+plotSOMprimary_shiny<-function(dt){
+  ##use internal function to get dt column classes
+  col.classes<-get.dt.col.classes(dt)
+  ##vectors for use as shiny inputs
+  choices.numeric<-col.classes$numeric
+  choices.factor<-col.classes$factor
+  choices.sample<-dt[,sort(unique(sample.id))]
+  ##limits for numeric columns; all data
+  lims <- dt[,lapply(.SD,range),.SDcols=choices.numeric]
+  ##shiny ui inputs
+  ui.inputs<-list(
+    marker.x=shiny::selectInput(
+      inputId = "marker1",
+      label = "Marker (x):",
+      choices = choices.numeric,
+      selected = choices.numeric[1]
+    ),
+    marker.y=shiny::selectInput(
+      inputId = "marker2",
+      label = "Marker (y):",
+      choices = choices.numeric,
+      selected = choices.numeric[2]
+    ),
+    color.by=shiny::selectInput(
+      inputId = "color.by",
+      label = "Color:",
+      choices = choices.numeric,
+      selected = ""
+    ),
+    color.check=shiny::checkboxInput(
+      inputId = "color.check",
+      label = "Color by selected variable?",
+      value = FALSE
+    ),
+    sample.id=shiny::selectInput(
+      inputId = "sample.id",
+      label="Sample:",
+      choices=choices.sample,
+      selected = choices.sample[1]
+    )
+  )
+  ##shiny ui actionbuttons
+  actionbuttons<-lapply(2:4,function(n){
+    list(pop=
+           shiny::actionButton(
+             inputId = paste0("pop",n),
+             label = paste0("#",n),
+             icon = shiny::icon(name="new-window",lib="glyphicon")
+           ),
+         clear=
+           shiny::actionButton(
+             inputId = paste0("clear.pop",n),
+             label = paste0("#",n),
+             icon = shiny::icon(name="remove",lib="glyphicon")
+           )
+    )
+  })
+  ##
+  ui <- shinydashboard::dashboardPage(
+    header = shinydashboard::dashboardHeader(
+      title = "SOMthingShiny",disable = F
+    ),
+    sidebar = shinydashboard::dashboardSidebar(
+      shiny::numericInput(
+        inputId = "bins",
+        label="Bins:",
+        value=200
+      ),
+      shiny::splitLayout(
+        shiny::textInput(
+          inputId = "limits.count",
+          label = "Limits (count):",
+          placeholder = "#,#"
+        ),
+        shiny::textInput(
+          inputId = "limits.color",
+          label = "Limits (color):",
+          placeholder = "#,#"
+        )
+      ),
+      ui.inputs$marker.x,
+      ui.inputs$marker.y,
+      ui.inputs$color.by,
+      ui.inputs$color.check,
+      ui.inputs$sample.id,
+      ui.inputs$factors,
+      shiny::selectInput(
+        inputId = "ggtheme",
+        label = "ggtheme:",
+        choices = c(
+          "gray"
+          ,"bw"
+          ,"light"
+          ,"dark"
+          ,"minimal"
+          ,"classic"
+          ,"void"
+        ),
+        selected = "dark"
+      ),
+      lapply(actionbuttons,function(i){shiny::splitLayout(i$pop,i$clear)})
+    ),
+    body = shinydashboard::dashboardBody(
+      shiny::fluidRow(
+        lapply(c(".plotSOMprimary","pop2"),function(n){
+          shinydashboard::box(
+            collapsible = T,
+            title = NULL,
+            shiny::plotOutput(n)
+          )
+        })
+      ),
+      shiny::fluidRow(
+        lapply(3:4,function(n){
+          shinydashboard::box(
+            collapsible = T,
+            title = NULL,
+            shiny::plotOutput(paste0("pop",n))
+          )
+        })
+      )
+    )
+  )
+  ##
+  server = function(input, output) {
+    ##function to extract color and count limits (https://stackoverflow.com/users/5836932/k-rohde)
+    extract.lims <- function(text) {
+      text <- gsub(" ", "", text)
+      split <- strsplit(text, ",", fixed = FALSE)[[1]]
+      as.numeric(split)
+    }
+    ##bivariate plot generated by plotSOMprimary
+    .plotSOMprimary <- shiny::reactive({
+      p <- if(input$color.check){
+        plotSOMprimary(
+          dt[sample.id %in% input$sample.id],
+          x=!!as.name(input$marker1),
+          y=!!as.name(input$marker2),
+          z=!!as.name(input$color.by),
+          bins = input$bins,
+          limits = if(!anyNA(extract.lims(input$limits.color)) && length(extract.lims(input$limits.color)) == 2){
+            extract.lims(input$limits.color)
+          }
+        ) +
+          ggplot2::labs(fill=input$color.by,subtitle = input$sample.id)
+      }else{
+        plotSOMprimary(
+          dt[sample.id %in% input$sample.id],
+          x=!!as.name(input$marker1),
+          y=!!as.name(input$marker2),
+          bins = input$bins,
+          limits = if(!anyNA(extract.lims(input$limits.count)) && length(extract.lims(input$limits.count)) == 2){
+            extract.lims(input$limits.count)
+          }
+        ) +
+          ggplot2::labs(subtitle = input$sample.id)
+      }
+      p <- p +
+        eval(parse(text = paste0('ggplot2::theme_',input$ggtheme,'()'))) +
+        ggplot2::theme(
+          panel.grid = ggplot2::element_blank()
+        ) +
+        #ggplot2::guides(fill='none') +
+        if(all(c(input$marker1,input$marker2) %in% names(lims))){
+          ggplot2::coord_cartesian(
+            xlim=lims[,get(input$marker1)],
+            ylim=lims[,get(input$marker2)])
+        }else if(input$marker1 %in% names(lims)){
+          ggplot2::coord_cartesian(
+            xlim=lims[,get(input$marker1)])
+        }else if(input$marker2 %in% names(lims)){
+          ggplot2::coord_cartesian(
+            ylim=lims[,get(input$marker2)])
+        }
+      return(p)
+    })
+    ##bivariate plot; output
+    output$.plotSOMprimary <- shiny::renderPlot({
+      .plotSOMprimary()
+    })
+    ##there is probably a more efficient way of handling the following code chunks
+    ##can probably put these into a list/loop
+    ##isolate pop-out #2; the current reactive plot as a new isolated/static plot
+    shiny::observeEvent(input$pop2,{
+      output$pop2<-shiny::renderPlot({
+        shiny::isolate(.plotSOMprimary())
+      })
+    })
+    ##clear pop-out #2
+    shiny::observeEvent(input$clear.pop2,{
+      output$pop2 <- NULL
+    })
+    ##isolate pop-out #3; the current reactive plot as a new isolated/static plot
+    shiny::observeEvent(input$pop3,{
+      output$pop3<-shiny::renderPlot({
+        shiny::isolate(.plotSOMprimary())
+      })
+    })
+    ##clear pop-out #3
+    shiny::observeEvent(input$clear.pop3,{
+      output$pop3 <- NULL
+    })
+    ##isolate pop-out #4; the current reactive plot as a new isolated/static plot
+    shiny::observeEvent(input$pop4,{
+      output$pop4<-shiny::renderPlot({
+        shiny::isolate(.plotSOMprimary())
+      })
+    })
+    ##clear pop-out #4
+    shiny::observeEvent(input$clear.pop4,{
+      output$pop4 <- NULL
+    })
+  }
+  ##
+  shiny::shinyApp(ui, server)
+}
 #' @title Density distribution of FlowSOM nodes per unique barcode channel with barcode-specific nodes as rug-ticks
 #'
 #' @param fsom An object as returned from \link{som.codes.dt}.
@@ -160,27 +437,6 @@ plotSOMbarcodes_zero<-function(dt,fsom,node.threshold=1E4,bins.N=100,mdat.cols=N
   #
   return(plist)
 }
-#' @title A cluster-faceted bivariate ggplot with a silhouette sampled from all data points
-#'
-#' @param dt a `data.table` containing a 'cluster' column
-#' @param ... `ggplot2::aes` arguments: x and y (unquoted)
-#' @param bins argument as defined by `ggplot2::geom_hex`
-#' @param fill.limits Numeric vector of length two used to define the `limits` argument of `ggplot2::scale_fill_gradient(...)`
-#' @param silhouette.val Numeric; the number of data points to sample from `dt` to create the silhouette
-#'
-#' @return a \code{ggplot2} object
-#' @export
-#'
-#'
-gg.func.bivariate.cluster.silhouette<-function(dt,...,bins=200,fill.limits=c(0,bins/2),silhouette.val=5E4){
-  cluster.col=grep('cluster',names(dt),value = T)
-  p<-ggplot2::ggplot(data=NULL,ggplot2::aes(...))
-  p<-p+ggplot2::geom_hex(data=dt[sample(.N,silhouette.val),!cluster.col,with=F],fill='gray',bins=bins)
-  p<-p+ggplot2::geom_hex(data=dt,bins=bins)
-  p<-p+viridis::scale_fill_viridis(option="plasma",limits=fill.limits,oob=scales::squish)
-  p<-p+ggplot2::theme_classic()
-  p+ggplot2::facet_wrap(~get(cluster.col))
-}
 #' @title Heatmap of cluster-specific, per-marker median expression values
 #' @description
 #' A heatmap of median expression values is a critical component of exploring clustering results. This function will return either a static \link[pheatmap]{pheatmap} for displaying/printing or an interactive \link[plotly]{plot_ly} heatmap object.
@@ -332,10 +588,10 @@ plotSOMheat<-function(fsom,heatmap.type=c("pheatmap","plotly"),color.function=c(
 #' Bivariate plot pairs are used to explore FlowSOM clustering results by overlaying cluster-specific data onto a silhouette sampled from all available data; this allows for visualizing how cluster-specific expression relates to the data as a whole.
 #'
 #' @param dt An object as returned from \link{fcs.to.dt} and mapped using \link{map.som.data}.
-#' @param ... \link[ggplot2]{aes} arguments; essentially x and y (unquoted)
+#' @param ... \link[ggplot2]{aes} arguments (unquoted); essentially x and y. If a `z` aesthetic is provided, the plot will switch to \link[ggplot2]{stat_summary_hex}, using this defined third variable as a 'color-by'.
 #' @param bins \link[ggplot2]{geom_hex} argument; numeric vector giving number of bins in both vertical and horizontal directions.
 #' @param show.clusters Numeric vector; if defined, the faceted plot will show only those clusters.
-#' @param silhouette.n Numeric (length 1); the number of events to sample from `dt` to create the silhouette. Set to 2E4 by default.
+#' @param silhouette.n Numeric; the number of events to sample from `dt` to create the silhouette. Set to 2E4 by default.
 #'
 #' @return a \link[ggplot2]{ggplot} object; faceted by clusters
 #' @export
@@ -351,6 +607,7 @@ plotSOMheat<-function(fsom,heatmap.type=c("pheatmap","plotly"),color.function=c(
 #' plotSOMclusters(dt,CD4_145Nd,CD8a_162Dy,bins=50,show.clusters=c(4,14)) +
 #' ggplot2::theme_classic() + ggplot2::guides(fill='none')
 #'
+#' plotSOMclusters(dt,CD4_145Nd,CD8a_162Dy,z=CD4_145Nd,bins=50,show.clusters=c(4,14))
 plotSOMclusters<-function(dt,...,bins=200,show.clusters=NULL,silhouette.n=2E4){
   ##
   cluster.col = grep("cluster", names(dt), value = T)
@@ -365,25 +622,35 @@ plotSOMclusters<-function(dt,...,bins=200,show.clusters=NULL,silhouette.n=2E4){
   ##
   sample.sil<-ifelse(dt[,.N]>silhouette.n,T,F)
   ##
-  ggplot2::ggplot(data=NULL,ggplot2::aes(...)) +
-    ggplot2::geom_hex(
-      data=if(dt[,.N]>silhouette.n){
-        set.seed(1337)
-        dt[sample(.N,silhouette.n),!cluster.col,with=F]
-      }else{
-        dt[,!cluster.col,with=F]
-      },
-      bins=bins,fill='gray') +
-    ggplot2::geom_hex(
-      data=if(!is.null(show.clusters)){dt[get(cluster.col) %in% show.clusters]}else{dt},
-      bins=bins
-    ) +
-    viridis::scale_fill_viridis(
-      option="plasma"
-      ,limits = c(0,bins=bins)
-      ,oob = scales::squish
-    ) +
-    ggplot2::facet_wrap(~get(cluster.col))
+  if("z" %in% ...names()){
+    ggplot2::ggplot(
+      data = if(!is.null(show.clusters)){dt[get(cluster.col) %in% show.clusters]}else{dt},
+      ggplot2::aes(...)) +
+      ggplot2::stat_summary_hex(bins=bins) +
+      viridis::scale_fill_viridis(option="magma") +
+      ggplot2::facet_wrap(~get(cluster.col))
+  }else{
+    ##
+    ggplot2::ggplot(data=NULL,ggplot2::aes(...)) +
+      ggplot2::geom_hex(
+        data=if(dt[,.N]>silhouette.n){
+          set.seed(1337)
+          dt[sample(.N,silhouette.n),!cluster.col,with=F]
+        }else{
+          dt[,!cluster.col,with=F]
+        },
+        bins=bins,fill='gray') +
+      ggplot2::geom_hex(
+        data=if(!is.null(show.clusters)){dt[get(cluster.col) %in% show.clusters]}else{dt},
+        bins=bins
+      ) +
+      viridis::scale_fill_viridis(
+        option="plasma"
+        ,limits = c(0,bins=bins)
+        ,oob = scales::squish
+      ) +
+      ggplot2::facet_wrap(~get(cluster.col))
+  }
 }
 #' @title A UMAP of FlowSOM nodes colored by cluster value or expression value
 #'
@@ -481,7 +748,7 @@ plotSOMumap<-function(fsom,dt,.by=NULL,cluster.highlight=NULL,expression.facets=
 #' @param dt An object as returned from \link{fcs.to.dt} and mapped using \link{map.som.data}.
 #' @param fsom An object as returned from \link{som.codes.dt}; fsom$codes.dt is required.
 #'
-#' @return \code{shinyapp}
+#' @return \link[shiny]{shinyApp}
 #' @export
 #'
 #' @examples
@@ -505,6 +772,8 @@ plotSOMshiny<-function(dt,fsom){
   choices.cluster<-levels(fsom$codes.dt[,get(cluster.col)])
   ##limits for numeric columns; all data
   lims <- dt[,lapply(.SD,range),.SDcols=choices.numeric]
+  ##limits for UMAP
+  lims.umap <- fsom$codes.dt[,lapply(.SD,range),.SDcols=c('umap.1','umap.2')]
   ##cluster counts
   cluster.counts<-dt.N.counts(dt[,.N,keyby=c('sample.id',cluster.col,choices.factor)])
   ##shiny ui inputs
@@ -513,17 +782,31 @@ plotSOMshiny<-function(dt,fsom){
       inputId = "marker1",
       label = "Marker (x):",
       choices = choices.numeric,
-      selected = choices.numeric[1]),
+      selected = choices.numeric[1]
+    ),
     marker.y=shiny::selectInput(
       inputId = "marker2",
       label = "Marker (y):",
       choices = choices.numeric,
-      selected = choices.numeric[2]),
+      selected = choices.numeric[2]
+    ),
+    color.by=shiny::selectInput(
+      inputId = "color.by",
+      label = "Color:",
+      choices = choices.numeric,
+      selected = ""
+    ),
+    color.check=shiny::checkboxInput(
+      inputId = "color.check",
+      label = "Color by selected variable?",
+      value = FALSE
+    ),
     sample.id=shiny::selectInput(
       inputId = "sample.id",
       label="Sample:",
       choices=choices.sample,
-      selected = choices.sample[1]),
+      selected = choices.sample[1]
+    ),
     cluster.val=shiny::selectInput(
       inputId = "cluster.val",
       label="Cluster #:",
@@ -545,6 +828,8 @@ plotSOMshiny<-function(dt,fsom){
     sidebar = shinydashboard::dashboardSidebar(
       ui.inputs$marker.x,
       ui.inputs$marker.y,
+      ui.inputs$color.by,
+      ui.inputs$color.check,
       ui.inputs$cluster.val,
       ui.inputs$sample.id,
       ui.inputs$factors
@@ -580,7 +865,6 @@ plotSOMshiny<-function(dt,fsom){
         shinydashboard::box(
           collapsible = T,
           title=NULL,
-          #shiny::plotOutput(".plotSOMcounts_gg")
           plotly::plotlyOutput(".plotSOMcounts_plotly")
         )
       )
@@ -590,12 +874,23 @@ plotSOMshiny<-function(dt,fsom){
   server = function(input, output) {
     ##bivariate plot; silhouette with cluster overlay
     .plotSOMclusters <- shiny::reactive({
-      plotSOMclusters(
-        dt[sample.id %in% input$sample.id],
-        x=!!as.name(input$marker1),
-        y=!!as.name(input$marker2),
-        show.clusters = input$cluster.val
-      ) +
+      p <- if(input$color.check){
+        plotSOMclusters(
+          dt[sample.id %in% input$sample.id],
+          x=!!as.name(input$marker1),
+          y=!!as.name(input$marker2),
+          z=!!as.name(input$color.by),
+          show.clusters = input$cluster.val
+        )
+      }else{
+        plotSOMclusters(
+          dt[sample.id %in% input$sample.id],
+          x=!!as.name(input$marker1),
+          y=!!as.name(input$marker2),
+          show.clusters = input$cluster.val
+        )
+      }
+      p <- p +
         ggplot2::theme_classic() +
         ggplot2::guides(fill='none') +
         if(all(c(input$marker1,input$marker2) %in% names(lims))){
@@ -609,6 +904,7 @@ plotSOMshiny<-function(dt,fsom){
           ggplot2::coord_cartesian(
             ylim=lims[,get(input$marker2)])
         }
+      return(p)
     })
     ##bivariate plot; output
     output$.plotSOMclusters <- shiny::renderPlot({
@@ -621,7 +917,12 @@ plotSOMshiny<-function(dt,fsom){
         dt[sample.id %in% input$sample.id],
         .by='sample.id',
         cluster.highlight = input$cluster.val
-      ) + ggplot2::scale_size_area(guide="none")
+      ) +
+        ggplot2::scale_size_area(guide="none") +
+        ggplot2::coord_cartesian(
+          xlim=lims.umap[['umap.1']],
+          ylim=lims.umap[['umap.2']]
+        )
     })
     ##umap plot; output
     output$.plotSOMumap <- shiny::renderPlot({
@@ -682,10 +983,10 @@ plotSOMshiny<-function(dt,fsom){
       plotly::event_data("plotly_click", priority = 'event', source = 'boxplot.click')
     })
     shiny::observeEvent(eventExpr = click.boxplot(),{
+      #print(click.boxplot())
       .number<-click.boxplot()$pointNumber+1
       .val<-click.boxplot()$y
-      .sample.id<-cluster.counts[,unique(sample.id)][.number]
-      #print(.sample.id)
+      .sample.id<-cluster.counts[get(cluster.col)==input$cluster.val,sample.id[.number]]
       shiny::updateSelectInput(
         inputId = "sample.id",
         selected = .sample.id
