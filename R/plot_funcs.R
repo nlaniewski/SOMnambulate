@@ -119,7 +119,7 @@ plotSOMprimary_shiny<-function(dt){
   ##
   ui <- shinydashboard::dashboardPage(
     header = shinydashboard::dashboardHeader(
-      title = "SOMthingShiny",disable = F
+      title = "plotSOMprimary",disable = F
     ),
     sidebar = shinydashboard::dashboardSidebar(
       shiny::numericInput(
@@ -159,7 +159,12 @@ plotSOMprimary_shiny<-function(dt){
         ),
         selected = "dark"
       ),
-      lapply(actionbuttons,function(i){shiny::splitLayout(i$pop,i$clear)})
+      lapply(actionbuttons,function(i){shiny::splitLayout(i$pop,i$clear)}),
+      shiny::actionButton(
+        inputId = "clear.pops",
+        label = "Clear all Pop-outs",
+        icon = shiny::icon(name="remove",lib="glyphicon")
+      )
     ),
     body = shinydashboard::dashboardBody(
       shiny::fluidRow(
@@ -239,37 +244,25 @@ plotSOMprimary_shiny<-function(dt){
     output$.plotSOMprimary <- shiny::renderPlot({
       .plotSOMprimary()
     })
-    ##there is probably a more efficient way of handling the following code chunks
-    ##can probably put these into a list/loop
-    ##isolate pop-out #2; the current reactive plot as a new isolated/static plot
-    shiny::observeEvent(input$pop2,{
-      output$pop2<-shiny::renderPlot({
-        shiny::isolate(.plotSOMprimary())
+    ##isolate pop-outs
+    lapply(2:4,function(n){
+      shiny::observeEvent(input[[paste0("pop",n)]],{
+        output[[paste0("pop",n)]]<-shiny::renderPlot({
+          shiny::isolate(.plotSOMprimary())
+        })
       })
     })
-    ##clear pop-out #2
-    shiny::observeEvent(input$clear.pop2,{
-      output$pop2 <- NULL
-    })
-    ##isolate pop-out #3; the current reactive plot as a new isolated/static plot
-    shiny::observeEvent(input$pop3,{
-      output$pop3<-shiny::renderPlot({
-        shiny::isolate(.plotSOMprimary())
+    ##clear pop-outs; individual
+    lapply(2:4,function(n){
+      shiny::observeEvent(input[[paste0("clear.pop",n)]],{
+        output[[paste0("pop",n)]]<-NULL
       })
     })
-    ##clear pop-out #3
-    shiny::observeEvent(input$clear.pop3,{
-      output$pop3 <- NULL
-    })
-    ##isolate pop-out #4; the current reactive plot as a new isolated/static plot
-    shiny::observeEvent(input$pop4,{
-      output$pop4<-shiny::renderPlot({
-        shiny::isolate(.plotSOMprimary())
+    ##clear pop-outs; all
+    shiny::observeEvent(input$clear.pops,{
+      lapply(2:4,function(n){
+        output[[paste0("pop",n)]]<-NULL
       })
-    })
-    ##clear pop-out #4
-    shiny::observeEvent(input$clear.pop4,{
-      output$pop4 <- NULL
     })
   }
   ##
@@ -823,16 +816,55 @@ plotSOMshiny<-function(dt,fsom){
   ##
   ui <- shinydashboard::dashboardPage(
     header = shinydashboard::dashboardHeader(
-      title = "SOMthingShiny",disable = F
+      title = "SOMnambulate",disable = F
     ),
     sidebar = shinydashboard::dashboardSidebar(
+      shiny::numericInput(
+        inputId = "bins",
+        label="Bins:",
+        value=200
+      ),
+      shiny::splitLayout(
+        shiny::textInput(
+          inputId = "limits.count",
+          label = "Limits (count):",
+          placeholder = "#,#"
+        ),
+        shiny::textInput(
+          inputId = "limits.color",
+          label = "Limits (color):",
+          placeholder = "#,#"
+        )
+      ),
       ui.inputs$marker.x,
       ui.inputs$marker.y,
       ui.inputs$color.by,
       ui.inputs$color.check,
       ui.inputs$cluster.val,
       ui.inputs$sample.id,
-      ui.inputs$factors
+      ui.inputs$factors,
+      shiny::selectInput(
+        inputId = "ggtheme",
+        label = "ggtheme:",
+        choices = c(
+          "gray"
+          ,"bw"
+          ,"light"
+          ,"dark"
+          ,"minimal"
+          ,"classic"
+          ,"void"
+        ),
+        selected = "classic"
+      ),
+      shiny::selectInput(
+        inputId = "heatmap.color",
+        label = "Heatmap Colors:",
+        choices = c(
+          "ryb",
+          "greens"
+        )
+      )
     ),
     body = shinydashboard::dashboardBody(
       shiny::fluidRow(
@@ -872,6 +904,12 @@ plotSOMshiny<-function(dt,fsom){
   )
   ##
   server = function(input, output) {
+    ##function to extract color and count limits (https://stackoverflow.com/users/5836932/k-rohde)
+    extract.lims <- function(text) {
+      text <- gsub(" ", "", text)
+      split <- strsplit(text, ",", fixed = FALSE)[[1]]
+      as.numeric(split)
+    }
     ##bivariate plot; silhouette with cluster overlay
     .plotSOMclusters <- shiny::reactive({
       p <- if(input$color.check){
@@ -880,19 +918,30 @@ plotSOMshiny<-function(dt,fsom){
           x=!!as.name(input$marker1),
           y=!!as.name(input$marker2),
           z=!!as.name(input$color.by),
-          show.clusters = input$cluster.val
-        )
+          show.clusters = input$cluster.val,
+          bins = input$bins,
+          limits = if(!anyNA(extract.lims(input$limits.color)) && length(extract.lims(input$limits.color)) == 2){
+            extract.lims(input$limits.color)
+          }) +
+          ggplot2::labs(fill=input$color.by,subtitle = input$sample.id)
       }else{
         plotSOMclusters(
           dt[sample.id %in% input$sample.id],
           x=!!as.name(input$marker1),
           y=!!as.name(input$marker2),
-          show.clusters = input$cluster.val
-        )
+          show.clusters = input$cluster.val,
+          bins = input$bins,
+          limits = if(!anyNA(extract.lims(input$limits.count)) && length(extract.lims(input$limits.count)) == 2){
+            extract.lims(input$limits.count)
+          }) +
+          ggplot2::labs(subtitle = input$sample.id)
       }
       p <- p +
-        ggplot2::theme_classic() +
-        ggplot2::guides(fill='none') +
+        eval(parse(text = paste0('ggplot2::theme_',input$ggtheme,'()'))) +
+        ggplot2::theme(
+          panel.grid = ggplot2::element_blank()
+        ) +
+        #ggplot2::guides(fill='none') +
         if(all(c(input$marker1,input$marker2) %in% names(lims))){
           ggplot2::coord_cartesian(
             xlim=lims[,get(input$marker1)],
@@ -957,6 +1006,7 @@ plotSOMshiny<-function(dt,fsom){
         plotSOMheat(
           fsom,
           heatmap.type = 'plotly',
+          color.function = input$heatmap.color,
           scale="row"
         )
       )
