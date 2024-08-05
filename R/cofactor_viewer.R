@@ -23,7 +23,7 @@ cofactor.viewer<-function(dt,cytometry.type=c('spectral','conventional','mass'),
   ##
   col.classes<-unlist(sapply(dt,class))
   col.vars<-sapply(unique(col.classes),function(i) names(col.classes[col.classes %in% i]),simplify = F)
-  vars <- grep("Time|FSC|SSC|node|cluster", col.vars$numeric, value = T, invert = T)
+  vars <- grep("Time|FSC|SSC|cluster|node|barcode", col.vars$numeric, value = T, invert = T)
   cuts<-Reduce(union,dt[, lapply(.SD, function(x){q<-stats::quantile(x,probs=c(0.0001,.9999));which(x<q[1]|x>q[2])}), .SDcols = vars])
   samples<-'combined'
   if(!is.null(col.vars$character)&'sample.id' %in% col.vars$character){

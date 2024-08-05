@@ -225,6 +225,7 @@ map.som.data<-function(fsom,dt){
 #' @param fsom An object as returned from \link{som.codes.dt}.
 #' @param clusters.to.merge A list; each list element (numeric vector) must be a two or more clusters to merge.
 #' @param merge.as.nodes Logical: default `FALSE`; if `TRUE`, the supplied `clusters.to.merge` will merge nodes instead of clusters; consider this a special-use case.
+#' @param preserve.factor.levels Logical: default `TRUE`; preserves existing factor levels.
 #'
 #' @return A modified fsom object; the cluster column in `fsom$codes.dt` will be updated -- by reference -- with the merged results. This function modifies `fsom$codes.dt` by reference using \link[data.table]{data.table}'s \link[data.table]{:=} and \link[data.table]{set} functions.
 #' @note Assignment operators \link[base]{<-} should not be used with this function; instead, `fsom$codes.dt` is modified/updated by reference.
@@ -233,6 +234,7 @@ map.som.data<-function(fsom,dt){
 #' @examples
 #' fsom<-SOMnambulate:::prepared.examples(example.type='fsom')
 #' fsom<-som.codes.dt(fsom,append.name = 'pbmc',k=10,umap.codes = FALSE)
+#' fsom.dup<-data.table::copy(fsom)
 #'
 #' #current clusters (factor)
 #' fsom$codes.dt[['cluster_pbmc']]
@@ -240,15 +242,20 @@ map.som.data<-function(fsom,dt){
 #' #for the sake of this example, assume the following clusters need to be merged:
 #' clusters.to.merge<-list(c(1,2),c(9,10))
 #' merge_som.clusters(fsom,clusters.to.merge)
+#' merge_som.clusters(fsom.dup,clusters.to.merge,preserve.factor.levels=FALSE)
 #'
-#' #after merging, updated clusters (factor)
+#' #result of 'preserve.factor.levels' argument
+#' levels(fsom$codes.dt[['cluster_pbmc']])
+#' levels(fsom.dup$codes.dt[['cluster_pbmc']])
+#'
+#' #updated clusters (factor)
 #' fsom$codes.dt[['cluster_pbmc']]
 #'
 #' #special-use case; merging individual nodes
 #' merge_som.clusters(fsom,list(c(1,2,3)),merge.as.nodes=TRUE)
 #' fsom$codes.dt[['cluster_pbmc']]
 #'
-merge_som.clusters<-function(fsom,clusters.to.merge,merge.as.nodes=F){
+merge_som.clusters<-function(fsom,clusters.to.merge,merge.as.nodes=F,preserve.factor.levels=TRUE){
   if(is.null(fsom$codes.dt)){
     stop("Need fsom as returned from som.codes.dt()")
   }else{
@@ -275,7 +282,9 @@ merge_som.clusters<-function(fsom,clusters.to.merge,merge.as.nodes=F){
     levels(m) <- c(levels(m), length(levels(m)) + 1)
     m[nodes] <- length(levels(m))
     m <- factor(m)
-    levels(m) <- c(1:length(levels(m)))
+    if(!preserve.factor.levels){
+      levels(m) <- c(1:length(levels(m)))
+    }
     ##
     data.table::set(fsom$codes.dt,j=cluster.col,value = m)
   }

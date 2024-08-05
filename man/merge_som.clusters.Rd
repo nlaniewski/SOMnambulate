@@ -4,7 +4,12 @@
 \alias{merge_som.clusters}
 \title{Merge two or more \link{som.codes.dt} clusters}
 \usage{
-merge_som.clusters(fsom, clusters.to.merge, merge.as.nodes = F)
+merge_som.clusters(
+  fsom,
+  clusters.to.merge,
+  merge.as.nodes = F,
+  preserve.factor.levels = TRUE
+)
 }
 \arguments{
 \item{fsom}{An object as returned from \link{som.codes.dt}.}
@@ -12,6 +17,8 @@ merge_som.clusters(fsom, clusters.to.merge, merge.as.nodes = F)
 \item{clusters.to.merge}{A list; each list element (numeric vector) must be a two or more clusters to merge.}
 
 \item{merge.as.nodes}{Logical: default \code{FALSE}; if \code{TRUE}, the supplied \code{clusters.to.merge} will merge nodes instead of clusters; consider this a special-use case.}
+
+\item{preserve.factor.levels}{Logical: default \code{TRUE}; preserves existing factor levels.}
 }
 \value{
 A modified fsom object; the cluster column in \code{fsom$codes.dt} will be updated -- by reference -- with the merged results. This function modifies \code{fsom$codes.dt} by reference using \link[data.table]{data.table}'s \link[data.table]{:=} and \link[data.table]{set} functions.
@@ -25,6 +32,7 @@ Assignment operators \link[base]{<-} should not be used with this function; inst
 \examples{
 fsom<-SOMnambulate:::prepared.examples(example.type='fsom')
 fsom<-som.codes.dt(fsom,append.name = 'pbmc',k=10,umap.codes = FALSE)
+fsom.dup<-data.table::copy(fsom)
 
 #current clusters (factor)
 fsom$codes.dt[['cluster_pbmc']]
@@ -32,8 +40,13 @@ fsom$codes.dt[['cluster_pbmc']]
 #for the sake of this example, assume the following clusters need to be merged:
 clusters.to.merge<-list(c(1,2),c(9,10))
 merge_som.clusters(fsom,clusters.to.merge)
+merge_som.clusters(fsom.dup,clusters.to.merge,preserve.factor.levels=FALSE)
 
-#after merging, updated clusters (factor)
+#result of 'preserve.factor.levels' argument
+levels(fsom$codes.dt[['cluster_pbmc']])
+levels(fsom.dup$codes.dt[['cluster_pbmc']])
+
+#updated clusters (factor)
 fsom$codes.dt[['cluster_pbmc']]
 
 #special-use case; merging individual nodes

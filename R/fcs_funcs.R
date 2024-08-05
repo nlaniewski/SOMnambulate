@@ -441,16 +441,16 @@ fcs.to.dt.parallel<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FA
                         ...
   )
 }
-#' @title Generate a `data.table` of .fcs parameters
+#' @title Generate a `data.frame` of .fcs parameters from a `data.table` of .fcs expression data
 #' @description
-#' As a utility function, this returns a `data.table` of .fcs parameters for use in building a new .fcs file by fulfilling the \link[Biobase]{AnnotatedDataFrame} slot; **par**a**m**eter**s**.**a**nnotated**d**ata**f**rame.**d**a**t**atable.
+#' As a utility function, this returns a `data.frame` of .fcs parameters for use in building a new .fcs file by fulfilling the \link[Biobase]{AnnotatedDataFrame} slot. Only numeric columns will be included.
 #'
 #'
-#' @param dt `data.table` returned from `fcs.to.dt`; some mix of .fcs expression values and character/factor values
-#' @param to.numeric Character vector; will attempt to convert each string element (named column in `dt`) to numeric
+#' @param dt a `data.table` as returned from \link{fcs.to.dt}.
+#' @param to.numeric Character vector; will attempt to convert each string element (named column in `dt`) to numeric.
 #' @param name.fix a `data.table` with two columns: 'name' and 'name.fix'; if 'name' matches, the value will be replaced with 'name.fix'.
 #'
-#' @return a `data.table` of .fcs parameters; used to define a (new) \link[flowCore]{flowFrame}'s parameter slot using \link[Biobase]{AnnotatedDataFrame}.
+#' @return a `data.frame` of .fcs parameters; used to define a (new) \link[flowCore]{flowFrame}'s parameter slot using \link[Biobase]{AnnotatedDataFrame}.
 #' @examples
 #' #from the 'get.fcs.file.dt' example:
 #' #from the 'get.fcs.channel.alias' example:
@@ -458,7 +458,8 @@ fcs.to.dt.parallel<-function(fcs.file.dt,channel_alias=NULL,use.alias.pattern=FA
 #'
 #' dt<-SOMnambulate:::prepared.examples('dt')
 #'
-#' SOMnambulate:::parms.adf.dt(dt,to.numeric='aliquot.seq')[]
+#' parms.adf<-SOMnambulate:::parms.adf.dt(dt,to.numeric='aliquot.seq')
+#' parms.adf[]
 #'
 parms.adf.dt<-function(dt,to.numeric=NULL,name.fix=NULL){
   #
@@ -496,8 +497,11 @@ parms.adf.dt<-function(dt,to.numeric=NULL,name.fix=NULL){
     parms.adf[is.na(name.fix),name.fix:=name]
     parms.adf[,name:=name.fix];parms.adf[,name.fix:=NULL]
   }
+  #convert to data.frame only/drop data.table class so rownames can be used
+  parms.adf<-data.frame(parms.adf)
+  rownames(parms.adf)<-paste0("$P", rownames(parms.adf))
   #
-  invisible(parms.adf)
+  return(parms.adf)
 }
 #' @title Generate a list of .fcs meta-data
 #'
