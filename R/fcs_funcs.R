@@ -89,6 +89,7 @@ getSOMkeywords <- get.fcs.keywords.metadata
 #'
 #' @param fcs.file.paths Character string; path(s) usually returned from `list.files(...,full.names=T,pattern=".fcs")`.
 #' @param factor.cols Character string; column names to be converted to factor.
+#' @param date.convert Logical; default \code{TRUE}. Converts FCS 3.0 date format (dd-mmm-yyyy) to yyyy-mm-dd.
 #'
 #' @return a \link[data.table]{data.table} of full length .fcs file paths and related metadata (parsed from the TEXT header).
 #' @examples
@@ -108,7 +109,7 @@ getSOMkeywords <- get.fcs.keywords.metadata
 #' fcs.files.dt[]
 #'
 #' @export
-get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
+get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL,date.convert=T){
   f.path<-source.name<-file.size.MB<-NULL
   dt<-data.table::data.table(f.path=fcs.file.paths)
   dt[,source.name:=basename(f.path)]
@@ -135,7 +136,11 @@ get.fcs.file.dt<-function(fcs.file.paths,factor.cols=NULL){
   )
   dt<-dt[,!drop.terms[drop.terms %in% names(dt)],with=F]
   #do a few conversions
-  if('$DATE' %in% names(dt)) dt[,'$DATE' := data.table::as.IDate(get('$DATE'),format="%d-%b-%Y")]
+  if('$DATE' %in% names(dt)) dt[,'$DATE' := if(date.convert){
+    data.table::as.IDate(get('$DATE'),format="%d-%b-%Y")
+  }else{
+    data.table::as.IDate(get('$DATE'))
+  }]
   if('$TOT' %in% names(dt)) dt[,'$TOT' := as.numeric(get('$TOT'))]
   if('$BTIM' %in% names(dt)) dt[,'$BTIM' := data.table::as.ITime(get('$BTIM'))]
   if('$ETIM' %in% names(dt)) dt[,'$ETIM' := data.table::as.ITime(get('$ETIM'))]

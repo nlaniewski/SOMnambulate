@@ -5,14 +5,16 @@
 \alias{getSOMfiles}
 \title{Get a \link[data.table]{data.table} of .fcs file paths and related metadata.}
 \usage{
-get.fcs.file.dt(fcs.file.paths, factor.cols = NULL)
+get.fcs.file.dt(fcs.file.paths, factor.cols = NULL, date.convert = T)
 
-getSOMfiles(fcs.file.paths, factor.cols = NULL)
+getSOMfiles(fcs.file.paths, factor.cols = NULL, date.convert = T)
 }
 \arguments{
 \item{fcs.file.paths}{Character string; path(s) usually returned from \code{list.files(...,full.names=T,pattern=".fcs")}.}
 
 \item{factor.cols}{Character string; column names to be converted to factor.}
+
+\item{date.convert}{Logical; default \code{TRUE}. Converts FCS 3.0 date format (dd-mmm-yyyy) to yyyy-mm-dd.}
 }
 \value{
 a \link[data.table]{data.table} of full length .fcs file paths and related metadata (parsed from the TEXT header).
