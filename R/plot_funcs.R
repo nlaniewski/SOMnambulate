@@ -1,3 +1,129 @@
+#' @title Parameters by Time
+#'
+#' @param dt An object as returned from \link{fcs.to.dt}; can be further subset using \link[data.table]{data.table} syntax (see examples).
+#' @param trim.quantile Numeric of length 2 used to define the **probs** argument of \link[stats]{quantile}; if defined, will 'trim' axis (y) limits.
+#' @param bins \link[ggplot2]{geom_hex} argument; numeric vector giving number of bins in both vertical and horizontal directions.
+#' @param plots.per.page Numeric; the number of individual plots per page.
+#' @param title Character string; a plot title (added to each individual page).
+#' @param timestep Numeric; usually obtained from the '$TIMESTEP' keyword of a .fcs file. The 'Time' parameter is multiplied by the `timestep` to convert to seconds with a final conversion to minutes.
+#'
+#' @return a list (pages) of 'patchworked' (\link[patchwork]{wrap_plots}) \link[ggplot2]{ggplot} objects
+#' @export
+#'
+#' @examples
+#' dt<-SOMnambulate:::prepared.examples("dt")
+#' metals <- grep("_[0-9]{3}[A-Z]{1}[a-z]{1}",names(dt),value=TRUE)
+#' for(j in metals){data.table::set(dt,i=NULL,j=j,value=asinh(dt[[j]]/10))}
+#'
+#' cols<-c("Time","CD3_170Er","CD4_145Nd","CD8a_162Dy","CD14_146Nd","CD19_142Nd")
+#'
+#' plotSOMtime(dt[stim.condition=="SEB",..cols],bins=50)[]#'
+#' plotSOMtime(dt[stim.condition=="SEB",c(..cols,'aliquot.seq')],bins=50)[]
+#'
+plotSOMtime<-function(dt,trim.quantile=c(.001,.999),bins=200,plots.per.page=5,title=NULL,timestep=1E-4){
+  ##
+  fac<-dt[,names(.SD),.SDcols = is.factor]
+  if(length(fac)==0){
+    add.facets<-FALSE
+  }else{
+    add.facets<-TRUE
+  }
+  ##
+  lims.quantcut<-dt[,lapply(.SD,function(j){
+    q.cut<-stats::quantile(j,trim.quantile)
+    range(j[j>q.cut[1]&j<q.cut[2]])
+  }),.SDcols = is.numeric]
+  ##
+  drop.cols<-paste0(c("Time",fac),collapse = "|")
+  plist<-sapply(grep(drop.cols,names(dt),value = T,invert = T),function(j,ylims=lims.quantcut){
+    p<-ggplot2::ggplot(dt,ggplot2::aes(Time*timestep/60,!!as.name(j))) +#timestep 1E-4 for spectral
+      ggplot2::geom_hex(bins=bins) +
+      viridis::scale_fill_viridis(option="plasma") +
+      ggplot2::xlab("Time (minutes)") +
+      ggplot2::coord_cartesian(ylim=ylims[[j]])
+    if(add.facets){
+      n<-dt[,length(levels(get(fac)))]
+      p<-p+ggplot2::facet_wrap(fac,scales="free_x",ncol = n)
+    }
+    return(p)
+  },simplify = F)
+  ##
+  list.seq<-lapply(c(0,seq(plots.per.page,length(plist),by=plots.per.page)),function(.page,lim=length(plist)){
+    (1:plots.per.page+.page)[(1:plots.per.page+.page)<=lim]
+  })
+  list.seq<-list.seq[sapply(list.seq,length)!=0]
+  ##
+  patches<-lapply(list.seq,function(.seq){
+    patchwork::wrap_plots(
+      lapply(plist[.seq],function(i){i+ggplot2::guides(fill="none")}),
+      nrow=plots.per.page) +
+      patchwork::plot_annotation(title=title)
+  })
+}
+#' @title Plot density distributions
+#'
+#' @param dt An object as returned from \link{fcs.to.dt}; can be further subset using \link[data.table]{data.table} syntax (see examples).
+#' @param trim.quantile Numeric of length 2 used to define the **probs** argument of \link[stats]{quantile}; if defined, will 'trim' outlying data before calculating a density distribution.
+#' @param return.densities Logical; if `TRUE`, a `data.table` of calculated density distributions (long format) will be returned.
+#'
+#' @return a (faceted) \link[ggplot2]{ggplot} object
+#' @export
+#'
+#' @examples
+#' dt<-SOMnambulate:::prepared.examples("dt")
+#' metals <- grep("_[0-9]{3}[A-Z]{1}[a-z]{1}",names(dt),value=TRUE)
+#' for(j in metals){data.table::set(dt,i=NULL,j=j,value=asinh(dt[[j]]/10))}
+#'
+#' cols<-c("CD3_170Er","CD4_145Nd","CD8a_162Dy","CD14_146Nd","CD19_142Nd")
+#'
+#' plotSOMdensities(dt[stim.condition=="SEB",..cols])
+#' plotSOMdensities(dt[stim.condition=="SEB",.SD,.SDcols=cols,keyby = sample.id])
+#'
+plotSOMdensities<-function(dt,trim.quantile = c(.001,.999),return.densities=FALSE){
+  .by<-data.table::key(dt)
+  if(is.null(.by)){
+    .sdcols<-names(dt)
+  }else{
+    .sdcols<-names(dt)[!names(dt)%in%.by]
+  }
+  ##
+  dt.dens<-cbind(
+    dt[,lapply(.SD,function(j){
+      unlist(stats::density(
+        if(!is.null(trim.quantile)){
+          q.cut<-stats::quantile(j,trim.quantile)
+          j[j>q.cut[1] & j<q.cut[2]]
+        }else{
+          j
+        }
+      )[c('x','y')])
+    }),.SDcols = .sdcols,keyby=.by],
+    "d"=rep(c('density.x','density.y'),each=512)
+  )
+  ##
+  dt.dens<-lapply(split(dt.dens,by='d'),function(.dt){
+    data.table::melt(
+      .dt[,!'d'],
+      id.vars=if(data.table::haskey(.dt)) data.table::key(.dt),
+      measure.vars=if(!data.table::haskey(.dt)) .sdcols,
+      value.name = .dt[,unique(d)]
+    )
+  })
+  ##
+  dt.dens<-cbind(dt.dens$density.x,'density.y'=dt.dens$density.y[,density.y])
+  if(return.densities){
+    return(dt.dens)
+  }
+  ##
+  p<-ggplot2::ggplot(dt.dens,ggplot2::aes(density.x,density.y)) +
+    ggplot2::facet_wrap(~variable,scales='free')
+  if(is.null(.by)){
+    p<-p+ggplot2::geom_line()
+  }else{
+    p<-p+ggplot2::geom_line(ggplot2::aes(color=!!as.name(.by)))
+  }
+  return(p)
+}
 #' @title A bivariate ggplot of hex-binned data points
 #'
 #' @param dt An object as returned from \link{fcs.to.dt}
