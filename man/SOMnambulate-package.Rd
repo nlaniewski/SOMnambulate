@@ -4,9 +4,9 @@
 \name{SOMnambulate-package}
 \alias{SOMnambulate}
 \alias{SOMnambulate-package}
-\title{SOMnambulate: Sleep Walking Through a High Dimensional Dream}
+\title{SOMnambulate: Analysis and Visualization of High-Dimensional Mass/Spectral Cytometry Data Powered by FlowSOM Clustering}
 \description{
-Generalized tools for .fcs preprocessing and visualization; High-dimensional analysis using a (flow)SOM-based workflow.
+SOMnambualte offers an efficient, reproducible, and scalable workflow for the analysis of high-dimensional mass/spectral cytometry data. It's like sleep walking through a high dimensional dream.
 }
 \author{
 \strong{Maintainer}: Nathan Laniewski \email{nathan_laniewski@urmc.rochester.edu}

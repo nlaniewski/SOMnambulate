@@ -241,8 +241,8 @@ map.som.data<-function(fsom,dt){
 #'
 #' #for the sake of this example, assume the following clusters need to be merged:
 #' clusters.to.merge<-list(c(1,2),c(9,10))
-#' merge_som.clusters(fsom,clusters.to.merge)
-#' merge_som.clusters(fsom.dup,clusters.to.merge,preserve.factor.levels=FALSE)
+#' mergeSOMclusters(fsom,clusters.to.merge)
+#' mergeSOMclusters(fsom.dup,clusters.to.merge,preserve.factor.levels=FALSE)
 #'
 #' #result of 'preserve.factor.levels' argument
 #' levels(fsom$codes.dt[['cluster_pbmc']])
@@ -252,10 +252,10 @@ map.som.data<-function(fsom,dt){
 #' fsom$codes.dt[['cluster_pbmc']]
 #'
 #' #special-use case; merging individual nodes
-#' merge_som.clusters(fsom,list(c(1,2,3)),merge.as.nodes=TRUE)
+#' mergeSOMclusters(fsom,list(c(1,2,3)),merge.as.nodes=TRUE)
 #' fsom$codes.dt[['cluster_pbmc']]
 #'
-merge_som.clusters<-function(fsom,clusters.to.merge,merge.as.nodes=F,preserve.factor.levels=TRUE){
+mergeSOMclusters<-function(fsom,clusters.to.merge,merge.as.nodes=F,preserve.factor.levels=TRUE){
   if(is.null(fsom$codes.dt)){
     stop("Need fsom as returned from som.codes.dt()")
   }else{
@@ -278,15 +278,16 @@ merge_som.clusters<-function(fsom,clusters.to.merge,merge.as.nodes=F,preserve.fa
   }
   ##use nodes.to.merge indices to re-factor and re-level existing clusters
   for(nodes in nodes.to.merge){
-    m <- fsom$codes.dt[[cluster.col]]
-    levels(m) <- c(levels(m), length(levels(m)) + 1)
-    m[nodes] <- length(levels(m))
-    m <- factor(m)
+    f <- fsom$codes.dt[[cluster.col]]
+    f.add<-max(as.numeric(as.vector(f)))+1
+    levels(f) <- c(levels(f),f.add)
+    f[nodes] <- f.add
+    f <- droplevels(f)
     if(!preserve.factor.levels){
-      levels(m) <- c(1:length(levels(m)))
+      levels(f) <- c(1:length(levels(f)))
     }
     ##
-    data.table::set(fsom$codes.dt,j=cluster.col,value = m)
+    data.table::set(fsom$codes.dt,j=cluster.col,value = f)
   }
   ##
   message(paste("Merging clusters and updating",paste0("'",cluster.col,"'"), "-- by reference -- to fsom$codes.dt"))

@@ -1,9 +1,9 @@
 Package: SOMnambulate
-Title: Sleep Walking Through a High Dimensional Dream 
-Version: 0.0.0.9000
+Title: Analysis and Visualization of High-Dimensional Mass/Spectral Cytometry Data Powered by FlowSOM Clustering
+Version: 1.0
 Authors@R: 
     person("Nathan", "Laniewski", , "nathan_laniewski@urmc.rochester.edu", role = c("aut", "cre"))
-Description: Generalized tools for .fcs preprocessing and visualization; High-dimensional analysis using a (flow)SOM-based workflow.
+Description: SOMnambualte offers an efficient, reproducible, and scalable workflow for the analysis of high-dimensional mass/spectral cytometry data. It's like sleep walking through a high dimensional dream.
 Depends: R (>= 3.5.0)
 License: GPL (>= 3) + file LICENSE
 Encoding: UTF-8
