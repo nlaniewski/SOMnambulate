@@ -1,6 +1,6 @@
 Package: SOMnambulate
 Title: Analysis and Visualization of High-Dimensional Mass/Spectral Cytometry Data Powered by FlowSOM Clustering
-Version: 1.0
+Version: 1.0.0.1
 Authors@R: 
     person("Nathan", "Laniewski", , "nathan_laniewski@urmc.rochester.edu", role = c("aut", "cre"))
 Description: SOMnambualte offers an efficient, reproducible, and scalable workflow for the analysis of high-dimensional mass/spectral cytometry data. It's like sleep walking through a high dimensional dream.
@@ -8,7 +8,7 @@ Depends: R (>= 3.5.0)
 License: GPL (>= 3) + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 Imports:
     Biobase,
     ConsensusClusterPlus,

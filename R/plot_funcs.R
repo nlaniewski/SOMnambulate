@@ -890,7 +890,15 @@ plotSOMshiny<-function(dt,fsom){
   cluster.col<-grep('cluster',names(fsom$codes.dt),value = T)
   choices.cluster<-levels(fsom$codes.dt[,get(cluster.col)])
   ##limits for numeric columns; all data
-  lims <- dt[,lapply(.SD,range),.SDcols=choices.numeric]
+  cols.linear<-grep("Time|[FS]SC",choices.numeric,value = T)
+  cols.transformed<-choices.numeric[!choices.numeric %in% cols.linear]
+
+  lims.linear <- dt[,lapply(.SD,range),.SDcols=cols.linear]
+  lims.transformed<-dt[,lapply(.SD,stats::quantile,probs=c(0.001,0.999)),.SDcols = cols.transformed]
+
+  lims<-cbind(lims.linear,lims.transformed)
+
+  # lims <- dt[,lapply(.SD,range),.SDcols=choices.numeric]
   ##limits for UMAP
   lims.umap <- fsom$codes.dt[,lapply(.SD,range),.SDcols=c('umap.1','umap.2')]
   ##cluster counts
