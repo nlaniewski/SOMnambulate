@@ -11,5 +11,10 @@ SOMnambualte offers an efficient, reproducible, and scalable workflow for the an
 \author{
 \strong{Maintainer}: Nathan Laniewski \email{nathan_laniewski@urmc.rochester.edu}
 
+Authors:
+\itemize{
+  \item Nathan Laniewski \email{nathan_laniewski@urmc.rochester.edu}
+}
+
 }
 \keyword{internal}
