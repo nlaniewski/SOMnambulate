@@ -14,7 +14,7 @@ Imports:
     stats,
     uwot
 Remotes:
-    nlaniewski/flowsomlite
+    nlaniewski/flowsomlite,
     nlaniewski/flowstate@object
 Suggests:
     flowstate
