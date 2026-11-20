@@ -117,6 +117,7 @@ som_map <- function(
     value = T
   )
   node.cols <- c(cols[['node']], paste0(cols[['node']], '.dist'))
+  cluster.factor <- som[['codes.dt']][[cols[['cluster']]]]
   ##
   flowstate[
     ,
@@ -129,10 +130,9 @@ som_map <- function(
     .SDcols = colnames(som[['codes']])
   ][
     ,
-    j = (cols[['cluster']]) := {
-      som[['codes.dt']][[cols[['cluster']]]][cols[['node']]]
-    }
-  ]
+    j = (cols[['cluster']]) := cluster.factor[unlist(.SD)],
+    .SDcols = cols[['node']]
+  ][]
 
   invisible(flowstate)
 }
