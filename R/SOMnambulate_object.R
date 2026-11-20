@@ -53,7 +53,7 @@ som <- function(
 #' @title Cluster a Self-organizing Map (SOM)
 #'
 #' @param som The return of [som].
-#' @param k.name Character string; a suffix appended to the otherwise generically named `node` and `cluster` columns.
+#' @param cluster.name Character string; a suffix appended to the otherwise generically named `node` and `cluster` columns.
 #' @param k Integer; desired number of clusters.
 #' @param plot Logical -- default `FALSE`; plot the [stats::hclust] result.
 #'
@@ -61,9 +61,9 @@ som <- function(
 #' @export
 #'
 #'
-som_k <- function(
+som_cluster <- function(
     som,
-    k.name,
+    cluster.name,
     k,
     plot = F
 )
@@ -78,12 +78,20 @@ som_k <- function(
 
   clusters <- factor(stats::cutree(hc, k = k))
 
-  k.name <- sprintf("cluster_%s", k.name)
+  cluster.col <- sprintf("cluster_%s", cluster.name)
 
   som[['codes.dt']][
     ,
-    (k.name) := clusters
+    (cluster.col) := clusters
   ]
+
+  data.table::setnames(
+    x = som[['codes.dt']],
+    old = "node",
+    new = sprintf("node_%s", cluster.name)
+  )
+
+  # data.table::setattr(som[['codes.dt']], "cluster.name", cluster.name)
 
   invisible(som)
 }
@@ -93,7 +101,7 @@ som_k <- function(
 #' @param som The return of [som].
 #' @param flowstate An object of class flowstate; as returned from `[flowstate:::flowstate_object]`.
 #'
-#' @returns UPDATES BY REFERENCE (invisible returns `flowstate`); `node`, `node_dist`, and `cluster` columns are added in-place to `flowstate`.
+#' @returns UPDATES BY REFERENCE (invisibly returns `flowstate`); `node`, `node.dist`, and `cluster` columns are added in-place to `flowstate`.
 #' @export
 #'
 #'
@@ -101,15 +109,29 @@ som_map <- function(
     som,
     flowstate
 ){
+  ##
+  cols <- sapply(
+    c('node', 'cluster'),
+    grep,
+    x = names(som[['codes.dt']]),
+    value = T
+  )
+  node.cols <- c(cols[['node']], paste0(cols[['node']], '.dist'))
+  ##
   flowstate[
     ,
-    j = c('node', 'node_dist') := {
+    j = (node.cols) := {
       flowsomlite::MapDataToCodes(
         codes = som[['codes']],
         newdata = as.matrix(.SD)
       ) |> as.data.frame() |> as.list()
     },
     .SDcols = colnames(som[['codes']])
+  ][
+    ,
+    j = (cols[['cluster']]) := {
+      som[['codes.dt']][[cols[['cluster']]]][cols[['node']]]
+    }
   ]
 
   invisible(flowstate)

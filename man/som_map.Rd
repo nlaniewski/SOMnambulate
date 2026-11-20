@@ -12,7 +12,7 @@ som_map(som, flowstate)
 \item{flowstate}{An object of class flowstate; as returned from \verb{[flowstate:::flowstate_object]}.}
 }
 \value{
-UPDATES BY REFERENCE (invisible returns \code{flowstate}); \code{node}, \code{node_dist}, and \code{cluster} columns are added in-place to \code{flowstate}.
+UPDATES BY REFERENCE (invisibly returns \code{flowstate}); \code{node}, \code{node.dist}, and \code{cluster} columns are added in-place to \code{flowstate}.
 }
 \description{
 Map individual data points to a SOM.
